@@ -108,6 +108,18 @@
     premiumCreatureAtlas.src = "assets/premium-creature-atlas-v2.png";
   }
 
+  const premiumMinionAtlas = typeof Image !== "undefined" ? new Image() : null;
+  if (premiumMinionAtlas) {
+    premiumMinionAtlas.decoding = "async";
+    premiumMinionAtlas.onload = () => {
+      if (!QA_MODE) return;
+      state.qa.visualDone = false;
+      updateQaDataset();
+      render();
+    };
+    premiumMinionAtlas.src = "assets/premium-minion-atlas-v3.png";
+  }
+
   const premiumPlayerAtlas = typeof Image !== "undefined" ? new Image() : null;
   if (premiumPlayerAtlas) {
     premiumPlayerAtlas.decoding = "async";
@@ -167,6 +179,15 @@
   const premiumCreatureFrames = {
     eliteDemon: { x: 0, y: 0, w: 512, h: 512 },
     stoneGolem: { x: 512, y: 0, w: 512, h: 512 }
+  };
+
+  const premiumMinionFrames = {
+    impFiend: { x: 0, y: 0, w: 512, h: 512 },
+    lavaWolf: { x: 512, y: 0, w: 512, h: 512 },
+    frostWisp: { x: 1024, y: 0, w: 512, h: 512 },
+    plagueCrawler: { x: 0, y: 512, w: 512, h: 512 },
+    stoneBrute: { x: 512, y: 512, w: 512, h: 512 },
+    voidSummoner: { x: 1024, y: 512, w: 512, h: 512 }
   };
 
   const premiumPlayerFrames = {
@@ -1415,6 +1436,10 @@
   }
 
   function updateSpawn(dt) {
+    if (QA_MODE && state.qa.mode === "minions") {
+      state.wave = 1;
+      return;
+    }
     const minute = Math.floor(state.elapsed / 60);
     state.wave = minute + 1;
     const spawnRate = clamp(0.92 - state.elapsed / 2300, 0.14, 0.92);
@@ -2445,6 +2470,7 @@
     document.body.dataset.qaAtlasReady = atlasReady() ? "1" : "0";
     document.body.dataset.qaCreatureAtlasReady = creatureAtlasReady() ? "1" : "0";
     document.body.dataset.qaPremiumCreatureAtlasReady = premiumCreatureAtlasReady() ? "1" : "0";
+    document.body.dataset.qaPremiumMinionAtlasReady = premiumMinionAtlasReady() ? "1" : "0";
     document.body.dataset.qaPremiumPlayerAtlasReady = premiumPlayerAtlasReady() ? "1" : "0";
     document.body.dataset.qaItemAtlasReady = itemIconAtlasReady() ? "1" : "0";
     document.body.dataset.qaArenaReady = arenaBackgroundReady() ? "1" : "0";
@@ -2820,6 +2846,10 @@
     return Boolean(premiumCreatureAtlas && premiumCreatureAtlas.complete && premiumCreatureAtlas.naturalWidth > 0);
   }
 
+  function premiumMinionAtlasReady() {
+    return Boolean(premiumMinionAtlas && premiumMinionAtlas.complete && premiumMinionAtlas.naturalWidth > 0);
+  }
+
   function premiumPlayerAtlasReady() {
     return Boolean(premiumPlayerAtlas && premiumPlayerAtlas.complete && premiumPlayerAtlas.naturalWidth > 0);
   }
@@ -2838,6 +2868,10 @@
 
   function allowCreatureAtlas(unitCount = state.enemies.length) {
     return creatureAtlasReady() && unitCount <= 150;
+  }
+
+  function allowPremiumMinionAtlas(unitCount = state.enemies.length) {
+    return premiumMinionAtlasReady() && unitCount <= 180;
   }
 
   function drawAtlasFrame(id, x, y, w, h, alpha = 1, rotation = 0, blend = "lighter") {
@@ -2875,6 +2909,19 @@
     ctx.rotate(rotation);
     ctx.scale(flip, 1);
     ctx.drawImage(premiumCreatureAtlas, frame.x, frame.y, frame.w, frame.h, -w / 2, -h / 2, w, h);
+    ctx.restore();
+    return true;
+  }
+
+  function drawPremiumMinionSprite(id, x, y, w, h, alpha = 0.88, rotation = 0, flip = 1) {
+    const frame = premiumMinionFrames[id];
+    if (!frame || !premiumMinionAtlasReady()) return false;
+    ctx.save();
+    ctx.globalAlpha *= alpha;
+    ctx.translate(x, y);
+    ctx.rotate(rotation);
+    ctx.scale(flip, 1);
+    ctx.drawImage(premiumMinionAtlas, frame.x, frame.y, frame.w, frame.h, -w / 2, -h / 2, w, h);
     ctx.restore();
     return true;
   }
@@ -2939,6 +2986,33 @@
     return null;
   }
 
+  function premiumMinionSprite(e) {
+    if (!premiumMinionAtlasReady()) return null;
+    switch (e.type.id) {
+      case "imp":
+        return "impFiend";
+      case "runner":
+      case "wolf":
+        return "lavaWolf";
+      case "wisp":
+      case "eliteWisp":
+        return "frostWisp";
+      case "bug":
+      case "spitter":
+        return "plagueCrawler";
+      case "brute":
+      case "eliteBrute":
+      case "stone":
+        return "stoneBrute";
+      case "summoner":
+      case "eliteSummoner":
+      case "shadow":
+        return "voidSummoner";
+      default:
+        return null;
+    }
+  }
+
   function itemIconMarkup(id, item, extraClass = "") {
     const frame = itemIconFrames[id] || itemIconFrames.coins;
     const x = frame[0] * 20;
@@ -2960,6 +3034,15 @@
     if (id === "stoneGolem") return [4.9, 5.85];
     if (id === "eliteDemon") return [4.05, 5.35];
     return [4.6, 5.2];
+  }
+
+  function premiumMinionSpriteScale(id) {
+    if (id === "lavaWolf") return [8.15, 5.35];
+    if (id === "plagueCrawler") return [7.45, 5.25];
+    if (id === "stoneBrute") return [5.85, 5.85];
+    if (id === "frostWisp") return [5.85, 6.35];
+    if (id === "voidSummoner") return [5.25, 6.45];
+    return [5.55, 5.65];
   }
 
   function premiumPlayerSpriteScale(id) {
@@ -2989,6 +3072,30 @@
         kind: "deathSprite",
         premiumSprite,
         rot: rand(-0.06, 0.06)
+      });
+      return;
+    }
+    const premiumMinionId = premiumMinionSprite(e);
+    if (premiumMinionId) {
+      const allowPremiumMinion = e.elite || (state.enemies.length < 180 && state.particles.length < MAX_PARTICLES - 40 && chance(0.5));
+      if (!allowPremiumMinion) return;
+      const scale = premiumMinionSpriteScale(premiumMinionId);
+      const max = e.elite ? 0.62 : 0.38;
+      state.particles.push({
+        x: e.x,
+        y: e.y,
+        vx: 0,
+        vy: e.elite ? -13 : -10,
+        life: max,
+        max,
+        r: e.r,
+        w: e.r * scale[0],
+        h: e.r * scale[1],
+        color: e.color,
+        kind: "deathSprite",
+        premiumMinionSprite: premiumMinionId,
+        flip: (premiumMinionId === "lavaWolf" || premiumMinionId === "plagueCrawler") && state.player && e.x < state.player.x ? -1 : 1,
+        rot: rand(-0.07, 0.07)
       });
       return;
     }
@@ -3301,40 +3408,49 @@
       ctx.save();
       ctx.translate(s.x, s.y);
       ctx.rotate(d.rot);
+      ctx.globalCompositeOperation = "lighter";
+      const dustAlpha = texturedArena ? 0.095 : 0.15;
       if (d.kind === 0) {
-        ctx.fillStyle = "rgba(87, 91, 78, 0.72)";
-        ctx.fillRect(-d.r * 0.6, -d.r * 0.38, d.r * 1.2, d.r * 0.76);
+        ctx.strokeStyle = `rgba(174, 160, 119, ${dustAlpha})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(-d.r * 0.48, -d.r * 0.08);
+        ctx.lineTo(d.r * 0.52, d.r * 0.08);
+        ctx.stroke();
+        ctx.fillStyle = `rgba(124, 215, 175, ${dustAlpha * 0.42})`;
+        ctx.fillRect(-1, -1, 2, 2);
       } else if (d.kind === 1) {
-        ctx.fillStyle = "rgba(84, 99, 92, 0.62)";
+        ctx.strokeStyle = `rgba(124, 215, 175, ${dustAlpha * 0.82})`;
+        ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.moveTo(0, -d.r);
-        ctx.lineTo(d.r * 0.72, d.r);
-        ctx.lineTo(-d.r * 0.72, d.r);
-        ctx.closePath();
-        ctx.fill();
+        ctx.moveTo(-d.r * 0.36, d.r * 0.28);
+        ctx.lineTo(0, -d.r * 0.42);
+        ctx.lineTo(d.r * 0.36, d.r * 0.28);
+        ctx.stroke();
       } else if (d.kind === 2) {
-        ctx.strokeStyle = "rgba(241, 198, 106, 0.16)";
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = `rgba(241, 198, 106, ${dustAlpha * 1.15})`;
+        ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.arc(0, 0, d.r, 0, TAU);
+        ctx.arc(0, 0, d.r * 0.72, 0, TAU);
         ctx.stroke();
       } else if (d.kind === 3) {
-        ctx.fillStyle = "rgba(75, 67, 62, 0.68)";
+        ctx.strokeStyle = `rgba(242, 234, 215, ${dustAlpha * 0.65})`;
+        ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.ellipse(0, 0, d.r, d.r * 0.58, 0, 0, TAU);
-        ctx.fill();
-      } else {
-        ctx.strokeStyle = "rgba(124, 215, 175, 0.12)";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(-d.r, 0);
-        ctx.lineTo(d.r, 0);
-        ctx.moveTo(0, -d.r * 0.7);
-        ctx.lineTo(0, d.r * 0.7);
+        ctx.ellipse(0, 0, d.r * 0.62, d.r * 0.28, 0, 0, TAU);
         ctx.stroke();
-        ctx.fillStyle = "rgba(21, 26, 25, 0.68)";
+      } else {
+        ctx.strokeStyle = `rgba(124, 215, 175, ${dustAlpha})`;
+        ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.arc(0, 0, d.r * 0.28, 0, TAU);
+        ctx.moveTo(-d.r * 0.55, 0);
+        ctx.lineTo(d.r * 0.55, 0);
+        ctx.moveTo(0, -d.r * 0.38);
+        ctx.lineTo(0, d.r * 0.38);
+        ctx.stroke();
+        ctx.fillStyle = `rgba(124, 215, 175, ${dustAlpha * 0.38})`;
+        ctx.beginPath();
+        ctx.arc(0, 0, Math.max(1.2, d.r * 0.12), 0, TAU);
         ctx.fill();
       }
       ctx.restore();
@@ -3550,9 +3666,11 @@
         continue;
       }
       const atlasCreatureId = enemyCreatureSprite(e);
-      const useCreatureSprite = atlasCreatureId && (e.boss || e.elite || allowCreatureAtlas());
+      const premiumMinionId = premiumMinionSprite(e);
+      const usePremiumMinionSprite = premiumMinionId && !premiumEnemySprite(e) && (e.elite || allowPremiumMinionAtlas());
+      const useCreatureSprite = usePremiumMinionSprite || (atlasCreatureId && (e.boss || e.elite || allowCreatureAtlas()));
       if (useCreatureSprite) {
-        drawSpriteEnemy(e, atlasCreatureId, t, pulse);
+        drawSpriteEnemy(e, atlasCreatureId, t, pulse, usePremiumMinionSprite ? premiumMinionId : null);
         ctx.restore();
         continue;
       }
@@ -3732,7 +3850,7 @@
     ctx.globalAlpha = 1;
   }
 
-  function drawSpriteEnemy(e, creatureId, t, pulse) {
+  function drawSpriteEnemy(e, creatureId, t, pulse, premiumMinionId = null) {
     ctx.fillStyle = e.boss ? "rgba(0, 0, 0, 0.42)" : e.elite ? "rgba(0, 0, 0, 0.30)" : "rgba(0, 0, 0, 0.18)";
     ctx.beginPath();
     ctx.ellipse(0, e.r * 0.88, e.r * 1.08, e.r * 0.36, 0, 0, TAU);
@@ -3740,22 +3858,29 @@
 
     ctx.save();
     ctx.globalCompositeOperation = "lighter";
-    drawGlow(0, 0, e.boss ? e.r * 2.35 : e.elite ? e.r * 1.85 : e.r * 1.05, e.boss ? colors.danger : e.elite ? colors.gold : e.color, e.boss ? 0.18 : e.elite ? 0.12 : 0.035);
+    drawGlow(0, 0, e.boss ? e.r * 2.35 : e.elite ? e.r * 1.85 : premiumMinionId ? e.r * 1.55 : e.r * 1.05, e.boss ? colors.danger : e.elite ? colors.gold : e.color, e.boss ? 0.18 : e.elite ? 0.12 : premiumMinionId ? 0.105 : 0.035);
     if (e.boss) drawRunicRing(0, 0, e.r * (1.16 + pulse * 0.015), colors.danger, -t * 0.8, 14, 0.34);
     else if (e.elite) drawRunicRing(0, 0, e.r * 1.18, colors.gold, t, 8, 0.26);
     ctx.restore();
 
     const premiumSprite = premiumEnemySprite(e);
-    const scale = premiumSprite ? premiumEnemySpriteScale(premiumSprite) : creatureSpriteScale(creatureId);
+    const scale = premiumSprite ? premiumEnemySpriteScale(premiumSprite) : premiumMinionId ? premiumMinionSpriteScale(premiumMinionId) : creatureSpriteScale(creatureId);
     const gait = Math.sin(t * (e.boss ? 2.2 : e.elite ? 3.2 : 5.4) + e.x * 0.013 + e.y * 0.011);
     const squash = e.boss ? 0.012 : e.elite ? 0.018 : 0.026;
-    const bob = premiumSprite ? -Math.abs(gait) * e.r * 0.025 : creatureId === "wolf" ? gait * e.r * 0.04 : -Math.abs(gait) * e.r * 0.052;
+    const bob = premiumSprite ? -Math.abs(gait) * e.r * 0.025 : premiumMinionId ? -Math.abs(gait) * e.r * 0.035 : creatureId === "wolf" ? gait * e.r * 0.04 : -Math.abs(gait) * e.r * 0.052;
     const lean = clamp((e.vx || 0) * 0.00065, -0.08, 0.08);
-    const alpha = e.flash > 0 ? 0.62 : e.boss ? 0.94 : e.elite ? 0.9 : 0.8;
-    const flip = creatureId === "wolf" && state.player && e.x < state.player.x ? -1 : 1;
+    const alpha = e.flash > 0 ? 0.62 : e.boss ? 0.94 : e.elite ? 0.9 : premiumMinionId ? 0.86 : 0.8;
+    const flip = (premiumMinionId === "lavaWolf" || premiumMinionId === "plagueCrawler" || creatureId === "wolf") && state.player && e.x < state.player.x ? -1 : 1;
     if (premiumSprite) {
       const y = (premiumSprite === "stoneGolem" ? -e.r * 0.4 : -e.r * 0.48) + bob;
       drawPremiumCreatureSprite(premiumSprite, 0, y, e.r * scale[0] * (1 + gait * squash), e.r * scale[1] * (1 - gait * squash * 0.72), alpha, lean, 1);
+    } else if (premiumMinionId) {
+      const y = (premiumMinionId === "lavaWolf" || premiumMinionId === "plagueCrawler" ? -e.r * 0.08 : premiumMinionId === "voidSummoner" ? -e.r * 0.42 : -e.r * 0.18) + bob;
+      drawPremiumMinionSprite(premiumMinionId, 0, y, e.r * scale[0] * (1 + gait * squash), e.r * scale[1] * (1 - gait * squash * 0.72), alpha, lean, flip);
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      drawGlow(0, y, e.r * 0.92, e.color, 0.08);
+      ctx.restore();
     } else {
       drawCreatureSprite(creatureId, 0, (creatureId === "wolf" ? -e.r * 0.12 : 0) + bob, e.r * scale[0] * (1 + gait * squash), e.r * scale[1] * (1 - gait * squash * 0.72), alpha, lean, flip);
     }
@@ -4602,6 +4727,8 @@
         ctx.globalCompositeOperation = "source-over";
         if (p.premiumSprite) {
           drawPremiumCreatureSprite(p.premiumSprite, s.x, s.y - fade * p.r * 0.82, p.w * scale, p.h * scale, alpha * 0.68, (p.rot || 0) + fade * 0.06, 1);
+        } else if (p.premiumMinionSprite) {
+          drawPremiumMinionSprite(p.premiumMinionSprite, s.x, s.y - fade * p.r * 0.72, p.w * scale, p.h * scale, alpha * 0.62, (p.rot || 0) + fade * 0.08, p.flip || 1);
         } else {
           drawCreatureSprite(p.sprite, s.x, s.y - fade * p.r * 0.72, p.w * scale, p.h * scale, alpha * 0.62, (p.rot || 0) + fade * 0.08, p.flip || 1);
         }
@@ -4857,6 +4984,53 @@
     updateHud();
   }
 
+  function setupQaMinionGallery() {
+    const p = state.player;
+    if (!p) return;
+    p.weapons = {};
+    p.passives = {};
+    applyStats(false);
+    p.hp = p.maxHp;
+    state.elapsed = 180;
+    state.enemies = [];
+    state.enemyGrid.clear();
+    state.projectiles = [];
+    state.enemyProjectiles = [];
+    state.areas = [];
+    state.particles = [];
+    state.gems = [];
+    state.coins = [];
+    state.powerups = [];
+    const ids = ["imp", "wolf", "wisp", "bug", "stone", "summoner"];
+    const positions = [
+      [-210, -96],
+      [0, -122],
+      [214, -94],
+      [-210, 116],
+      [0, 132],
+      [214, 118]
+    ];
+    ids.forEach((id, i) => {
+      const type = enemyTypes.find((candidate) => candidate.id === id);
+      if (!type) return;
+      spawnEnemy(false, type);
+      const e = state.enemies[state.enemies.length - 1];
+      if (!e) return;
+      e.x = p.x + positions[i][0];
+      e.y = p.y + positions[i][1];
+      e.hp = type.hp * 20;
+      e.maxHp = e.hp;
+      e.speed = 0;
+      e.damage = 0;
+      e.vx = 0;
+      e.vy = 0;
+    });
+    rebuildEnemyGrid();
+    updateHud();
+    updateQaDataset();
+    render();
+  }
+
   function startQaMode() {
     const params = new URLSearchParams(window.location.search);
     const mode = params.get("qa");
@@ -4885,6 +5059,10 @@
       openChest(chest);
       updateHud();
       updateQaDataset();
+      return;
+    }
+    if (mode === "minions") {
+      setupQaMinionGallery();
       return;
     }
     grantQaBuild();
