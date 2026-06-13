@@ -5024,6 +5024,8 @@
       e.damage = 0;
       e.vx = 0;
       e.vy = 0;
+      e.attackTimer = 9999;
+      e.summonTimer = 9999;
     });
     rebuildEnemyGrid();
     updateHud();
