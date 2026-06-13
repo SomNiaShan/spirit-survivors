@@ -173,6 +173,18 @@
     environmentPropAtlas.src = "assets/premium-environment-prop-atlas-v1.png";
   }
 
+  const atmosphereAtlas = typeof Image !== "undefined" ? new Image() : null;
+  if (atmosphereAtlas) {
+    atmosphereAtlas.decoding = "async";
+    atmosphereAtlas.onload = () => {
+      if (!QA_MODE) return;
+      state.qa.visualDone = false;
+      updateQaDataset();
+      render();
+    };
+    atmosphereAtlas.src = "assets/premium-atmosphere-atlas-v1.png";
+  }
+
   const itemIconAtlas = typeof Image !== "undefined" ? new Image() : null;
   if (itemIconAtlas) {
     itemIconAtlas.decoding = "async";
@@ -270,6 +282,17 @@
   };
 
   const environmentPropIds = Object.keys(environmentPropFrames);
+
+  const atmosphereFrames = {
+    ghostFog: { x: 0, y: 0, w: 443, h: 443 },
+    spiritEmbers: { x: 443, y: 0, w: 444, h: 443 },
+    moonbeam: { x: 887, y: 0, w: 443, h: 443 },
+    dangerPulse: { x: 1330, y: 0, w: 444, h: 443 },
+    ashMotes: { x: 0, y: 443, w: 443, h: 444 },
+    lowMist: { x: 443, y: 443, w: 444, h: 444 },
+    bossAura: { x: 887, y: 443, w: 443, h: 444 },
+    sparkleCluster: { x: 1330, y: 443, w: 444, h: 444 }
+  };
 
   const itemIconFrames = {
     flyingSword: [0, 0],
@@ -665,7 +688,7 @@
     hudSignature: "",
     forceNextChestEvolution: false,
     lastResult: null,
-    qa: { mode: null, autoChoices: false, autoMove: false, timeScale: 1, maxSteps: 1, syncRunning: false, syncSteps: 0, syncMs: 0, visualDone: false, groundDecalDraws: 0, environmentPropDraws: 0, swarmImpostorDraws: 0, legacyVectorOverlays: 0, premiumAtlasFxDraws: 0 },
+    qa: { mode: null, autoChoices: false, autoMove: false, timeScale: 1, maxSteps: 1, syncRunning: false, syncSteps: 0, syncMs: 0, visualDone: false, groundDecalDraws: 0, environmentPropDraws: 0, atmosphereDraws: 0, swarmImpostorDraws: 0, legacyVectorOverlays: 0, premiumAtlasFxDraws: 0 },
     wave: 1,
     spawnTimer: 0,
     eliteSchedule: [90, 180, 300, 450, 600, 760],
@@ -1119,6 +1142,7 @@
     state.lastResult = null;
     state.qa.groundDecalDraws = 0;
     state.qa.environmentPropDraws = 0;
+    state.qa.atmosphereDraws = 0;
     state.qa.swarmImpostorDraws = 0;
     state.wave = 1;
     state.spawnTimer = 0;
@@ -2572,6 +2596,8 @@
     document.body.dataset.qaGroundDecalDraws = String(state.qa.groundDecalDraws || 0);
     document.body.dataset.qaEnvironmentPropAtlasReady = environmentPropAtlasReady() ? "1" : "0";
     document.body.dataset.qaEnvironmentPropDraws = String(state.qa.environmentPropDraws || 0);
+    document.body.dataset.qaAtmosphereAtlasReady = atmosphereAtlasReady() ? "1" : "0";
+    document.body.dataset.qaAtmosphereDraws = String(state.qa.atmosphereDraws || 0);
     document.body.dataset.qaSwarmImpostorDraws = String(state.qa.swarmImpostorDraws || 0);
     document.body.dataset.qaLegacyVectorOverlays = String(state.qa.legacyVectorOverlays || 0);
     document.body.dataset.qaPremiumAtlasFxDraws = String(state.qa.premiumAtlasFxDraws || 0);
@@ -2800,6 +2826,7 @@
     resize();
     state.qa.legacyVectorOverlays = 0;
     state.qa.premiumAtlasFxDraws = 0;
+    state.qa.atmosphereDraws = 0;
     ctx.save();
     ctx.fillStyle = "#111417";
     ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
@@ -2808,6 +2835,7 @@
     }
     renderWorld();
     if (state.player) {
+      renderAtmosphereBack();
       renderPickups();
       renderAreas();
       renderProjectiles();
@@ -2815,6 +2843,7 @@
       renderPlayer();
       renderParticles();
       renderTexts();
+      renderAtmosphereFront();
       renderVignette();
     } else {
       renderAttract();
@@ -2975,6 +3004,10 @@
     return Boolean(environmentPropAtlas && environmentPropAtlas.complete && environmentPropAtlas.naturalWidth > 0);
   }
 
+  function atmosphereAtlasReady() {
+    return Boolean(atmosphereAtlas && atmosphereAtlas.complete && atmosphereAtlas.naturalWidth > 0);
+  }
+
   function itemIconAtlasReady() {
     return Boolean(itemIconAtlas && itemIconAtlas.complete && itemIconAtlas.naturalWidth > 0);
   }
@@ -3091,6 +3124,21 @@
     ctx.scale(flip, 1);
     ctx.drawImage(environmentPropAtlas, frame.x, frame.y, frame.w, frame.h, -w / 2, -h / 2, w, h);
     ctx.restore();
+    return true;
+  }
+
+  function drawAtmosphereFrame(id, x, y, w, h, alpha = 1, rotation = 0, blend = "source-over", flip = 1) {
+    const frame = atmosphereFrames[id];
+    if (!frame || !atmosphereAtlasReady()) return false;
+    ctx.save();
+    ctx.globalAlpha *= alpha;
+    ctx.globalCompositeOperation = blend;
+    ctx.translate(x, y);
+    ctx.rotate(rotation);
+    ctx.scale(flip, 1);
+    ctx.drawImage(atmosphereAtlas, frame.x, frame.y, frame.w, frame.h, -w / 2, -h / 2, w, h);
+    ctx.restore();
+    if (QA_MODE) state.qa.atmosphereDraws += 1;
     return true;
   }
 
@@ -3741,6 +3789,87 @@
       fog.addColorStop(1, "rgba(124, 215, 175, 0)");
       ctx.fillStyle = fog;
       ctx.fillRect(0, 0, w, h);
+    }
+  }
+
+  function renderAtmosphereBack() {
+    if (!atmosphereAtlasReady()) return;
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const t = performance.now() / 1000;
+    const compact = Math.min(w, h) < 560;
+    const dense = state.enemies.length >= SWARM_RENDER_LIMIT;
+    const detail = compact ? 0.72 : dense ? 0.82 : 1;
+    drawAtmosphereFrame(
+      "moonbeam",
+      w * 0.19 + Math.sin(t * 0.1) * 18,
+      h * 0.22,
+      Math.min(w * 0.72, compact ? 360 : 620),
+      Math.min(h * 1.05, compact ? 520 : 820),
+      0.06 * detail,
+      Math.sin(t * 0.18) * 0.025,
+      "lighter"
+    );
+
+    const mistCount = compact ? 2 : dense ? 3 : 4;
+    for (let i = 0; i < mistCount; i++) {
+      const phase = i * 0.31 + t * 0.018;
+      const x = (phase % 1) * (w + 420) - 210;
+      const y = h * (0.55 + i * 0.11) + Math.sin(t * 0.38 + i * 1.7) * 14;
+      const width = Math.min(w * (compact ? 0.9 : 0.66), compact ? 380 : 620);
+      drawAtmosphereFrame("lowMist", x, y, width, width * 0.42, 0.16 * detail, Math.sin(t * 0.2 + i) * 0.035, "source-over", i % 2 ? -1 : 1);
+    }
+
+    const fogCount = compact || dense ? 1 : 2;
+    for (let i = 0; i < fogCount; i++) {
+      const x = w * (0.25 + i * 0.5) + Math.sin(t * 0.16 + i * 2.4) * w * 0.08;
+      const y = h * (0.22 + i * 0.32) + Math.cos(t * 0.13 + i) * h * 0.06;
+      const size = Math.min(Math.max(w, h) * 0.34, compact ? 260 : 440);
+      drawAtmosphereFrame("ghostFog", x, y, size, size * 0.92, 0.09 * detail, Math.sin(t * 0.12 + i) * 0.26, "source-over", i % 2 ? -1 : 1);
+    }
+
+    const boss = state.enemies.find((e) => e.boss && e.hp > 0);
+    if (boss) {
+      const s = worldToScreen(boss.x, boss.y);
+      if (s.x > -260 && s.x < w + 260 && s.y > -260 && s.y < h + 260) {
+        const pulse = 1 + Math.sin(t * 2.1) * 0.05;
+        drawAtmosphereFrame("bossAura", s.x, s.y + boss.r * 0.12, boss.r * 8.2 * pulse, boss.r * 6.6 * pulse, 0.18 * detail, t * 0.08, "lighter");
+      }
+    }
+  }
+
+  function renderAtmosphereFront() {
+    if (!atmosphereAtlasReady() || !state.player) return;
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const t = performance.now() / 1000;
+    const compact = Math.min(w, h) < 560;
+    const dense = state.enemies.length >= SWARM_RENDER_LIMIT;
+    const detail = compact ? 0.7 : dense ? 0.78 : 1;
+    const p = state.player;
+    const pScreen = worldToScreen(p.x, p.y);
+
+    drawAtmosphereFrame("spiritEmbers", pScreen.x + Math.sin(t * 1.5) * 7, pScreen.y - p.r * 1.1, p.r * 6.0, p.r * 5.4, 0.1 * detail, t * 0.06, "lighter");
+
+    const moteCount = compact ? 2 : dense ? 3 : 4;
+    for (let i = 0; i < moteCount; i++) {
+      const x = ((i * 0.29 + t * (0.018 + i * 0.002)) % 1) * (w + 260) - 130;
+      const y = h * (0.18 + i * 0.19) + Math.sin(t * 0.52 + i * 2.1) * 26;
+      const size = compact ? 120 + i * 18 : 150 + i * 24;
+      drawAtmosphereFrame(i % 2 ? "sparkleCluster" : "ashMotes", x, y, size, size, (i % 2 ? 0.1 : 0.075) * detail, Math.sin(t * 0.22 + i) * 0.35, "lighter", i % 2 ? -1 : 1);
+    }
+
+    const boss = state.enemies.find((e) => e.boss && e.hp > 0);
+    const hpRatio = p.maxHp ? p.hp / p.maxHp : 1;
+    const crowdDanger = dense ? clamp((state.enemies.length - SWARM_RENDER_LIMIT) / 280, 0, 1) : 0;
+    const dangerAlpha = boss ? 0.2 : hpRatio < 0.36 ? 0.16 : crowdDanger * 0.12;
+    if (dangerAlpha > 0) {
+      const target = boss ? worldToScreen(boss.x, boss.y) : pScreen;
+      const visible = target.x > -260 && target.x < w + 260 && target.y > -260 && target.y < h + 260;
+      const x = visible ? target.x : w / 2;
+      const y = visible ? target.y : h / 2;
+      const size = boss ? Math.min(560, Math.max(300, boss.r * 8.6)) : Math.min(360, Math.max(220, Math.min(w, h) * 0.58));
+      drawAtmosphereFrame("dangerPulse", x, y, size, size * 0.72, dangerAlpha * detail * (0.9 + Math.sin(t * 2.6) * 0.1), -t * 0.12, "lighter");
     }
   }
 
@@ -5735,6 +5864,12 @@
           chests: state.chests.length,
           runCoins: state.runCoins,
           kills: state.kills,
+          visuals: {
+            atmosphereReady: atmosphereAtlasReady(),
+            atmosphereDraws: state.qa.atmosphereDraws || 0,
+            legacyVectorOverlays: state.qa.legacyVectorOverlays || 0,
+            premiumAtlasFxDraws: state.qa.premiumAtlasFxDraws || 0
+          },
           perf: {
             frames: state.perf.frames,
             workFrames: state.perf.workFrames,
@@ -5754,6 +5889,7 @@
         state.perf = { frames: 0, totalDt: 0, maxDt: 0, workFrames: 0, totalWorkMs: 0, maxWorkMs: 0 };
         state.qa.groundDecalDraws = 0;
         state.qa.environmentPropDraws = 0;
+        state.qa.atmosphereDraws = 0;
         state.qa.swarmImpostorDraws = 0;
         updateQaDataset();
         return true;
