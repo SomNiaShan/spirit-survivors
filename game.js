@@ -70,6 +70,27 @@
     poison: "#91d56f"
   };
 
+  const visualAtlas = typeof Image !== "undefined" ? new Image() : null;
+  if (visualAtlas) {
+    visualAtlas.decoding = "async";
+    visualAtlas.onload = () => {
+      if (!QA_MODE) return;
+      state.qa.visualDone = false;
+      updateQaDataset();
+      render();
+    };
+    visualAtlas.src = "assets/combat-asset-reference-v1.png";
+  }
+
+  const atlasFrames = {
+    swordFan: { x: 0, y: 620, w: 335, h: 300 },
+    talismanWheel: { x: 320, y: 625, w: 270, h: 292 },
+    spiritFire: { x: 585, y: 620, w: 235, h: 305 },
+    voidSeal: { x: 800, y: 610, w: 265, h: 315 },
+    frostBurst: { x: 1048, y: 600, w: 265, h: 325 },
+    plaguePool: { x: 1286, y: 602, w: 386, h: 326 }
+  };
+
   const characters = [
     {
       id: "sword",
@@ -2279,6 +2300,7 @@
     document.body.dataset.qaCoins = String(state.coins.length);
     document.body.dataset.qaChests = String(state.chests.length);
     document.body.dataset.qaPowerups = String(state.powerups.length);
+    document.body.dataset.qaAtlasReady = atlasReady() ? "1" : "0";
     const boss = state.enemies.find((e) => e.boss && e.hp > 0);
     document.body.dataset.qaBossHp = boss ? String(Math.ceil(boss.hp)) : "0";
     document.body.dataset.qaKills = String(state.kills);
@@ -2594,6 +2616,27 @@
 
   function allowHighFx() {
     return state.enemies.length < DETAIL_ENEMY_LIMIT && state.particles.length < HIGH_FX_LIMIT;
+  }
+
+  function atlasReady() {
+    return Boolean(visualAtlas && visualAtlas.complete && visualAtlas.naturalWidth > 0);
+  }
+
+  function allowAtlasFx() {
+    return atlasReady() && allowHighFx() && state.projectiles.length < 180 && state.areas.length < 100;
+  }
+
+  function drawAtlasFrame(id, x, y, w, h, alpha = 1, rotation = 0, blend = "lighter") {
+    const frame = atlasFrames[id];
+    if (!frame || !atlasReady()) return false;
+    ctx.save();
+    ctx.globalAlpha *= alpha;
+    ctx.globalCompositeOperation = blend;
+    ctx.translate(x, y);
+    ctx.rotate(rotation);
+    ctx.drawImage(visualAtlas, frame.x, frame.y, frame.w, frame.h, -w / 2, -h / 2, w, h);
+    ctx.restore();
+    return true;
   }
 
   function drawBladeGlyph(length, width, color, alpha = 1) {
@@ -2935,6 +2978,7 @@
     const s = worldToScreen(p.x, p.y);
     const t = performance.now() / 1000;
     const face = Math.atan2(p.lastDir.y, p.lastDir.x);
+    const atlasFx = allowAtlasFx();
     ctx.save();
     ctx.translate(s.x, s.y);
     ctx.rotate(face * 0.06);
@@ -2954,6 +2998,7 @@
 
     ctx.save();
     ctx.globalCompositeOperation = "lighter";
+    if (atlasFx) drawAtlasFrame("swordFan", 0, 2, p.r * 5.6, p.r * 4.0, 0.12, -face * 0.35);
     for (let i = 0; i < 4; i++) {
       const a = t * 1.25 + i * (TAU / 4);
       const rr = p.r * (1.55 + Math.sin(t * 2 + i) * 0.08);
@@ -3431,6 +3476,7 @@
   function renderProjectiles() {
     const now = performance.now();
     const highFx = allowHighFx();
+    const atlasFx = allowAtlasFx();
     for (const pr of state.projectiles) {
       const s = worldToScreen(pr.x, pr.y);
       if (s.x < -80 || s.x > window.innerWidth + 80 || s.y < -80 || s.y > window.innerHeight + 80) continue;
@@ -3444,6 +3490,7 @@
       if (pr.kind === "thousandSword") {
         ctx.globalCompositeOperation = "lighter";
         drawGlow(pr.r * 0.8, 0, pr.r * 4.5, pr.color, 0.18);
+        if (atlasFx) drawAtlasFrame("swordFan", -pr.r * 0.55, 0, pr.r * 10.8, pr.r * 7.4, 0.22, 0);
         if (highFx) {
           for (let i = -1; i <= 1; i += 2) {
             ctx.save();
@@ -3458,6 +3505,7 @@
       } else if (pr.kind === "glacierNeedle") {
         ctx.globalCompositeOperation = "lighter";
         drawGlow(0, 0, pr.r * 4, pr.color, 0.16);
+        if (atlasFx) drawAtlasFrame("frostBurst", 0, 0, pr.r * 6.2, pr.r * 4.6, 0.18, 0);
         if (highFx) drawShardCluster(-pr.r * 0.6, 0, pr.r * 1.2, pr.color, now, 5);
         ctx.globalCompositeOperation = "source-over";
         ctx.beginPath();
@@ -3502,6 +3550,7 @@
       } else if (pr.kind === "talisman") {
         ctx.save();
         ctx.rotate(Math.sin(now / 120 + pr.spin) * 0.08);
+        if (atlasFx) drawAtlasFrame("talismanWheel", 0, 0, pr.r * 5.4, pr.r * 5.4, 0.16, -now / 900);
         if (highFx) {
           ctx.globalCompositeOperation = "lighter";
           for (let i = 1; i <= 2; i++) {
@@ -3517,6 +3566,7 @@
       } else if (pr.kind === "fireSea") {
         ctx.globalCompositeOperation = "lighter";
         drawGlow(0, 0, pr.r * 3.8, pr.color, 0.22);
+        if (atlasFx) drawAtlasFrame("spiritFire", 0, 0, pr.r * 7.2, pr.r * 5.6, 0.2, 0);
         ctx.globalCompositeOperation = "source-over";
         ctx.beginPath();
         ctx.moveTo(pr.r * 1.55, 0);
@@ -3537,6 +3587,7 @@
           ctx.globalCompositeOperation = "source-over";
         }
       } else if (pr.kind === "fire") {
+        if (atlasFx) drawAtlasFrame("spiritFire", -pr.r * 0.12, 0, pr.r * 5.6, pr.r * 3.9, 0.18, 0);
         ctx.beginPath();
         ctx.moveTo(pr.r * 1.75, 0);
         ctx.bezierCurveTo(pr.r * 0.55, pr.r * 1.25, -pr.r * 1.35, pr.r * 0.72, -pr.r * 1.1, 0);
@@ -3589,6 +3640,7 @@
   function renderAreas() {
     const now = performance.now();
     const highFx = allowHighFx();
+    const atlasFx = allowAtlasFx();
     for (const area of state.areas) {
       const s = worldToScreen(area.x, area.y);
       const alpha = clamp(area.life / area.maxLife, 0, 1);
@@ -3604,6 +3656,7 @@
       ctx.fillStyle = fill;
       ctx.beginPath();
       if (area.kind === "voidSeal") {
+        if (atlasFx) drawAtlasFrame("voidSeal", s.x, s.y, area.r * 1.95, area.r * 1.95, 0.3 * alpha, -now / 1400);
         for (let i = 0; i < 8; i++) {
           const a = (TAU / 8) * i + now / 1400;
           const r = i % 2 ? area.r * 0.82 : area.r;
@@ -3614,6 +3667,15 @@
         }
         ctx.closePath();
       } else {
+        if (atlasFx && area.kind === "plagueDomain") {
+          drawAtlasFrame("plaguePool", s.x, s.y, area.r * 2.12, area.r * 1.68, 0.27 * alpha, now / 2200);
+        } else if (atlasFx && area.kind === "fireSea") {
+          drawAtlasFrame("spiritFire", s.x, s.y, area.r * 1.95, area.r * 1.42, 0.3 * alpha, now / 1800);
+        } else if (atlasFx && area.kind === "poison") {
+          drawAtlasFrame("plaguePool", s.x, s.y, area.r * 1.86, area.r * 1.36, 0.2 * alpha, -now / 2400);
+        } else if (atlasFx && area.kind === "burst") {
+          drawAtlasFrame("frostBurst", s.x, s.y, area.r * 1.82, area.r * 1.42, 0.28 * alpha, now / 1600);
+        }
         ctx.arc(s.x, s.y, area.r, 0, TAU);
       }
       ctx.fill();
