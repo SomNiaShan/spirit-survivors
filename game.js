@@ -57,6 +57,7 @@
   const SWARM_RENDER_LIMIT = 420;
   const DENSE_AREA_LIMIT = 48;
   const HIGH_FX_LIMIT = 560;
+  const GROUND_DECAL_DENSE_LIMIT = 72;
   const QA_MODE = new URLSearchParams(window.location.search).has("qa");
   const STORAGE_KEY = QA_MODE ? "spirit-survivors-save-qa-v1" : "spirit-survivors-save-v2";
 
@@ -144,6 +145,18 @@
     premiumPickupAtlas.src = "assets/premium-pickup-atlas-v1.png";
   }
 
+  const groundDecalAtlas = typeof Image !== "undefined" ? new Image() : null;
+  if (groundDecalAtlas) {
+    groundDecalAtlas.decoding = "async";
+    groundDecalAtlas.onload = () => {
+      if (!QA_MODE) return;
+      state.qa.visualDone = false;
+      updateQaDataset();
+      render();
+    };
+    groundDecalAtlas.src = "assets/premium-ground-decal-atlas-v1.png";
+  }
+
   const itemIconAtlas = typeof Image !== "undefined" ? new Image() : null;
   if (itemIconAtlas) {
     itemIconAtlas.decoding = "async";
@@ -214,6 +227,17 @@
     healGourd: { x: 0, y: 512, w: 512, h: 512 },
     magnetArray: { x: 512, y: 512, w: 512, h: 512 },
     thunderBomb: { x: 1024, y: 512, w: 512, h: 512 }
+  };
+
+  const groundDecalFrames = {
+    swordScar: { x: 0, y: 0, w: 512, h: 512 },
+    infernoScorch: { x: 512, y: 0, w: 512, h: 512 },
+    voidRift: { x: 1024, y: 0, w: 512, h: 512 },
+    talismanSeal: { x: 1536, y: 0, w: 512, h: 512 },
+    frostCrater: { x: 0, y: 512, w: 512, h: 512 },
+    plagueMiasma: { x: 512, y: 512, w: 512, h: 512 },
+    lightningSigil: { x: 1024, y: 512, w: 512, h: 512 },
+    soulVortex: { x: 1536, y: 512, w: 512, h: 512 }
   };
 
   const itemIconFrames = {
@@ -610,7 +634,7 @@
     hudSignature: "",
     forceNextChestEvolution: false,
     lastResult: null,
-    qa: { mode: null, autoChoices: false, autoMove: false, timeScale: 1, maxSteps: 1, syncRunning: false, syncSteps: 0, syncMs: 0, visualDone: false },
+    qa: { mode: null, autoChoices: false, autoMove: false, timeScale: 1, maxSteps: 1, syncRunning: false, syncSteps: 0, syncMs: 0, visualDone: false, groundDecalDraws: 0 },
     wave: 1,
     spawnTimer: 0,
     eliteSchedule: [90, 180, 300, 450, 600, 760],
@@ -621,7 +645,7 @@
     kills: 0,
     camera: { x: 0, y: 0 },
     shake: 0,
-    perf: { frames: 0, totalDt: 0, maxDt: 0 },
+    perf: { frames: 0, totalDt: 0, maxDt: 0, workFrames: 0, totalWorkMs: 0, maxWorkMs: 0 },
     audio: { ctx: null, master: null, ambient: [], muted: false, last: {} },
     mouseWorld: { x: 0, y: 0 },
     input: {
@@ -1062,6 +1086,7 @@
     state.hudSignature = "";
     state.forceNextChestEvolution = false;
     state.lastResult = null;
+    state.qa.groundDecalDraws = 0;
     state.wave = 1;
     state.spawnTimer = 0;
     state.eliteIndex = 0;
@@ -1108,7 +1133,7 @@
     state.player.hp = state.player.maxHp;
     state.camera.x = 0;
     state.camera.y = 0;
-    state.perf = { frames: 0, totalDt: 0, maxDt: 0 };
+    state.perf = { frames: 0, totalDt: 0, maxDt: 0, workFrames: 0, totalWorkMs: 0, maxWorkMs: 0 };
     for (let i = 0; i < 16; i++) spawnEnemy(false);
     updateHud();
     showScreen("playing");
@@ -2509,6 +2534,8 @@
     document.body.dataset.qaPremiumMinionAtlasReady = premiumMinionAtlasReady() ? "1" : "0";
     document.body.dataset.qaPremiumPlayerAtlasReady = premiumPlayerAtlasReady() ? "1" : "0";
     document.body.dataset.qaPremiumPickupAtlasReady = premiumPickupAtlasReady() ? "1" : "0";
+    document.body.dataset.qaGroundDecalAtlasReady = groundDecalAtlasReady() ? "1" : "0";
+    document.body.dataset.qaGroundDecalDraws = String(state.qa.groundDecalDraws || 0);
     document.body.dataset.qaItemAtlasReady = itemIconAtlasReady() ? "1" : "0";
     document.body.dataset.qaArenaReady = arenaBackgroundReady() ? "1" : "0";
     const boss = state.enemies.find((e) => e.boss && e.hp > 0);
@@ -2529,6 +2556,8 @@
     document.body.dataset.qaSyncMs = String(state.qa.syncMs || 0);
     document.body.dataset.qaAvgFrameMs = state.perf.frames ? ((state.perf.totalDt / state.perf.frames) * 1000).toFixed(2) : "0";
     document.body.dataset.qaMaxFrameMs = (state.perf.maxDt * 1000).toFixed(2);
+    document.body.dataset.qaAvgWorkMs = state.perf.workFrames ? (state.perf.totalWorkMs / state.perf.workFrames).toFixed(2) : "0";
+    document.body.dataset.qaMaxWorkMs = state.perf.maxWorkMs.toFixed(2);
   }
 
   function updateQaVisualDataset() {
@@ -2895,6 +2924,10 @@
     return Boolean(premiumPickupAtlas && premiumPickupAtlas.complete && premiumPickupAtlas.naturalWidth > 0);
   }
 
+  function groundDecalAtlasReady() {
+    return Boolean(groundDecalAtlas && groundDecalAtlas.complete && groundDecalAtlas.naturalWidth > 0);
+  }
+
   function itemIconAtlasReady() {
     return Boolean(itemIconAtlas && itemIconAtlas.complete && itemIconAtlas.naturalWidth > 0);
   }
@@ -2988,6 +3021,19 @@
     ctx.translate(x, y);
     ctx.rotate(rotation);
     ctx.drawImage(premiumPickupAtlas, frame.x, frame.y, frame.w, frame.h, -w / 2, -h / 2, w, h);
+    ctx.restore();
+    return true;
+  }
+
+  function drawGroundDecalFrame(id, x, y, w, h, alpha = 0.7, rotation = 0, blend = "source-over") {
+    const frame = groundDecalFrames[id];
+    if (!frame || !groundDecalAtlasReady()) return false;
+    ctx.save();
+    ctx.globalAlpha *= alpha;
+    ctx.globalCompositeOperation = blend;
+    ctx.translate(x, y);
+    ctx.rotate(rotation);
+    ctx.drawImage(groundDecalAtlas, frame.x, frame.y, frame.w, frame.h, -w / 2, -h / 2, w, h);
     ctx.restore();
     return true;
   }
@@ -4545,15 +4591,47 @@
     }
   }
 
+  function areaGroundDecalSpec(area, now) {
+    let id = null;
+    if (area.kind === "voidSeal") id = "voidRift";
+    else if (area.kind === "plagueDomain" || area.kind === "poison") id = "plagueMiasma";
+    else if (area.kind === "fireSea") id = "infernoScorch";
+    else if (area.kind === "burst") {
+      if (area.color === weapons.talisman.color || area.color === weapons.voidSeal.color || area.color === colors.gold) id = "talismanSeal";
+      else if (area.color === weapons.thunderArray.color || area.color === weapons.thunderPearl.color) id = "lightningSigil";
+      else if (area.slow || area.color === weapons.frostNeedle.color || area.color === weapons.glacierRain.color || area.color === colors.frost) id = "frostCrater";
+      else id = "soulVortex";
+    }
+    if (!id) return null;
+    const base = area.kind === "voidSeal" ? 2.28 : area.kind === "plagueDomain" ? 2.2 : area.kind === "fireSea" ? 2.05 : 2.0;
+    return {
+      id,
+      w: area.r * base,
+      h: area.r * base,
+      alpha: area.kind === "burst" ? 0.5 : 0.62,
+      rotation: (area.x * 0.0017 + area.y * 0.0021) + (area.kind === "voidSeal" ? -now / 3600 : now / 5200)
+    };
+  }
+
   function renderAreas() {
     const now = performance.now();
     const highFx = allowHighFx();
     const atlasFx = allowAtlasFx();
     const denseAreas = state.areas.length >= DENSE_AREA_LIMIT || state.enemies.length >= SWARM_RENDER_LIMIT;
+    const viewW = window.innerWidth;
+    const viewH = window.innerHeight;
+    const groundDecalBudget = denseAreas ? GROUND_DECAL_DENSE_LIMIT : 160;
+    let groundDecalDraws = 0;
     for (const area of state.areas) {
       const s = worldToScreen(area.x, area.y);
+      const cull = area.r * 2.4;
+      if (s.x < -cull || s.x > viewW + cull || s.y < -cull || s.y > viewH + cull) continue;
       const alpha = clamp(area.life / area.maxLife, 0, 1);
       ctx.save();
+      const groundSpec = groundDecalDraws < groundDecalBudget ? areaGroundDecalSpec(area, now) : null;
+      if (groundSpec && drawGroundDecalFrame(groundSpec.id, s.x, s.y, groundSpec.w, groundSpec.h, groundSpec.alpha * alpha, groundSpec.rotation, "source-over")) {
+        groundDecalDraws += 1;
+      }
       ctx.globalCompositeOperation = "lighter";
       ctx.globalAlpha = area.kind === "voidSeal" ? 0.18 + alpha * 0.26 : 0.16 + alpha * 0.24;
       ctx.shadowColor = area.color;
@@ -4683,6 +4761,7 @@
       ctx.shadowBlur = 0;
       ctx.restore();
     }
+    if (QA_MODE) state.qa.groundDecalDraws = groundDecalDraws;
   }
 
   function renderPickups() {
@@ -4986,6 +5065,7 @@
   }
 
   function loop(now) {
+    const frameStart = performance.now();
     const dt = Math.min(0.033, (now - state.lastTime) / 1000 || 0);
     state.lastTime = now;
     state.dt = dt;
@@ -5001,6 +5081,10 @@
       if (state.screen === "result") break;
     }
     render();
+    const workMs = performance.now() - frameStart;
+    state.perf.workFrames += 1;
+    state.perf.totalWorkMs += workMs;
+    state.perf.maxWorkMs = Math.max(state.perf.maxWorkMs, workMs);
     requestAnimationFrame(loop);
   }
 
