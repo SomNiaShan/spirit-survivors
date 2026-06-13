@@ -3225,6 +3225,8 @@
     const t = performance.now() / 1000;
     const face = Math.atan2(p.lastDir.y, p.lastDir.x);
     const atlasFx = allowAtlasFx();
+    const playerSprite = playerCreatureSprite(p.character.id);
+    const usePlayerSprite = playerSprite && creatureAtlasReady();
     ctx.save();
     ctx.translate(s.x, s.y);
     ctx.rotate(face * 0.06);
@@ -3245,25 +3247,38 @@
     ctx.save();
     ctx.globalCompositeOperation = "lighter";
     if (atlasFx) drawAtlasFrame("swordFan", 0, 2, p.r * 5.6, p.r * 4.0, 0.12, -face * 0.35);
-    for (let i = 0; i < 4; i++) {
-      const a = t * 1.25 + i * (TAU / 4);
-      const rr = p.r * (1.55 + Math.sin(t * 2 + i) * 0.08);
-      ctx.save();
-      ctx.translate(Math.cos(a) * rr, Math.sin(a) * rr * 0.62);
-      ctx.rotate(a + Math.PI / 2);
-      drawBladeGlyph(p.r * 1.45, p.r * 0.42, p.character.color, 0.34);
-      ctx.restore();
+    if (!usePlayerSprite) {
+      for (let i = 0; i < 4; i++) {
+        const a = t * 1.25 + i * (TAU / 4);
+        const rr = p.r * (1.55 + Math.sin(t * 2 + i) * 0.08);
+        ctx.save();
+        ctx.translate(Math.cos(a) * rr, Math.sin(a) * rr * 0.62);
+        ctx.rotate(a + Math.PI / 2);
+        drawBladeGlyph(p.r * 1.45, p.r * 0.42, p.character.color, 0.34);
+        ctx.restore();
+      }
     }
     ctx.restore();
 
-    const playerSprite = playerCreatureSprite(p.character.id);
-    if (playerSprite && creatureAtlasReady()) {
+    if (usePlayerSprite) {
       const bob = Math.sin(t * 5.2) * 1.7;
       const lean = clamp(p.lastDir.x * 0.055, -0.07, 0.07);
       ctx.save();
       ctx.globalCompositeOperation = "source-over";
       drawCreatureSprite(playerSprite, 0, -5 + bob, p.r * 5.05, p.r * 5.05, p.hitFlash > 0 ? 0.58 : 0.9, lean - face * 0.03, p.lastDir.x < -0.08 ? -1 : 1);
       ctx.restore();
+      if (p.hitFlash > 0) {
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.42)";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.ellipse(0, -3, p.r * 1.28, p.r * 1.82, lean, 0, TAU);
+        ctx.stroke();
+        ctx.restore();
+      }
+      ctx.restore();
+      return;
     }
 
     ctx.shadowColor = p.character.color;
@@ -3378,6 +3393,13 @@
         ctx.restore();
         continue;
       }
+      const atlasCreatureId = enemyCreatureSprite(e);
+      const useCreatureSprite = atlasCreatureId && (e.boss || e.elite || allowCreatureAtlas());
+      if (useCreatureSprite) {
+        drawSpriteEnemy(e, atlasCreatureId, t, pulse);
+        ctx.restore();
+        continue;
+      }
       ctx.fillStyle = e.boss ? "rgba(0, 0, 0, 0.46)" : "rgba(0, 0, 0, 0.32)";
       ctx.beginPath();
       ctx.ellipse(0, e.r * 0.84, e.r * 1.08, e.r * 0.36, 0, 0, TAU);
@@ -3477,21 +3499,6 @@
         ctx.fillStyle = body;
         drawEnemySilhouette(e, detailed);
       }
-      const creatureId = enemyCreatureSprite(e);
-      const drawCreature = creatureId && (e.boss || e.elite || allowCreatureAtlas());
-      if (drawCreature) {
-        const scale = creatureSpriteScale(creatureId);
-        const gait = Math.sin(t * (e.boss ? 2.2 : e.elite ? 3.2 : 5.4) + e.x * 0.013 + e.y * 0.011);
-        const squash = e.boss ? 0.012 : e.elite ? 0.018 : 0.028;
-        const bob = creatureId === "wolf" ? gait * e.r * 0.04 : -Math.abs(gait) * e.r * 0.055;
-        const lean = clamp((e.vx || 0) * 0.00065, -0.08, 0.08);
-        const alpha = e.flash > 0 ? 0.46 : e.boss ? 0.86 : e.elite ? 0.82 : 0.72;
-        const flip = creatureId === "wolf" && state.player && e.x < state.player.x ? -1 : 1;
-        ctx.save();
-        ctx.globalCompositeOperation = "source-over";
-        drawCreatureSprite(creatureId, 0, (creatureId === "wolf" ? -e.r * 0.12 : 0) + bob, e.r * scale[0] * (1 + gait * squash), e.r * scale[1] * (1 - gait * squash * 0.72), alpha, lean, flip);
-        ctx.restore();
-      }
       ctx.shadowBlur = 0;
       if (!e.boss) {
         ctx.strokeStyle = e.elite ? colorAlpha(colors.gold, 0.42) : "rgba(0, 0, 0, 0.46)";
@@ -3521,6 +3528,48 @@
         ctx.fillRect(-hpw / 2, -e.r - 14, hpw * clamp(e.hp / e.maxHp, 0, 1), 6);
       }
       ctx.restore();
+    }
+  }
+
+  function drawSpriteEnemy(e, creatureId, t, pulse) {
+    ctx.fillStyle = e.boss ? "rgba(0, 0, 0, 0.42)" : e.elite ? "rgba(0, 0, 0, 0.30)" : "rgba(0, 0, 0, 0.18)";
+    ctx.beginPath();
+    ctx.ellipse(0, e.r * 0.88, e.r * 1.08, e.r * 0.36, 0, 0, TAU);
+    ctx.fill();
+
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    drawGlow(0, 0, e.boss ? e.r * 2.35 : e.elite ? e.r * 1.85 : e.r * 1.05, e.boss ? colors.danger : e.elite ? colors.gold : e.color, e.boss ? 0.18 : e.elite ? 0.12 : 0.035);
+    if (e.boss) drawRunicRing(0, 0, e.r * (1.16 + pulse * 0.015), colors.danger, -t * 0.8, 14, 0.34);
+    else if (e.elite) drawRunicRing(0, 0, e.r * 1.18, colors.gold, t, 8, 0.26);
+    ctx.restore();
+
+    const scale = creatureSpriteScale(creatureId);
+    const gait = Math.sin(t * (e.boss ? 2.2 : e.elite ? 3.2 : 5.4) + e.x * 0.013 + e.y * 0.011);
+    const squash = e.boss ? 0.012 : e.elite ? 0.018 : 0.026;
+    const bob = creatureId === "wolf" ? gait * e.r * 0.04 : -Math.abs(gait) * e.r * 0.052;
+    const lean = clamp((e.vx || 0) * 0.00065, -0.08, 0.08);
+    const alpha = e.boss ? 0.92 : e.elite ? 0.86 : 0.8;
+    const flip = creatureId === "wolf" && state.player && e.x < state.player.x ? -1 : 1;
+    drawCreatureSprite(creatureId, 0, (creatureId === "wolf" ? -e.r * 0.12 : 0) + bob, e.r * scale[0] * (1 + gait * squash), e.r * scale[1] * (1 - gait * squash * 0.72), alpha, lean, flip);
+
+    if (e.flash > 0) {
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.48)";
+      ctx.lineWidth = e.boss ? 4 : e.elite ? 3 : 2.2;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, e.r * (e.boss ? 1.05 : 0.9), e.r * (e.boss ? 1.15 : 1.02), lean, 0, TAU);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    if (e.elite) {
+      const hpw = e.boss ? 96 : 56;
+      ctx.fillStyle = "rgba(0,0,0,0.55)";
+      ctx.fillRect(-hpw / 2, -e.r - 14, hpw, 6);
+      ctx.fillStyle = e.boss ? colors.danger : colors.gold;
+      ctx.fillRect(-hpw / 2, -e.r - 14, hpw * clamp(e.hp / e.maxHp, 0, 1), 6);
     }
   }
 
@@ -3852,8 +3901,8 @@
       if (pr.kind === "thousandSword") {
         ctx.globalCompositeOperation = "lighter";
         drawGlow(pr.r * 0.8, 0, pr.r * 4.5, pr.color, 0.18);
-        if (atlasFx) drawAtlasFrame("swordFan", -pr.r * 0.55, 0, pr.r * 10.8, pr.r * 7.4, 0.22, 0);
-        if (highFx) {
+        const drewAtlas = atlasFx && drawAtlasFrame("swordFan", -pr.r * 0.55, 0, pr.r * 10.8, pr.r * 7.4, 0.56, 0, "screen");
+        if (!drewAtlas && highFx) {
           for (let i = -1; i <= 1; i += 2) {
             ctx.save();
             ctx.translate(-pr.r * 1.2, i * pr.r * 1.05);
@@ -3863,23 +3912,25 @@
           }
         }
         ctx.globalCompositeOperation = "source-over";
-        drawBladeGlyph(pr.r * 5.4, pr.r * 1.7, pr.color, 1);
+        if (!drewAtlas) drawBladeGlyph(pr.r * 5.4, pr.r * 1.7, pr.color, 1);
       } else if (pr.kind === "glacierNeedle") {
         ctx.globalCompositeOperation = "lighter";
         drawGlow(0, 0, pr.r * 4, pr.color, 0.16);
-        if (atlasFx) drawAtlasFrame("frostBurst", 0, 0, pr.r * 6.2, pr.r * 4.6, 0.18, 0);
-        if (highFx) drawShardCluster(-pr.r * 0.6, 0, pr.r * 1.2, pr.color, now, 5);
+        const drewAtlas = atlasFx && drawAtlasFrame("frostBurst", 0, 0, pr.r * 6.2, pr.r * 4.6, 0.5, 0, "screen");
+        if (!drewAtlas && highFx) drawShardCluster(-pr.r * 0.6, 0, pr.r * 1.2, pr.color, now, 5);
         ctx.globalCompositeOperation = "source-over";
-        ctx.beginPath();
-        ctx.moveTo(pr.r * 3.2, 0);
-        ctx.lineTo(-pr.r * 0.1, pr.r * 0.78);
-        ctx.lineTo(-pr.r * 1.45, 0);
-        ctx.lineTo(-pr.r * 0.1, -pr.r * 0.78);
-        ctx.closePath();
-        ctx.fill();
-        ctx.strokeStyle = "rgba(255,255,255,0.86)";
-        ctx.lineWidth = 1;
-        ctx.stroke();
+        if (!drewAtlas) {
+          ctx.beginPath();
+          ctx.moveTo(pr.r * 3.2, 0);
+          ctx.lineTo(-pr.r * 0.1, pr.r * 0.78);
+          ctx.lineTo(-pr.r * 1.45, 0);
+          ctx.lineTo(-pr.r * 0.1, -pr.r * 0.78);
+          ctx.closePath();
+          ctx.fill();
+          ctx.strokeStyle = "rgba(255,255,255,0.86)";
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
       } else if (pr.kind === "dragonBolt") {
         ctx.globalCompositeOperation = "lighter";
         drawGlow(pr.r * 0.4, 0, pr.r * 5, pr.color, 0.2);
@@ -3912,8 +3963,8 @@
       } else if (pr.kind === "talisman") {
         ctx.save();
         ctx.rotate(Math.sin(now / 120 + pr.spin) * 0.08);
-        if (atlasFx) drawAtlasFrame("talismanWheel", 0, 0, pr.r * 5.4, pr.r * 5.4, 0.16, -now / 900);
-        if (highFx) {
+        const drewAtlas = atlasFx && drawAtlasFrame("talismanWheel", 0, 0, pr.r * 5.4, pr.r * 5.4, 0.52, -now / 900, "screen");
+        if (!drewAtlas && highFx) {
           ctx.globalCompositeOperation = "lighter";
           for (let i = 1; i <= 2; i++) {
             ctx.save();
@@ -3923,51 +3974,55 @@
           }
           ctx.globalCompositeOperation = "source-over";
         }
-        drawTalismanGlyph(pr.r, pr.color, now / 160 + pr.spin, 1);
+        if (!drewAtlas) drawTalismanGlyph(pr.r, pr.color, now / 160 + pr.spin, 1);
         ctx.restore();
       } else if (pr.kind === "fireSea") {
         ctx.globalCompositeOperation = "lighter";
         drawGlow(0, 0, pr.r * 3.8, pr.color, 0.22);
-        if (atlasFx) drawAtlasFrame("spiritFire", 0, 0, pr.r * 7.2, pr.r * 5.6, 0.2, 0);
+        const drewAtlas = atlasFx && drawAtlasFrame("spiritFire", 0, 0, pr.r * 7.2, pr.r * 5.6, 0.55, 0, "screen");
         ctx.globalCompositeOperation = "source-over";
-        ctx.beginPath();
-        ctx.moveTo(pr.r * 1.55, 0);
-        for (let i = 1; i <= 7; i++) {
-          const a = (TAU / 7) * i + now / 900;
-          const rr = i % 2 ? pr.r * 0.74 : pr.r * 1.42;
-          ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
-        }
-        ctx.closePath();
-        ctx.fill();
-        ctx.fillStyle = "rgba(255,236,150,0.45)";
-        ctx.beginPath();
-        ctx.arc(0, 0, pr.r * 0.48, 0, TAU);
-        ctx.fill();
-        if (highFx) {
-          ctx.globalCompositeOperation = "lighter";
-          drawSkullMotif(-pr.r * 0.2, -pr.r * 0.08, pr.r * 0.9, "#ffcc8a", 0.32);
-          ctx.globalCompositeOperation = "source-over";
+        if (!drewAtlas) {
+          ctx.beginPath();
+          ctx.moveTo(pr.r * 1.55, 0);
+          for (let i = 1; i <= 7; i++) {
+            const a = (TAU / 7) * i + now / 900;
+            const rr = i % 2 ? pr.r * 0.74 : pr.r * 1.42;
+            ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
+          }
+          ctx.closePath();
+          ctx.fill();
+          ctx.fillStyle = "rgba(255,236,150,0.45)";
+          ctx.beginPath();
+          ctx.arc(0, 0, pr.r * 0.48, 0, TAU);
+          ctx.fill();
+          if (highFx) {
+            ctx.globalCompositeOperation = "lighter";
+            drawSkullMotif(-pr.r * 0.2, -pr.r * 0.08, pr.r * 0.9, "#ffcc8a", 0.32);
+            ctx.globalCompositeOperation = "source-over";
+          }
         }
       } else if (pr.kind === "fire") {
-        if (atlasFx) drawAtlasFrame("spiritFire", -pr.r * 0.12, 0, pr.r * 5.6, pr.r * 3.9, 0.18, 0);
-        ctx.beginPath();
-        ctx.moveTo(pr.r * 1.75, 0);
-        ctx.bezierCurveTo(pr.r * 0.55, pr.r * 1.25, -pr.r * 1.35, pr.r * 0.72, -pr.r * 1.1, 0);
-        ctx.bezierCurveTo(-pr.r * 1.35, -pr.r * 0.72, pr.r * 0.55, -pr.r * 1.25, pr.r * 1.75, 0);
-        ctx.fill();
-        ctx.fillStyle = "rgba(255,236,150,0.42)";
-        ctx.beginPath();
-        ctx.arc(pr.r * 0.2, 0, pr.r * 0.45, 0, TAU);
-        ctx.fill();
-        if (highFx) {
-          ctx.globalCompositeOperation = "lighter";
-          ctx.strokeStyle = "rgba(255,236,150,0.38)";
-          ctx.lineWidth = 1.2;
+        const drewAtlas = atlasFx && drawAtlasFrame("spiritFire", -pr.r * 0.12, 0, pr.r * 5.6, pr.r * 3.9, 0.5, 0, "screen");
+        if (!drewAtlas) {
           ctx.beginPath();
-          ctx.moveTo(-pr.r * 1.0, -pr.r * 0.42);
-          ctx.quadraticCurveTo(-pr.r * 0.25, 0, pr.r * 1.1, -pr.r * 0.18);
-          ctx.stroke();
-          ctx.globalCompositeOperation = "source-over";
+          ctx.moveTo(pr.r * 1.75, 0);
+          ctx.bezierCurveTo(pr.r * 0.55, pr.r * 1.25, -pr.r * 1.35, pr.r * 0.72, -pr.r * 1.1, 0);
+          ctx.bezierCurveTo(-pr.r * 1.35, -pr.r * 0.72, pr.r * 0.55, -pr.r * 1.25, pr.r * 1.75, 0);
+          ctx.fill();
+          ctx.fillStyle = "rgba(255,236,150,0.42)";
+          ctx.beginPath();
+          ctx.arc(pr.r * 0.2, 0, pr.r * 0.45, 0, TAU);
+          ctx.fill();
+          if (highFx) {
+            ctx.globalCompositeOperation = "lighter";
+            ctx.strokeStyle = "rgba(255,236,150,0.38)";
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.moveTo(-pr.r * 1.0, -pr.r * 0.42);
+            ctx.quadraticCurveTo(-pr.r * 0.25, 0, pr.r * 1.1, -pr.r * 0.18);
+            ctx.stroke();
+            ctx.globalCompositeOperation = "source-over";
+          }
         }
       } else {
         ctx.beginPath();
@@ -3999,6 +4054,23 @@
     }
   }
 
+  function areaAtlasSpec(area, now) {
+    switch (area.kind) {
+      case "voidSeal":
+        return { id: "voidSeal", w: area.r * 2.05, h: area.r * 2.05, alpha: 0.82, rotation: -now / 1400 };
+      case "plagueDomain":
+        return { id: "plaguePool", w: area.r * 2.25, h: area.r * 1.76, alpha: 0.8, rotation: now / 2200 };
+      case "fireSea":
+        return { id: "spiritFire", w: area.r * 2.08, h: area.r * 1.5, alpha: 0.78, rotation: now / 1800 };
+      case "poison":
+        return { id: "plaguePool", w: area.r * 1.96, h: area.r * 1.44, alpha: 0.72, rotation: -now / 2400 };
+      case "burst":
+        return { id: "frostBurst", w: area.r * 1.94, h: area.r * 1.5, alpha: 0.78, rotation: now / 1600 };
+      default:
+        return null;
+    }
+  }
+
   function renderAreas() {
     const now = performance.now();
     const highFx = allowHighFx();
@@ -4011,6 +4083,13 @@
       ctx.globalAlpha = area.kind === "voidSeal" ? 0.18 + alpha * 0.26 : 0.16 + alpha * 0.24;
       ctx.shadowColor = area.color;
       ctx.shadowBlur = area.kind === "plagueDomain" || area.kind === "fireSea" ? 34 : 24;
+      const atlasSpec = atlasFx ? areaAtlasSpec(area, now) : null;
+      if (atlasSpec && drawAtlasFrame(atlasSpec.id, s.x, s.y, atlasSpec.w, atlasSpec.h, atlasSpec.alpha * alpha, atlasSpec.rotation, "screen")) {
+        drawGlow(s.x, s.y, area.r * 1.18, area.color, 0.12 * alpha);
+        ctx.shadowBlur = 0;
+        ctx.restore();
+        continue;
+      }
       const fill = ctx.createRadialGradient(s.x, s.y, area.r * 0.08, s.x, s.y, area.r);
       fill.addColorStop(0, colorAlpha(area.color, area.kind === "burst" ? 0.42 : 0.36));
       fill.addColorStop(0.58, colorAlpha(area.color, 0.16));
@@ -4213,6 +4292,7 @@
   }
 
   function renderParticles() {
+    const atlasFx = allowAtlasFx();
     for (const p of state.particles) {
       const s = worldToScreen(p.x, p.y);
       const alpha = clamp(p.life / p.max, 0, 1);
@@ -4222,15 +4302,33 @@
       ctx.strokeStyle = p.color;
       ctx.shadowColor = p.color;
       if (p.kind === "blade" || p.kind === "moonBlade") {
-        ctx.shadowBlur = p.kind === "moonBlade" ? 18 : 8;
-        ctx.beginPath();
-        ctx.ellipse(s.x, s.y, p.r * (p.kind === "moonBlade" ? 1.25 : 1), p.r * (p.kind === "moonBlade" ? 0.48 : 0.35), performance.now() / 140, 0, TAU);
-        ctx.stroke();
-        if (p.kind === "moonBlade") {
-          ctx.globalAlpha = alpha * 0.38;
+        ctx.globalCompositeOperation = "lighter";
+        ctx.shadowBlur = p.kind === "moonBlade" ? 16 : 8;
+        if (atlasFx) {
+          ctx.translate(s.x, s.y);
+          ctx.rotate((p.x + p.y) * 0.013 + performance.now() / 240);
+          ctx.lineWidth = Math.max(1.2, p.r * 0.09);
+          const length = p.r * (p.kind === "moonBlade" ? 1.85 : 1.45);
+          const streak = ctx.createLinearGradient(-length, 0, length, 0);
+          streak.addColorStop(0, colorAlpha(p.color, 0));
+          streak.addColorStop(0.48, colorAlpha(p.color, 0.58));
+          streak.addColorStop(0.58, "rgba(255,255,255,0.7)");
+          streak.addColorStop(1, colorAlpha(p.color, 0));
+          ctx.strokeStyle = streak;
           ctx.beginPath();
-          ctx.arc(s.x, s.y, p.r * 1.05, 0, TAU);
+          ctx.moveTo(-length, p.r * 0.05);
+          ctx.quadraticCurveTo(0, -p.r * 0.12, length, 0);
           ctx.stroke();
+        } else {
+          ctx.beginPath();
+          ctx.ellipse(s.x, s.y, p.r * (p.kind === "moonBlade" ? 1.25 : 1), p.r * (p.kind === "moonBlade" ? 0.48 : 0.35), performance.now() / 140, 0, TAU);
+          ctx.stroke();
+          if (p.kind === "moonBlade") {
+            ctx.globalAlpha = alpha * 0.38;
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, p.r * 1.05, 0, TAU);
+            ctx.stroke();
+          }
         }
       } else if (p.kind === "lightning") {
         ctx.globalCompositeOperation = "lighter";
