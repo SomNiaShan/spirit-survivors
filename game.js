@@ -197,6 +197,18 @@
     hitAtlas.src = "assets/premium-hit-atlas-v1.png";
   }
 
+  const threatAtlas = typeof Image !== "undefined" ? new Image() : null;
+  if (threatAtlas) {
+    threatAtlas.decoding = "async";
+    threatAtlas.onload = () => {
+      if (!QA_MODE) return;
+      state.qa.visualDone = false;
+      updateQaDataset();
+      render();
+    };
+    threatAtlas.src = "assets/premium-threat-atlas-v1.png";
+  }
+
   const itemIconAtlas = typeof Image !== "undefined" ? new Image() : null;
   if (itemIconAtlas) {
     itemIconAtlas.decoding = "async";
@@ -315,6 +327,17 @@
     poisonSplash: { x: 443, y: 443, w: 444, h: 444 },
     iceFracture: { x: 887, y: 443, w: 443, h: 444 },
     lootPop: { x: 1330, y: 443, w: 444, h: 444 }
+  };
+
+  const threatFrames = {
+    bossSigil: { x: 0, y: 0, w: 443, h: 443 },
+    eliteCrown: { x: 443, y: 0, w: 444, h: 443 },
+    dangerReticle: { x: 887, y: 0, w: 443, h: 443 },
+    shockwaveRing: { x: 1330, y: 0, w: 444, h: 443 },
+    summonPortal: { x: 0, y: 443, w: 443, h: 444 },
+    ghostHalo: { x: 443, y: 443, w: 444, h: 444 },
+    bloodRune: { x: 887, y: 443, w: 443, h: 444 },
+    phaseBurst: { x: 1330, y: 443, w: 444, h: 444 }
   };
 
   const itemIconFrames = {
@@ -711,7 +734,7 @@
     hudSignature: "",
     forceNextChestEvolution: false,
     lastResult: null,
-    qa: { mode: null, autoChoices: false, autoMove: false, timeScale: 1, maxSteps: 1, syncRunning: false, syncSteps: 0, syncMs: 0, visualDone: false, groundDecalDraws: 0, environmentPropDraws: 0, atmosphereDraws: 0, hitAtlasDraws: 0, particlesRendered: 0, particlesCulled: 0, swarmImpostorDraws: 0, legacyVectorOverlays: 0, premiumAtlasFxDraws: 0 },
+    qa: { mode: null, autoChoices: false, autoMove: false, timeScale: 1, maxSteps: 1, syncRunning: false, syncSteps: 0, syncMs: 0, visualDone: false, groundDecalDraws: 0, environmentPropDraws: 0, atmosphereDraws: 0, hitAtlasDraws: 0, threatDraws: 0, particlesRendered: 0, particlesCulled: 0, swarmImpostorDraws: 0, legacyVectorOverlays: 0, premiumAtlasFxDraws: 0 },
     wave: 1,
     spawnTimer: 0,
     eliteSchedule: [90, 180, 300, 450, 600, 760],
@@ -1167,6 +1190,7 @@
     state.qa.environmentPropDraws = 0;
     state.qa.atmosphereDraws = 0;
     state.qa.hitAtlasDraws = 0;
+    state.qa.threatDraws = 0;
     state.qa.particlesRendered = 0;
     state.qa.particlesCulled = 0;
     state.qa.swarmImpostorDraws = 0;
@@ -2663,6 +2687,8 @@
     document.body.dataset.qaAtmosphereDraws = String(state.qa.atmosphereDraws || 0);
     document.body.dataset.qaHitAtlasReady = hitAtlasReady() ? "1" : "0";
     document.body.dataset.qaHitAtlasDraws = String(state.qa.hitAtlasDraws || 0);
+    document.body.dataset.qaThreatAtlasReady = threatAtlasReady() ? "1" : "0";
+    document.body.dataset.qaThreatDraws = String(state.qa.threatDraws || 0);
     document.body.dataset.qaParticlesRendered = String(state.qa.particlesRendered || 0);
     document.body.dataset.qaParticlesCulled = String(state.qa.particlesCulled || 0);
     document.body.dataset.qaParticleLimit = String(fxParticleLimit());
@@ -2897,6 +2923,7 @@
     state.qa.premiumAtlasFxDraws = 0;
     state.qa.atmosphereDraws = 0;
     state.qa.hitAtlasDraws = 0;
+    state.qa.threatDraws = 0;
     state.qa.particlesRendered = 0;
     state.qa.particlesCulled = 0;
     ctx.save();
@@ -2910,6 +2937,7 @@
       renderAtmosphereBack();
       renderPickups();
       renderAreas();
+      renderThreatsBack();
       renderProjectiles();
       renderEnemies();
       renderPlayer();
@@ -3104,6 +3132,10 @@
     return Boolean(hitAtlas && hitAtlas.complete && hitAtlas.naturalWidth > 0);
   }
 
+  function threatAtlasReady() {
+    return Boolean(threatAtlas && threatAtlas.complete && threatAtlas.naturalWidth > 0);
+  }
+
   function itemIconAtlasReady() {
     return Boolean(itemIconAtlas && itemIconAtlas.complete && itemIconAtlas.naturalWidth > 0);
   }
@@ -3250,6 +3282,21 @@
     ctx.drawImage(hitAtlas, frame.x, frame.y, frame.w, frame.h, -w / 2, -h / 2, w, h);
     ctx.restore();
     if (QA_MODE) state.qa.hitAtlasDraws += 1;
+    return true;
+  }
+
+  function drawThreatFrame(id, x, y, w, h, alpha = 1, rotation = 0, blend = "source-over", flip = 1) {
+    const frame = threatFrames[id];
+    if (!frame || !threatAtlasReady()) return false;
+    ctx.save();
+    ctx.globalAlpha *= alpha;
+    ctx.globalCompositeOperation = blend;
+    ctx.translate(x, y);
+    ctx.rotate(rotation);
+    ctx.scale(flip, 1);
+    ctx.drawImage(threatAtlas, frame.x, frame.y, frame.w, frame.h, -w / 2, -h / 2, w, h);
+    ctx.restore();
+    if (QA_MODE) state.qa.threatDraws += 1;
     return true;
   }
 
@@ -3984,6 +4031,47 @@
     }
   }
 
+  function eliteThreatFrame(e) {
+    if (e.boss) return "bossSigil";
+    if (e.type.id === "eliteSummoner") return "summonPortal";
+    if (e.type.id === "eliteWisp") return "ghostHalo";
+    return "eliteCrown";
+  }
+
+  function renderThreatsBack() {
+    if (!threatAtlasReady()) return;
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const t = performance.now() / 1000;
+    const compact = Math.min(w, h) < 560;
+    let budget = compact ? 5 : 9;
+    for (const e of state.enemies) {
+      if ((!e.boss && !e.elite) || e.hp <= 0 || budget <= 0) continue;
+      const s = worldToScreen(e.x, e.y);
+      const cull = e.r * 7.5;
+      if (s.x < -cull || s.x > w + cull || s.y < -cull || s.y > h + cull) continue;
+      const hpRatio = clamp(e.hp / e.maxHp, 0, 1);
+      const pulse = 1 + Math.sin(t * (e.boss ? 1.8 : 2.4) + e.x * 0.003) * 0.045;
+      if (e.boss) {
+        drawThreatFrame("bossSigil", s.x, s.y + e.r * 0.2, e.r * 8.0 * pulse, e.r * 6.25 * pulse, 0.38, -t * 0.08, "source-over");
+        budget -= 1;
+        if (budget <= 0) continue;
+        drawThreatFrame("shockwaveRing", s.x, s.y + e.r * 0.22, e.r * 8.8 * (1.02 - hpRatio * 0.05), e.r * 5.8, 0.18, t * 0.12, "lighter");
+        budget -= 1;
+        if (hpRatio < 0.42 && budget > 0) {
+          drawThreatFrame("phaseBurst", s.x, s.y - e.r * 0.08, e.r * 6.6, e.r * 5.2, 0.24 * (1.1 - hpRatio), t * 0.04, "lighter");
+          budget -= 1;
+        }
+      } else {
+        const frame = eliteThreatFrame(e);
+        const width = e.r * (frame === "summonPortal" ? 5.5 : frame === "ghostHalo" ? 5.0 : 4.75) * pulse;
+        const height = e.r * (frame === "summonPortal" ? 5.3 : frame === "ghostHalo" ? 4.55 : 3.7) * pulse;
+        drawThreatFrame(frame, s.x, s.y + e.r * 0.1, width, height, compact ? 0.18 : 0.25, frame === "eliteCrown" ? 0 : t * 0.08, frame === "eliteCrown" ? "lighter" : "source-over");
+        budget -= 1;
+      }
+    }
+  }
+
   function renderPlayer() {
     const p = state.player;
     const s = worldToScreen(p.x, p.y);
@@ -4203,7 +4291,9 @@
       ctx.shadowBlur = e.boss ? 26 : e.elite ? 18 : 8;
       const enemyColor = e.flash > 0 ? "#ffffff" : e.color;
       if (e.boss) {
-        drawRunicRing(0, 0, e.r * (1.12 + pulse * 0.02), colors.danger, -t * 0.8, 14, 0.42);
+        if (!drawThreatFrame("dangerReticle", 0, 0, e.r * 3.15, e.r * 3.15, 0.2, -t * 0.15, "lighter")) {
+          drawRunicRing(0, 0, e.r * (1.12 + pulse * 0.02), colors.danger, -t * 0.8, 14, 0.42);
+        }
         ctx.fillStyle = colorAlpha(colors.danger, 0.28);
         for (let i = 0; i < 8; i++) {
           const a = (TAU / 8) * i + t * 0.4;
@@ -4241,7 +4331,9 @@
         drawGlow(0, 0, e.r * 0.9, colors.danger, 0.2);
         ctx.globalCompositeOperation = "source-over";
       } else if (e.elite) {
-        drawRunicRing(0, 0, e.r * 1.16, colors.gold, t, 8, 0.34);
+        if (!drawThreatFrame("eliteCrown", 0, -e.r * 0.1, e.r * 3.0, e.r * 2.45, 0.2, 0, "lighter")) {
+          drawRunicRing(0, 0, e.r * 1.16, colors.gold, t, 8, 0.34);
+        }
         const eliteGrad = ctx.createLinearGradient(-e.r, -e.r, e.r, e.r);
         eliteGrad.addColorStop(0, "#fff1ae");
         eliteGrad.addColorStop(0.28, enemyColor);
@@ -4431,8 +4523,16 @@
     ctx.save();
     ctx.globalCompositeOperation = "lighter";
     drawGlow(0, 0, e.boss ? e.r * 2.35 : e.elite ? e.r * 1.85 : premiumMinionId ? e.r * 1.55 : e.r * 1.05, e.boss ? colors.danger : e.elite ? colors.gold : e.color, e.boss ? 0.18 : e.elite ? 0.12 : premiumMinionId ? 0.105 : 0.035);
-    if (e.boss) drawRunicRing(0, 0, e.r * (1.16 + pulse * 0.015), colors.danger, -t * 0.8, 14, 0.34);
-    else if (e.elite) drawRunicRing(0, 0, e.r * 1.18, colors.gold, t, 8, 0.26);
+    if (e.boss) {
+      if (!drawThreatFrame("dangerReticle", 0, 0, e.r * 3.25, e.r * 3.25, 0.22, -t * 0.15, "lighter")) {
+        drawRunicRing(0, 0, e.r * (1.16 + pulse * 0.015), colors.danger, -t * 0.8, 14, 0.34);
+      }
+    } else if (e.elite) {
+      const threatId = eliteThreatFrame(e);
+      if (!drawThreatFrame(threatId, 0, -e.r * 0.1, e.r * (threatId === "summonPortal" ? 3.35 : 3.0), e.r * (threatId === "summonPortal" ? 3.4 : 2.45), 0.2, threatId === "eliteCrown" ? 0 : t * 0.08, "lighter")) {
+        drawRunicRing(0, 0, e.r * 1.18, colors.gold, t, 8, 0.26);
+      }
+    }
     ctx.restore();
 
     const premiumSprite = premiumEnemySprite(e);
@@ -6055,6 +6155,8 @@
             atmosphereDraws: state.qa.atmosphereDraws || 0,
             hitReady: hitAtlasReady(),
             hitDraws: state.qa.hitAtlasDraws || 0,
+            threatReady: threatAtlasReady(),
+            threatDraws: state.qa.threatDraws || 0,
             particlesRendered: state.qa.particlesRendered || 0,
             particlesCulled: state.qa.particlesCulled || 0,
             particleLimit: fxParticleLimit(),
@@ -6083,6 +6185,7 @@
         state.qa.environmentPropDraws = 0;
         state.qa.atmosphereDraws = 0;
         state.qa.hitAtlasDraws = 0;
+        state.qa.threatDraws = 0;
         state.qa.particlesRendered = 0;
         state.qa.particlesCulled = 0;
         state.qa.swarmImpostorDraws = 0;
