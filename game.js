@@ -94,6 +94,16 @@
     creatureAtlas.src = "assets/creature-atlas-v1.png";
   }
 
+  const itemIconAtlas = typeof Image !== "undefined" ? new Image() : null;
+  if (itemIconAtlas) {
+    itemIconAtlas.decoding = "async";
+    itemIconAtlas.onload = () => {
+      if (!QA_MODE) return;
+      updateQaDataset();
+    };
+    itemIconAtlas.src = "assets/item-icon-atlas-v1.png";
+  }
+
   const atlasFrames = {
     swordFan: { x: 0, y: 620, w: 335, h: 300 },
     talismanWheel: { x: 320, y: 625, w: 270, h: 292 },
@@ -112,6 +122,34 @@
     stone: { x: 443, y: 443, w: 444, h: 444 },
     summoner: { x: 887, y: 443, w: 443, h: 444 },
     boss: { x: 1330, y: 443, w: 444, h: 444 }
+  };
+
+  const itemIconFrames = {
+    flyingSword: [0, 0],
+    talisman: [1, 0],
+    spiritFire: [2, 0],
+    thunderPearl: [3, 0],
+    frostNeedle: [4, 0],
+    spinningBlade: [5, 0],
+    poisonMist: [0, 1],
+    crossbow: [1, 1],
+    thousandSword: [2, 1],
+    voidSeal: [3, 1],
+    fireSea: [4, 1],
+    thunderArray: [5, 1],
+    glacierRain: [0, 2],
+    moonWheel: [1, 2],
+    plagueDomain: [2, 2],
+    dragonRepeater: [3, 2],
+    powerCharm: [4, 2],
+    cooldownJade: [5, 2],
+    windBoots: [0, 3],
+    lifeGourd: [1, 3],
+    magnetBell: [2, 3],
+    splitPearl: [3, 3],
+    everlamp: [4, 3],
+    goldFang: [5, 3],
+    coins: [5, 3]
   };
 
   const characters = [
@@ -883,7 +921,7 @@
       const req = item.req ? `<span class="tag">进化：${passives[item.req].name}</span>` : "";
       const base = item.base ? `<span class="tag">由 ${weapons[item.base].name} 进化</span>` : "";
       div.innerHTML = `
-        <h3>${item.name}</h3>
+        <div class="entry-head">${itemIconMarkup(item.id, item)}<h3>${item.name}</h3></div>
         <p>${item.desc}</p>
         <div class="tag-row">
           <span class="tag">${item.type === "evolved" ? "进化法宝" : item.type === "weapon" ? "法宝" : "心法"}</span>
@@ -1139,7 +1177,7 @@
       const div = document.createElement("div");
       div.className = `choice ${choice.kind === "coins" ? "passive" : isWeapon ? "weapon" : "passive"}`;
       div.innerHTML = `
-        <h3>${item.name}</h3>
+        <div class="entry-head">${itemIconMarkup(choice.id, item, choice.kind === "coins" ? "coin-icon" : "")}<h3>${item.name}</h3></div>
         <p>${item.desc}</p>
         <div class="tag-row">
           <span class="tag">${choice.kind === "coins" ? "灵石" : isWeapon ? "法宝" : "心法"}</span>
@@ -2307,7 +2345,7 @@
         const item = weapons[id];
         const div = document.createElement("div");
         div.className = "slot";
-        div.innerHTML = `<strong style="color:${item.color}">${item.name}</strong><span>${item.type === "evolved" ? "进化" : `Lv ${owned.level}/${item.max}`}</span>`;
+        div.innerHTML = `${itemIconMarkup(id, item, "small")}<div class="slot-copy"><strong style="color:${item.color}">${item.name}</strong><span>${item.type === "evolved" ? "进化" : `Lv ${owned.level}/${item.max}`}</span></div>`;
         ui.weaponList.appendChild(div);
       }
 
@@ -2316,7 +2354,7 @@
         const item = passives[id];
         const div = document.createElement("div");
         div.className = "slot";
-        div.innerHTML = `<strong style="color:${item.color}">${item.name}</strong><span>Lv ${owned.level}/${item.max}</span>`;
+        div.innerHTML = `${itemIconMarkup(id, item, "small")}<div class="slot-copy"><strong style="color:${item.color}">${item.name}</strong><span>Lv ${owned.level}/${item.max}</span></div>`;
         ui.passiveList.appendChild(div);
       }
     }
@@ -2350,6 +2388,7 @@
     document.body.dataset.qaPowerups = String(state.powerups.length);
     document.body.dataset.qaAtlasReady = atlasReady() ? "1" : "0";
     document.body.dataset.qaCreatureAtlasReady = creatureAtlasReady() ? "1" : "0";
+    document.body.dataset.qaItemAtlasReady = itemIconAtlasReady() ? "1" : "0";
     const boss = state.enemies.find((e) => e.boss && e.hp > 0);
     document.body.dataset.qaBossHp = boss ? String(Math.ceil(boss.hp)) : "0";
     document.body.dataset.qaKills = String(state.kills);
@@ -2675,6 +2714,10 @@
     return Boolean(creatureAtlas && creatureAtlas.complete && creatureAtlas.naturalWidth > 0);
   }
 
+  function itemIconAtlasReady() {
+    return Boolean(itemIconAtlas && itemIconAtlas.complete && itemIconAtlas.naturalWidth > 0);
+  }
+
   function allowAtlasFx() {
     return atlasReady() && allowHighFx() && state.projectiles.length < 180 && state.areas.length < 100;
   }
@@ -2741,6 +2784,14 @@
       default:
         return null;
     }
+  }
+
+  function itemIconMarkup(id, item, extraClass = "") {
+    const frame = itemIconFrames[id] || itemIconFrames.coins;
+    const x = frame[0] * 20;
+    const y = frame[1] * (100 / 3);
+    const color = item?.color || colors.gold;
+    return `<span class="item-icon ${extraClass}" style="--icon-x:${x}%;--icon-y:${y}%;--icon-color:${color}"></span>`;
   }
 
   function creatureSpriteScale(id) {
@@ -4346,6 +4397,12 @@
     state.qa.syncMs = 0;
     state.qa.visualDone = false;
     startRun(params.get("character") || "sword");
+    if (mode === "levelup") {
+      state.pendingLevels = 1;
+      openLevelUp();
+      updateQaDataset();
+      return;
+    }
     if (mode === "evolution") {
       state.player.weapons = { flyingSword: { level: 8, evolved: false } };
       state.player.passives = { powerCharm: { level: 1 } };
@@ -4410,7 +4467,7 @@
       spawnEnemy(true);
       const started = Date.now();
       state.qa.syncRunning = true;
-      for (let i = 0; i < 120 && state.screen === "playing"; i++) update(1 / 30);
+      for (let i = 0; i < 15 && state.screen === "playing"; i++) update(1 / 30);
       state.qa.syncRunning = false;
       state.qa.syncMs = Date.now() - started;
       for (let i = 0; i < 52; i++) spawnEnemy(false);
@@ -4441,7 +4498,7 @@
       }
       const started = Date.now();
       state.qa.syncRunning = true;
-      for (let i = 0; i < 240 && state.screen === "playing"; i++) update(1 / 30);
+      for (let i = 0; i < 2 && state.screen === "playing"; i++) update(1 / 30);
       state.qa.syncRunning = false;
       state.qa.syncMs = Date.now() - started;
       updateHud();

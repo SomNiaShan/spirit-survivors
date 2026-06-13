@@ -200,12 +200,19 @@ canvas {
 }
 
 .slot {
-  min-width: 68px;
-  height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 112px;
+  height: 42px;
   border: 1px solid rgba(255, 255, 255, 0.13);
   border-radius: 8px;
-  padding: 4px 7px;
+  padding: 5px 8px;
   background: rgba(15, 16, 18, 0.72);
+}
+
+.slot-copy {
+  min-width: 0;
 }
 
 .slot strong,
@@ -223,6 +230,41 @@ canvas {
 .slot span {
   color: var(--muted);
   font-size: 10px;
+}
+
+.item-icon {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 46px;
+  height: 46px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 48% 42%, rgba(255, 255, 255, 0.1), transparent 52%),
+    url("assets/item-icon-atlas-v1.png");
+  background-size: 100% 100%, 600% 400%;
+  background-position: center, var(--icon-x, 0%) var(--icon-y, 0%);
+  box-shadow:
+    0 0 14px rgba(241, 198, 106, 0.18),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    inset 0 -12px 18px rgba(0, 0, 0, 0.24);
+  vertical-align: middle;
+}
+
+.item-icon.small {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  box-shadow:
+    0 0 10px rgba(241, 198, 106, 0.16),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.slot .item-icon {
+  display: block;
+  overflow: visible;
+  white-space: normal;
+  text-overflow: clip;
 }
 
 .overlay {
@@ -366,6 +408,33 @@ h2 {
   font-size: 18px;
 }
 
+.entry-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  margin-bottom: 8px;
+}
+
+.entry-head h3 {
+  min-width: 0;
+  margin: 0;
+}
+
+.choice .entry-head {
+  margin-bottom: 10px;
+}
+
+.choice .item-icon {
+  width: 52px;
+  height: 52px;
+}
+
+.codex .item-icon {
+  width: 44px;
+  height: 44px;
+}
+
 .card p,
 .choice p,
 .upgrade p,
@@ -502,5 +571,14 @@ h2 {
 
   .loadout {
     display: none;
+  }
+
+  .choice .item-icon {
+    width: 46px;
+    height: 46px;
+  }
+
+  .entry-head {
+    gap: 8px;
   }
 }

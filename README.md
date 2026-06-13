@@ -32,6 +32,7 @@ python -m http.server 4173
 - 高品质视觉方向稿 `assets/concept-visual-target.png`
 - 战斗资源方向图 `assets/combat-asset-reference-v1.png`
 - 角色/怪物透明图集 `assets/creature-atlas-v1.png`
+- 法宝/心法 UI 图标图集 `assets/item-icon-atlas-v1.png`
 - 程序化音效、氛围音和静音开关
 - 成就系统和角色解锁
 - 回血、吸附、清屏三类场上道具
@@ -42,7 +43,7 @@ python -m http.server 4173
 
 ## 美术方向
 
-当前目标是暗黑修仙题材的高可读 2.5D 幸存者画面：深色战场、强轮廓怪潮、中心法阵、粗亮弹道、清晰颜色分区和大面积技能领域。`assets/concept-visual-target.png` 是整体氛围方向稿，`assets/combat-asset-reference-v1.png` 是战斗资源方向图，并已作为运行时特效图集叠加到飞剑、符箓、火焰、虚空、冰霜和毒域效果中。`assets/creature-atlas-v1.png` 是角色/怪物透明图集，已用于主角、普通怪、精英和 Boss 的实战绘制，并加入基础呼吸、步态、受击斩痕和死亡残影。
+当前目标是暗黑修仙题材的高可读 2.5D 幸存者画面：深色战场、强轮廓怪潮、中心法阵、粗亮弹道、清晰颜色分区和大面积技能领域。`assets/concept-visual-target.png` 是整体氛围方向稿，`assets/combat-asset-reference-v1.png` 是战斗资源方向图，并已作为运行时特效图集叠加到飞剑、符箓、火焰、虚空、冰霜和毒域效果中。`assets/creature-atlas-v1.png` 是角色/怪物透明图集，已用于主角、普通怪、精英和 Boss 的实战绘制，并加入基础呼吸、步态、受击斩痕和死亡残影。`assets/item-icon-atlas-v1.png` 是法宝/心法 UI 图标图集，已用于 HUD 装备栏、升级选择和图鉴条目。
 
 ## 成就与解锁
 
@@ -55,6 +56,7 @@ python -m http.server 4173
 - `http://localhost:4173/?qa=evolution`：快速验证宝箱和武器进化。
 - `http://localhost:4173/?qa=powerups`：分阶段验证回血、吸附和清屏道具。
 - `http://localhost:4173/?qa=boss`：快速进入最终 Boss 阶段。
+- `http://localhost:4173/?qa=levelup`：直接打开升级三选一界面，验证升级卡片和图标布局。
 - `http://localhost:4173/?qa=victory`：快速验证 15 分钟胜利结算。
 - `http://localhost:4173/?qa=soak&speed=80`：同步自动跑完整 15 分钟局，自动走位、自动升级并验证 Boss、进化和结算。
 - `http://localhost:4173/?qa=showcase`：预热一段后展示进化法宝、怪潮和领域特效，用于视觉回归。
