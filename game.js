@@ -185,6 +185,18 @@
     atmosphereAtlas.src = "assets/premium-atmosphere-atlas-v1.png";
   }
 
+  const hitAtlas = typeof Image !== "undefined" ? new Image() : null;
+  if (hitAtlas) {
+    hitAtlas.decoding = "async";
+    hitAtlas.onload = () => {
+      if (!QA_MODE) return;
+      state.qa.visualDone = false;
+      updateQaDataset();
+      render();
+    };
+    hitAtlas.src = "assets/premium-hit-atlas-v1.png";
+  }
+
   const itemIconAtlas = typeof Image !== "undefined" ? new Image() : null;
   if (itemIconAtlas) {
     itemIconAtlas.decoding = "async";
@@ -292,6 +304,17 @@
     lowMist: { x: 443, y: 443, w: 444, h: 444 },
     bossAura: { x: 887, y: 443, w: 443, h: 444 },
     sparkleCluster: { x: 1330, y: 443, w: 444, h: 444 }
+  };
+
+  const hitFrames = {
+    hitSpark: { x: 0, y: 0, w: 443, h: 443 },
+    spectralSlash: { x: 443, y: 0, w: 444, h: 443 },
+    criticalBurst: { x: 887, y: 0, w: 443, h: 443 },
+    lightningImpact: { x: 1330, y: 0, w: 444, h: 443 },
+    soulRupture: { x: 0, y: 443, w: 443, h: 444 },
+    poisonSplash: { x: 443, y: 443, w: 444, h: 444 },
+    iceFracture: { x: 887, y: 443, w: 443, h: 444 },
+    lootPop: { x: 1330, y: 443, w: 444, h: 444 }
   };
 
   const itemIconFrames = {
@@ -688,7 +711,7 @@
     hudSignature: "",
     forceNextChestEvolution: false,
     lastResult: null,
-    qa: { mode: null, autoChoices: false, autoMove: false, timeScale: 1, maxSteps: 1, syncRunning: false, syncSteps: 0, syncMs: 0, visualDone: false, groundDecalDraws: 0, environmentPropDraws: 0, atmosphereDraws: 0, swarmImpostorDraws: 0, legacyVectorOverlays: 0, premiumAtlasFxDraws: 0 },
+    qa: { mode: null, autoChoices: false, autoMove: false, timeScale: 1, maxSteps: 1, syncRunning: false, syncSteps: 0, syncMs: 0, visualDone: false, groundDecalDraws: 0, environmentPropDraws: 0, atmosphereDraws: 0, hitAtlasDraws: 0, particlesRendered: 0, particlesCulled: 0, swarmImpostorDraws: 0, legacyVectorOverlays: 0, premiumAtlasFxDraws: 0 },
     wave: 1,
     spawnTimer: 0,
     eliteSchedule: [90, 180, 300, 450, 600, 760],
@@ -1143,6 +1166,9 @@
     state.qa.groundDecalDraws = 0;
     state.qa.environmentPropDraws = 0;
     state.qa.atmosphereDraws = 0;
+    state.qa.hitAtlasDraws = 0;
+    state.qa.particlesRendered = 0;
+    state.qa.particlesCulled = 0;
     state.qa.swarmImpostorDraws = 0;
     state.wave = 1;
     state.spawnTimer = 0;
@@ -2145,7 +2171,28 @@
     if (text && chance(textChance)) {
       floatingText(e.x, e.y - e.r, Math.ceil(amount).toString(), color, 12);
     }
-    if (!premiumTarget && state.particles.length < MAX_PARTICLES - 8 && allowHighFx() && chance(text ? 0.36 : 0.09)) {
+    if (premiumTarget && hitAtlasReady() && hasParticleRoom(14)) {
+      const dense = state.enemies.length >= SWARM_RENDER_LIMIT;
+      const hitChance = e.boss ? 0.72 : e.elite ? 0.46 : dense ? 0.035 : state.enemies.length > DETAIL_ENEMY_LIMIT ? 0.08 : 0.18;
+      if (chance(text ? hitChance : hitChance * 0.45)) {
+        const from = state.player || { x: e.x - 1, y: e.y };
+        const angle = Math.atan2(e.y - from.y, e.x - from.x) + rand(-0.38, 0.38);
+        state.particles.push({
+          x: e.x + rand(-e.r * 0.24, e.r * 0.24),
+          y: e.y + rand(-e.r * 0.24, e.r * 0.24),
+          vx: 0,
+          vy: 0,
+          life: e.boss ? 0.22 : 0.16,
+          max: e.boss ? 0.22 : 0.16,
+          r: e.r * (e.boss ? rand(0.72, 1.05) : rand(0.68, 0.96)),
+          color,
+          kind: "premiumHit",
+          hitFrame: amount > e.maxHp * 0.08 ? "criticalBurst" : hitFrameId(color, chance(0.32) ? "slash" : "impact"),
+          angle
+        });
+      }
+    }
+    if (!premiumTarget && hasParticleRoom(8) && allowHighFx() && chance(text ? 0.36 : 0.09)) {
       const from = state.player || { x: e.x - 1, y: e.y };
       const angle = Math.atan2(e.y - from.y, e.x - from.x) + rand(-0.42, 0.42);
       state.particles.push({
@@ -2161,7 +2208,7 @@
         angle
       });
     }
-    if (!premiumTarget && state.particles.length < MAX_PARTICLES && chance(text ? 0.28 : 0.08)) {
+    if (!premiumTarget && hasParticleRoom() && chance(text ? 0.28 : 0.08)) {
       state.particles.push({
         x: e.x + rand(-e.r * 0.4, e.r * 0.4),
         y: e.y + rand(-e.r * 0.4, e.r * 0.4),
@@ -2224,6 +2271,21 @@
     }
     const premiumDeath = hasPremiumEnemyArt(e);
     spawnDeathSprite(e);
+    if (hitAtlasReady() && hasParticleRoom(6) && (premiumDeath || e.elite || e.boss || state.enemies.length < DETAIL_ENEMY_LIMIT)) {
+      state.particles.push({
+        x: e.x,
+        y: e.y,
+        vx: 0,
+        vy: 0,
+        life: e.boss ? 0.48 : e.elite ? 0.36 : 0.28,
+        max: e.boss ? 0.48 : e.elite ? 0.36 : 0.28,
+        r: e.r * (e.boss ? 2.0 : e.elite ? 1.65 : 1.18),
+        color: e.elite ? colors.gold : e.color,
+        kind: "premiumDeath",
+        hitFrame: e.elite ? "lootPop" : hitFrameId(e.color, "death"),
+        angle: rand(-0.16, 0.16)
+      });
+    }
     if (premiumDeath) {
       burst(e.x, e.y, e.color, e.elite ? 10 : 3, e.elite ? 130 : 72, { impact: false, minR: 1.4, maxR: 3.2, life: 0.42 });
     } else {
@@ -2407,7 +2469,7 @@
     const maxR = options.maxR || 5;
     const maxLife = options.life || 0.62;
     for (let i = 0; i < count; i++) {
-      if (state.particles.length >= MAX_PARTICLES - 1) break;
+      if (!hasParticleRoom(1)) break;
       const a = rand(0, TAU);
       const s = rand(speed * 0.25, speed);
       state.particles.push({
@@ -2422,7 +2484,7 @@
         kind: chance(0.28) ? "streak" : "spark"
       });
     }
-    if (options.impact === false || state.particles.length >= MAX_PARTICLES) return;
+    if (options.impact === false || !hasParticleRoom()) return;
     state.particles.push({
       x,
       y,
@@ -2452,8 +2514,9 @@
       p.vy *= 0.92;
       if (p.life <= 0) state.particles.splice(i, 1);
     }
-    if (state.particles.length > MAX_PARTICLES) {
-      state.particles.splice(0, state.particles.length - MAX_PARTICLES);
+    const particleLimit = fxParticleLimit();
+    if (state.particles.length > particleLimit) {
+      state.particles.splice(0, state.particles.length - particleLimit);
     }
     state.shake = Math.max(0, state.shake - dt * 28);
     if (state.player) {
@@ -2598,6 +2661,11 @@
     document.body.dataset.qaEnvironmentPropDraws = String(state.qa.environmentPropDraws || 0);
     document.body.dataset.qaAtmosphereAtlasReady = atmosphereAtlasReady() ? "1" : "0";
     document.body.dataset.qaAtmosphereDraws = String(state.qa.atmosphereDraws || 0);
+    document.body.dataset.qaHitAtlasReady = hitAtlasReady() ? "1" : "0";
+    document.body.dataset.qaHitAtlasDraws = String(state.qa.hitAtlasDraws || 0);
+    document.body.dataset.qaParticlesRendered = String(state.qa.particlesRendered || 0);
+    document.body.dataset.qaParticlesCulled = String(state.qa.particlesCulled || 0);
+    document.body.dataset.qaParticleLimit = String(fxParticleLimit());
     document.body.dataset.qaSwarmImpostorDraws = String(state.qa.swarmImpostorDraws || 0);
     document.body.dataset.qaLegacyVectorOverlays = String(state.qa.legacyVectorOverlays || 0);
     document.body.dataset.qaPremiumAtlasFxDraws = String(state.qa.premiumAtlasFxDraws || 0);
@@ -2827,6 +2895,9 @@
     state.qa.legacyVectorOverlays = 0;
     state.qa.premiumAtlasFxDraws = 0;
     state.qa.atmosphereDraws = 0;
+    state.qa.hitAtlasDraws = 0;
+    state.qa.particlesRendered = 0;
+    state.qa.particlesCulled = 0;
     ctx.save();
     ctx.fillStyle = "#111417";
     ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
@@ -2972,6 +3043,17 @@
     return state.enemies.length < DETAIL_ENEMY_LIMIT && state.particles.length < HIGH_FX_LIMIT;
   }
 
+  function fxParticleLimit() {
+    const compact = Math.min(window.innerWidth, window.innerHeight) < 560;
+    if (state.enemies.length >= SWARM_RENDER_LIMIT) return compact ? 260 : 360;
+    if (state.enemies.length > DETAIL_ENEMY_LIMIT) return compact ? 340 : 500;
+    return compact ? 560 : MAX_PARTICLES;
+  }
+
+  function hasParticleRoom(buffer = 0) {
+    return state.particles.length < fxParticleLimit() - buffer;
+  }
+
   function atlasReady() {
     return Boolean(visualAtlas && visualAtlas.complete && visualAtlas.naturalWidth > 0);
   }
@@ -3006,6 +3088,10 @@
 
   function atmosphereAtlasReady() {
     return Boolean(atmosphereAtlas && atmosphereAtlas.complete && atmosphereAtlas.naturalWidth > 0);
+  }
+
+  function hitAtlasReady() {
+    return Boolean(hitAtlas && hitAtlas.complete && hitAtlas.naturalWidth > 0);
   }
 
   function itemIconAtlasReady() {
@@ -3139,6 +3225,21 @@
     ctx.drawImage(atmosphereAtlas, frame.x, frame.y, frame.w, frame.h, -w / 2, -h / 2, w, h);
     ctx.restore();
     if (QA_MODE) state.qa.atmosphereDraws += 1;
+    return true;
+  }
+
+  function drawHitFrame(id, x, y, w, h, alpha = 1, rotation = 0, blend = "source-over", flip = 1) {
+    const frame = hitFrames[id];
+    if (!frame || !hitAtlasReady()) return false;
+    ctx.save();
+    ctx.globalAlpha *= alpha;
+    ctx.globalCompositeOperation = blend;
+    ctx.translate(x, y);
+    ctx.rotate(rotation);
+    ctx.scale(flip, 1);
+    ctx.drawImage(hitAtlas, frame.x, frame.y, frame.w, frame.h, -w / 2, -h / 2, w, h);
+    ctx.restore();
+    if (QA_MODE) state.qa.hitAtlasDraws += 1;
     return true;
   }
 
@@ -3328,7 +3429,7 @@
   function spawnDeathSprite(e) {
     const premiumSprite = premiumEnemySprite(e);
     if (premiumSprite) {
-      const allowPremium = e.boss || e.elite || (state.enemies.length < 150 && state.particles.length < MAX_PARTICLES - 40 && chance(0.42));
+      const allowPremium = e.boss || e.elite || (state.enemies.length < 150 && hasParticleRoom(40) && chance(0.42));
       if (!allowPremium) return;
       const scale = premiumEnemySpriteScale(premiumSprite);
       const max = e.boss ? 0.9 : 0.62;
@@ -3351,7 +3452,7 @@
     }
     const premiumMinionId = premiumMinionSprite(e);
     if (premiumMinionId) {
-      const allowPremiumMinion = e.elite || (state.enemies.length < 180 && state.particles.length < MAX_PARTICLES - 40 && chance(0.5));
+      const allowPremiumMinion = e.elite || (state.enemies.length < 180 && hasParticleRoom(40) && chance(0.5));
       if (!allowPremiumMinion) return;
       const scale = premiumMinionSpriteScale(premiumMinionId);
       const max = e.elite ? 0.62 : 0.38;
@@ -3375,7 +3476,7 @@
     }
     const sprite = enemyCreatureSprite(e);
     if (!sprite || !creatureAtlasReady()) return;
-    const allow = e.boss || e.elite || (state.enemies.length < 150 && state.particles.length < MAX_PARTICLES - 40 && chance(0.42));
+    const allow = e.boss || e.elite || (state.enemies.length < 150 && hasParticleRoom(40) && chance(0.42));
     if (!allow) return;
     const scale = creatureSpriteScale(sprite);
     const max = e.boss ? 0.86 : e.elite ? 0.58 : 0.34;
@@ -4894,6 +4995,17 @@
     return "swordFan";
   }
 
+  function hitFrameId(color, kind = "impact") {
+    if (kind === "slash") return "spectralSlash";
+    if (kind === "death") return color === colors.gold ? "lootPop" : "soulRupture";
+    if (color === weapons.thunderArray.color || color === weapons.thunderPearl.color || color === colors.blue) return "lightningImpact";
+    if (color === weapons.frostNeedle.color || color === weapons.glacierRain.color || color === colors.frost) return "iceFracture";
+    if (color === weapons.poisonMist.color || color === weapons.plagueDomain.color || color === colors.poison) return "poisonSplash";
+    if (color === weapons.spiritFire.color || color === weapons.fireSea.color || color === colors.danger) return "criticalBurst";
+    if (color === weapons.talisman.color || color === weapons.voidSeal.color || color === colors.violet) return "soulRupture";
+    return kind === "spark" ? "hitSpark" : "criticalBurst";
+  }
+
   function areaGroundDecalSpec(area, now) {
     let id = null;
     if (area.kind === "voidSeal") id = "voidRift";
@@ -5202,15 +5314,39 @@
 
   function renderParticles() {
     const atlasFx = allowAtlasFx();
+    const viewW = window.innerWidth;
+    const viewH = window.innerHeight;
+    let renderedParticles = 0;
+    let culledParticles = 0;
     for (const p of state.particles) {
       const s = worldToScreen(p.x, p.y);
+      const cull = p.kind === "deathSprite" ? Math.max(p.w || 0, p.h || 0, p.r * 5) * 0.55 : Math.max(86, p.r * 5.8);
+      if (s.x < -cull || s.x > viewW + cull || s.y < -cull || s.y > viewH + cull) {
+        culledParticles += 1;
+        continue;
+      }
+      renderedParticles += 1;
       const alpha = clamp(p.life / p.max, 0, 1);
       ctx.save();
       ctx.globalAlpha = alpha;
       ctx.fillStyle = p.color;
       ctx.strokeStyle = p.color;
       ctx.shadowColor = p.color;
-      if (p.kind === "blade" || p.kind === "moonBlade") {
+      if (p.kind === "premiumHit") {
+        ctx.globalCompositeOperation = "lighter";
+        ctx.shadowBlur = 18;
+        const frame = p.hitFrame || hitFrameId(p.color, "impact");
+        const size = p.hitFrame === "spectralSlash" ? [p.r * 3.8, p.r * 2.0] : [p.r * 3.15, p.r * 2.65];
+        const drewHit = drawHitFrame(frame, s.x, s.y, size[0], size[1], 0.68, p.angle || 0, "source-over");
+        if (drewHit) drawGlow(s.x, s.y, p.r * 1.65, p.color, 0.12 * alpha);
+      } else if (p.kind === "premiumDeath") {
+        ctx.globalCompositeOperation = "lighter";
+        ctx.shadowBlur = 22;
+        const frame = p.hitFrame || hitFrameId(p.color, "death");
+        const size = p.hitFrame === "lootPop" ? [p.r * 3.4, p.r * 3.1] : [p.r * 3.0, p.r * 3.45];
+        const drewHit = drawHitFrame(frame, s.x, s.y, size[0], size[1], 0.58, (p.angle || 0) + (1 - alpha) * 0.12, "source-over");
+        if (drewHit) drawGlow(s.x, s.y, p.r * 1.95, p.color, 0.14 * alpha);
+      } else if (p.kind === "blade" || p.kind === "moonBlade") {
         ctx.globalCompositeOperation = "lighter";
         ctx.shadowBlur = p.kind === "moonBlade" ? 16 : 8;
         if (atlasFx) {
@@ -5262,66 +5398,85 @@
       } else if (p.kind === "spark") {
         ctx.globalCompositeOperation = "lighter";
         ctx.shadowBlur = 12;
-        const sparkFrame = impactAtlasFrameId(p.color);
-        const drewAtlas = atlasFx && drawAtlasFrame(sparkFrame, s.x, s.y, p.r * 3.8, p.r * 2.7, 0.28, (p.x + p.y) * 0.017 + alpha * 1.7, "source-over");
-        if (drewAtlas) {
-          state.qa.premiumAtlasFxDraws += 1;
+        const rotation = (p.x + p.y) * 0.017 + alpha * 1.7;
+        const hitFrame = hitFrameId(p.color, "spark");
+        const drewHit = drawHitFrame(hitFrame, s.x, s.y, p.r * 3.45, p.r * 2.85, 0.24, rotation, "source-over");
+        if (drewHit) {
+          drawGlow(s.x, s.y, p.r * 1.15, p.color, 0.08 * alpha);
         } else {
-          if (atlasFx) state.qa.legacyVectorOverlays += 1;
-          ctx.translate(s.x, s.y);
-          ctx.rotate((p.x + p.y) * 0.017 + alpha * 1.7);
-          const r = Math.max(1.2, p.r * (0.72 + alpha * 0.34));
-          ctx.fillStyle = colorAlpha(p.color, 0.72);
-          ctx.beginPath();
-          ctx.moveTo(0, -r * 1.35);
-          ctx.lineTo(r * 0.42, 0);
-          ctx.lineTo(0, r * 1.35);
-          ctx.lineTo(-r * 0.42, 0);
-          ctx.closePath();
-          ctx.fill();
-          ctx.strokeStyle = colorAlpha("#ffffff", 0.38);
-          ctx.lineWidth = 1;
-          ctx.stroke();
+          const sparkFrame = impactAtlasFrameId(p.color);
+          const drewAtlas = atlasFx && drawAtlasFrame(sparkFrame, s.x, s.y, p.r * 3.8, p.r * 2.7, 0.28, rotation, "source-over");
+          if (drewAtlas) {
+            state.qa.premiumAtlasFxDraws += 1;
+          } else {
+            if (atlasFx) state.qa.legacyVectorOverlays += 1;
+            ctx.translate(s.x, s.y);
+            ctx.rotate(rotation);
+            const r = Math.max(1.2, p.r * (0.72 + alpha * 0.34));
+            ctx.fillStyle = colorAlpha(p.color, 0.72);
+            ctx.beginPath();
+            ctx.moveTo(0, -r * 1.35);
+            ctx.lineTo(r * 0.42, 0);
+            ctx.lineTo(0, r * 1.35);
+            ctx.lineTo(-r * 0.42, 0);
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = colorAlpha("#ffffff", 0.38);
+            ctx.lineWidth = 1;
+            ctx.stroke();
+          }
         }
       } else if (p.kind === "impact") {
         ctx.globalCompositeOperation = "lighter";
         ctx.shadowBlur = 14;
-        const impactFrame = impactAtlasFrameId(p.color);
-        const drewAtlas = atlasFx && drawAtlasFrame(impactFrame, s.x, s.y, p.r * 2.7, p.r * 2.2, 0.36, (p.x + p.y) * 0.002 + performance.now() / 1500, "source-over");
-        if (drewAtlas) {
-          state.qa.premiumAtlasFxDraws += 1;
+        const rotation = (p.x + p.y) * 0.002 + performance.now() / 1500;
+        const hitFrame = hitFrameId(p.color, "impact");
+        const drewHit = drawHitFrame(hitFrame, s.x, s.y, p.r * 2.72, p.r * 2.46, 0.34, rotation, "source-over");
+        if (drewHit) {
           drawGlow(s.x, s.y, p.r * 1.7, p.color, 0.11 * alpha);
         } else {
-          if (atlasFx) state.qa.legacyVectorOverlays += 1;
-          ctx.lineWidth = 1.45;
-          ctx.globalAlpha = alpha * 0.42;
-          ctx.beginPath();
-          ctx.arc(s.x, s.y, p.r * (1.16 - alpha * 0.52), 0, TAU);
-          ctx.stroke();
-          ctx.globalAlpha = alpha * 0.12;
-          drawGlow(s.x, s.y, p.r * 1.65, p.color, 0.24);
+          const impactFrame = impactAtlasFrameId(p.color);
+          const drewAtlas = atlasFx && drawAtlasFrame(impactFrame, s.x, s.y, p.r * 2.7, p.r * 2.2, 0.36, rotation, "source-over");
+          if (drewAtlas) {
+            state.qa.premiumAtlasFxDraws += 1;
+            drawGlow(s.x, s.y, p.r * 1.7, p.color, 0.11 * alpha);
+          } else {
+            if (atlasFx) state.qa.legacyVectorOverlays += 1;
+            ctx.lineWidth = 1.45;
+            ctx.globalAlpha = alpha * 0.42;
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, p.r * (1.16 - alpha * 0.52), 0, TAU);
+            ctx.stroke();
+            ctx.globalAlpha = alpha * 0.12;
+            drawGlow(s.x, s.y, p.r * 1.65, p.color, 0.24);
+          }
         }
       } else if (p.kind === "slash") {
         ctx.globalCompositeOperation = "lighter";
         ctx.shadowBlur = 18;
-        const drewAtlas = atlasFx && drawAtlasFrame("swordFan", s.x, s.y, p.r * 3.4, p.r * 1.75, 0.5, p.angle || 0, "source-over");
-        if (drewAtlas) {
-          state.qa.premiumAtlasFxDraws += 1;
+        const drewHit = drawHitFrame("spectralSlash", s.x, s.y, p.r * 3.75, p.r * 1.95, 0.42, p.angle || 0, "source-over");
+        if (drewHit) {
+          drawGlow(s.x, s.y, p.r * 1.45, p.color, 0.08 * alpha);
         } else {
-          if (atlasFx) state.qa.legacyVectorOverlays += 1;
-          ctx.translate(s.x, s.y);
-          ctx.rotate(p.angle || 0);
-          ctx.lineWidth = Math.max(2, p.r * 0.12);
-          const slash = ctx.createLinearGradient(-p.r, 0, p.r, 0);
-          slash.addColorStop(0, colorAlpha(p.color, 0));
-          slash.addColorStop(0.42, colorAlpha(p.color, 0.72));
-          slash.addColorStop(0.58, "rgba(255,255,255,0.88)");
-          slash.addColorStop(1, colorAlpha(p.color, 0));
-          ctx.strokeStyle = slash;
-          ctx.beginPath();
-          ctx.moveTo(-p.r, -p.r * 0.18);
-          ctx.quadraticCurveTo(0, p.r * 0.22, p.r, -p.r * 0.12);
-          ctx.stroke();
+          const drewAtlas = atlasFx && drawAtlasFrame("swordFan", s.x, s.y, p.r * 3.4, p.r * 1.75, 0.5, p.angle || 0, "source-over");
+          if (drewAtlas) {
+            state.qa.premiumAtlasFxDraws += 1;
+          } else {
+            if (atlasFx) state.qa.legacyVectorOverlays += 1;
+            ctx.translate(s.x, s.y);
+            ctx.rotate(p.angle || 0);
+            ctx.lineWidth = Math.max(2, p.r * 0.12);
+            const slash = ctx.createLinearGradient(-p.r, 0, p.r, 0);
+            slash.addColorStop(0, colorAlpha(p.color, 0));
+            slash.addColorStop(0.42, colorAlpha(p.color, 0.72));
+            slash.addColorStop(0.58, "rgba(255,255,255,0.88)");
+            slash.addColorStop(1, colorAlpha(p.color, 0));
+            ctx.strokeStyle = slash;
+            ctx.beginPath();
+            ctx.moveTo(-p.r, -p.r * 0.18);
+            ctx.quadraticCurveTo(0, p.r * 0.22, p.r, -p.r * 0.12);
+            ctx.stroke();
+          }
         }
       } else if (p.kind === "deathSprite") {
         const fade = 1 - alpha;
@@ -5339,37 +5494,52 @@
       } else if (p.kind === "streak") {
         ctx.globalCompositeOperation = "lighter";
         ctx.shadowBlur = 12;
-        const streakFrame = impactAtlasFrameId(p.color);
         const streakAngle = Math.atan2(p.vy || 0, p.vx || 1);
-        const drewAtlas = atlasFx && drawAtlasFrame(streakFrame, s.x, s.y, Math.max(10, p.r * 4.4), Math.max(6, p.r * 2.2), 0.2, streakAngle, "source-over");
-        if (drewAtlas) {
-          state.qa.premiumAtlasFxDraws += 1;
+        const drewHit = drawHitFrame(hitFrameId(p.color, "spark"), s.x, s.y, Math.max(10, p.r * 3.8), Math.max(7, p.r * 2.2), 0.16, streakAngle, "source-over");
+        if (drewHit) {
+          drawGlow(s.x, s.y, p.r * 1.05, p.color, 0.06 * alpha);
         } else {
-          if (atlasFx) state.qa.legacyVectorOverlays += 1;
-          ctx.lineWidth = Math.max(1.5, p.r * 0.55);
-          ctx.beginPath();
-          ctx.moveTo(s.x, s.y);
-          ctx.lineTo(s.x - p.vx * 0.045, s.y - p.vy * 0.045);
-          ctx.stroke();
-          ctx.beginPath();
-          ctx.arc(s.x, s.y, p.r * 0.55 * alpha, 0, TAU);
-          ctx.fill();
+          const streakFrame = impactAtlasFrameId(p.color);
+          const drewAtlas = atlasFx && drawAtlasFrame(streakFrame, s.x, s.y, Math.max(10, p.r * 4.4), Math.max(6, p.r * 2.2), 0.2, streakAngle, "source-over");
+          if (drewAtlas) {
+            state.qa.premiumAtlasFxDraws += 1;
+          } else {
+            if (atlasFx) state.qa.legacyVectorOverlays += 1;
+            ctx.lineWidth = Math.max(1.5, p.r * 0.55);
+            ctx.beginPath();
+            ctx.moveTo(s.x, s.y);
+            ctx.lineTo(s.x - p.vx * 0.045, s.y - p.vy * 0.045);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, p.r * 0.55 * alpha, 0, TAU);
+            ctx.fill();
+          }
         }
       } else {
         ctx.globalCompositeOperation = "lighter";
         ctx.shadowBlur = 10;
-        const fallbackFrame = impactAtlasFrameId(p.color);
-        const drewAtlas = atlasFx && drawAtlasFrame(fallbackFrame, s.x, s.y, p.r * 2.4, p.r * 2.0, 0.18, (p.x + p.y) * 0.001 + performance.now() / 1300, "source-over");
-        if (drewAtlas) {
-          state.qa.premiumAtlasFxDraws += 1;
+        const rotation = (p.x + p.y) * 0.001 + performance.now() / 1300;
+        const drewHit = drawHitFrame(hitFrameId(p.color, "impact"), s.x, s.y, p.r * 2.2, p.r * 1.95, 0.14, rotation, "source-over");
+        if (drewHit) {
+          drawGlow(s.x, s.y, p.r * 1.0, p.color, 0.06 * alpha);
         } else {
-          if (atlasFx) state.qa.legacyVectorOverlays += 1;
-          ctx.beginPath();
-          ctx.arc(s.x, s.y, p.r * alpha, 0, TAU);
-          ctx.fill();
+          const fallbackFrame = impactAtlasFrameId(p.color);
+          const drewAtlas = atlasFx && drawAtlasFrame(fallbackFrame, s.x, s.y, p.r * 2.4, p.r * 2.0, 0.18, rotation, "source-over");
+          if (drewAtlas) {
+            state.qa.premiumAtlasFxDraws += 1;
+          } else {
+            if (atlasFx) state.qa.legacyVectorOverlays += 1;
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, p.r * alpha, 0, TAU);
+            ctx.fill();
+          }
         }
       }
       ctx.restore();
+    }
+    if (QA_MODE) {
+      state.qa.particlesRendered = renderedParticles;
+      state.qa.particlesCulled = culledParticles;
     }
   }
 
@@ -5867,6 +6037,11 @@
           visuals: {
             atmosphereReady: atmosphereAtlasReady(),
             atmosphereDraws: state.qa.atmosphereDraws || 0,
+            hitReady: hitAtlasReady(),
+            hitDraws: state.qa.hitAtlasDraws || 0,
+            particlesRendered: state.qa.particlesRendered || 0,
+            particlesCulled: state.qa.particlesCulled || 0,
+            particleLimit: fxParticleLimit(),
             legacyVectorOverlays: state.qa.legacyVectorOverlays || 0,
             premiumAtlasFxDraws: state.qa.premiumAtlasFxDraws || 0
           },
@@ -5890,6 +6065,9 @@
         state.qa.groundDecalDraws = 0;
         state.qa.environmentPropDraws = 0;
         state.qa.atmosphereDraws = 0;
+        state.qa.hitAtlasDraws = 0;
+        state.qa.particlesRendered = 0;
+        state.qa.particlesCulled = 0;
         state.qa.swarmImpostorDraws = 0;
         updateQaDataset();
         return true;
