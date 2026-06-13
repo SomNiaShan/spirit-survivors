@@ -2556,6 +2556,7 @@
     document.body.dataset.qaSyncMs = String(state.qa.syncMs || 0);
     document.body.dataset.qaAvgFrameMs = state.perf.frames ? ((state.perf.totalDt / state.perf.frames) * 1000).toFixed(2) : "0";
     document.body.dataset.qaMaxFrameMs = (state.perf.maxDt * 1000).toFixed(2);
+    document.body.dataset.qaWorkFrames = String(state.perf.workFrames || 0);
     document.body.dataset.qaAvgWorkMs = state.perf.workFrames ? (state.perf.totalWorkMs / state.perf.workFrames).toFixed(2) : "0";
     document.body.dataset.qaMaxWorkMs = state.perf.maxWorkMs.toFixed(2);
   }
@@ -4620,7 +4621,8 @@
     const denseAreas = state.areas.length >= DENSE_AREA_LIMIT || state.enemies.length >= SWARM_RENDER_LIMIT;
     const viewW = window.innerWidth;
     const viewH = window.innerHeight;
-    const groundDecalBudget = denseAreas ? GROUND_DECAL_DENSE_LIMIT : 160;
+    const compactViewport = Math.min(viewW, viewH) < 560;
+    const groundDecalBudget = compactViewport ? 8 : denseAreas ? GROUND_DECAL_DENSE_LIMIT : 160;
     let groundDecalDraws = 0;
     for (const area of state.areas) {
       const s = worldToScreen(area.x, area.y);
@@ -5530,6 +5532,12 @@
             passives: Object.fromEntries(Object.entries(state.player.passives).map(([id, owned]) => [id, owned.level]))
           } : null
         };
+      },
+      resetPerf() {
+        state.perf = { frames: 0, totalDt: 0, maxDt: 0, workFrames: 0, totalWorkMs: 0, maxWorkMs: 0 };
+        state.qa.groundDecalDraws = 0;
+        updateQaDataset();
+        return true;
       }
     };
   }
