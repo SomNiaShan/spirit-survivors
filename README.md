@@ -42,7 +42,7 @@ python -m http.server 4173
 
 ## 美术方向
 
-当前目标是暗黑修仙题材的高可读 2.5D 幸存者画面：深色战场、强轮廓怪潮、中心法阵、粗亮弹道、清晰颜色分区和大面积技能领域。`assets/concept-visual-target.png` 是整体氛围方向稿，`assets/combat-asset-reference-v1.png` 是战斗资源方向图，并已作为运行时特效图集叠加到飞剑、符箓、火焰、虚空、冰霜和毒域效果中。`assets/creature-atlas-v1.png` 是角色/怪物透明图集，已用于主角、普通怪、精英和 Boss 的实战绘制。
+当前目标是暗黑修仙题材的高可读 2.5D 幸存者画面：深色战场、强轮廓怪潮、中心法阵、粗亮弹道、清晰颜色分区和大面积技能领域。`assets/concept-visual-target.png` 是整体氛围方向稿，`assets/combat-asset-reference-v1.png` 是战斗资源方向图，并已作为运行时特效图集叠加到飞剑、符箓、火焰、虚空、冰霜和毒域效果中。`assets/creature-atlas-v1.png` 是角色/怪物透明图集，已用于主角、普通怪、精英和 Boss 的实战绘制，并加入基础呼吸、步态、受击斩痕和死亡残影。
 
 ## 成就与解锁
 

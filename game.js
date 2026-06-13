@@ -1921,6 +1921,22 @@
     if (text && chance(0.22)) {
       floatingText(e.x, e.y - e.r, Math.ceil(amount).toString(), color, 12);
     }
+    if (state.particles.length < MAX_PARTICLES - 8 && allowHighFx() && chance(text ? 0.36 : 0.09)) {
+      const from = state.player || { x: e.x - 1, y: e.y };
+      const angle = Math.atan2(e.y - from.y, e.x - from.x) + rand(-0.42, 0.42);
+      state.particles.push({
+        x: e.x + rand(-e.r * 0.24, e.r * 0.24),
+        y: e.y + rand(-e.r * 0.24, e.r * 0.24),
+        vx: 0,
+        vy: 0,
+        life: 0.16,
+        max: 0.16,
+        r: e.r * rand(0.85, 1.35),
+        color,
+        kind: "slash",
+        angle
+      });
+    }
     if (state.particles.length < MAX_PARTICLES && chance(text ? 0.28 : 0.08)) {
       state.particles.push({
         x: e.x + rand(-e.r * 0.4, e.r * 0.4),
@@ -1982,6 +1998,7 @@
       floatingText(e.x, e.y - 62, "妖君伏诛", colors.gold, 24);
       state.shake = Math.max(state.shake, 20);
     }
+    spawnDeathSprite(e);
     burst(e.x, e.y, e.color, e.elite ? 20 : 7, e.elite ? 160 : 90);
   }
 
@@ -2319,6 +2336,14 @@
     document.body.dataset.qaEnemyProjectiles = String(state.enemyProjectiles.length);
     document.body.dataset.qaAreas = String(state.areas.length);
     document.body.dataset.qaParticles = String(state.particles.length);
+    let deathSprites = 0;
+    let slashParticles = 0;
+    for (const particle of state.particles) {
+      if (particle.kind === "deathSprite") deathSprites += 1;
+      else if (particle.kind === "slash") slashParticles += 1;
+    }
+    document.body.dataset.qaDeathSprites = String(deathSprites);
+    document.body.dataset.qaSlashParticles = String(slashParticles);
     document.body.dataset.qaGems = String(state.gems.length);
     document.body.dataset.qaCoins = String(state.coins.length);
     document.body.dataset.qaChests = String(state.chests.length);
@@ -2718,6 +2743,40 @@
     }
   }
 
+  function creatureSpriteScale(id) {
+    if (id === "wolf") return [7.2, 4.7];
+    if (id === "stone") return [5.9, 5.2];
+    if (id === "wisp") return [5.6, 5.6];
+    if (id === "summoner") return [5.1, 5.7];
+    if (id === "boss") return [4.7, 4.5];
+    return [4.9, 4.9];
+  }
+
+  function spawnDeathSprite(e) {
+    const sprite = enemyCreatureSprite(e);
+    if (!sprite || !creatureAtlasReady()) return;
+    const allow = e.boss || e.elite || (state.enemies.length < 150 && state.particles.length < MAX_PARTICLES - 40 && chance(0.42));
+    if (!allow) return;
+    const scale = creatureSpriteScale(sprite);
+    const max = e.boss ? 0.86 : e.elite ? 0.58 : 0.34;
+    state.particles.push({
+      x: e.x,
+      y: e.y,
+      vx: 0,
+      vy: e.boss ? -18 : -10,
+      life: max,
+      max,
+      r: e.r,
+      w: e.r * scale[0],
+      h: e.r * scale[1],
+      color: e.color,
+      kind: "deathSprite",
+      sprite,
+      flip: sprite === "wolf" && state.player && e.x < state.player.x ? -1 : 1,
+      rot: rand(-0.08, 0.08)
+    });
+  }
+
   function drawBladeGlyph(length, width, color, alpha = 1) {
     ctx.save();
     ctx.globalAlpha *= alpha;
@@ -3090,10 +3149,12 @@
     ctx.restore();
 
     const playerSprite = playerCreatureSprite(p.character.id);
-    if (playerSprite && allowCreatureAtlas()) {
+    if (playerSprite && creatureAtlasReady()) {
+      const bob = Math.sin(t * 5.2) * 1.7;
+      const lean = clamp(p.lastDir.x * 0.055, -0.07, 0.07);
       ctx.save();
       ctx.globalCompositeOperation = "source-over";
-      drawCreatureSprite(playerSprite, 0, -3, p.r * 4.9, p.r * 4.9, p.hitFlash > 0 ? 0.55 : 0.92, -face * 0.05, p.lastDir.x < -0.08 ? -1 : 1);
+      drawCreatureSprite(playerSprite, 0, -5 + bob, p.r * 5.05, p.r * 5.05, p.hitFlash > 0 ? 0.58 : 0.9, lean - face * 0.03, p.lastDir.x < -0.08 ? -1 : 1);
       ctx.restore();
     }
 
@@ -3306,12 +3367,16 @@
       const creatureId = enemyCreatureSprite(e);
       const drawCreature = creatureId && (e.boss || e.elite || allowCreatureAtlas());
       if (drawCreature) {
-        const scale = creatureId === "wolf" ? [7.2, 4.7] : creatureId === "stone" ? [5.9, 5.2] : creatureId === "wisp" ? [5.6, 5.6] : creatureId === "summoner" ? [5.1, 5.7] : creatureId === "boss" ? [4.7, 4.5] : [4.9, 4.9];
+        const scale = creatureSpriteScale(creatureId);
+        const gait = Math.sin(t * (e.boss ? 2.2 : e.elite ? 3.2 : 5.4) + e.x * 0.013 + e.y * 0.011);
+        const squash = e.boss ? 0.012 : e.elite ? 0.018 : 0.028;
+        const bob = creatureId === "wolf" ? gait * e.r * 0.04 : -Math.abs(gait) * e.r * 0.055;
+        const lean = clamp((e.vx || 0) * 0.00065, -0.08, 0.08);
         const alpha = e.flash > 0 ? 0.46 : e.boss ? 0.86 : e.elite ? 0.82 : 0.72;
         const flip = creatureId === "wolf" && state.player && e.x < state.player.x ? -1 : 1;
         ctx.save();
         ctx.globalCompositeOperation = "source-over";
-        drawCreatureSprite(creatureId, 0, creatureId === "wolf" ? -e.r * 0.12 : 0, e.r * scale[0], e.r * scale[1], alpha, 0, flip);
+        drawCreatureSprite(creatureId, 0, (creatureId === "wolf" ? -e.r * 0.12 : 0) + bob, e.r * scale[0] * (1 + gait * squash), e.r * scale[1] * (1 - gait * squash * 0.72), alpha, lean, flip);
         ctx.restore();
       }
       ctx.shadowBlur = 0;
@@ -3995,6 +4060,29 @@
         ctx.stroke();
         ctx.globalAlpha = alpha * 0.22;
         drawGlow(s.x, s.y, p.r * 1.8, p.color, 0.28);
+      } else if (p.kind === "slash") {
+        ctx.globalCompositeOperation = "lighter";
+        ctx.translate(s.x, s.y);
+        ctx.rotate(p.angle || 0);
+        ctx.shadowBlur = 18;
+        ctx.lineWidth = Math.max(2, p.r * 0.12);
+        const slash = ctx.createLinearGradient(-p.r, 0, p.r, 0);
+        slash.addColorStop(0, colorAlpha(p.color, 0));
+        slash.addColorStop(0.42, colorAlpha(p.color, 0.72));
+        slash.addColorStop(0.58, "rgba(255,255,255,0.88)");
+        slash.addColorStop(1, colorAlpha(p.color, 0));
+        ctx.strokeStyle = slash;
+        ctx.beginPath();
+        ctx.moveTo(-p.r, -p.r * 0.18);
+        ctx.quadraticCurveTo(0, p.r * 0.22, p.r, -p.r * 0.12);
+        ctx.stroke();
+      } else if (p.kind === "deathSprite") {
+        const fade = 1 - alpha;
+        const scale = 1 + fade * 0.32;
+        ctx.globalCompositeOperation = "source-over";
+        drawCreatureSprite(p.sprite, s.x, s.y - fade * p.r * 0.72, p.w * scale, p.h * scale, alpha * 0.62, (p.rot || 0) + fade * 0.08, p.flip || 1);
+        ctx.globalCompositeOperation = "lighter";
+        drawGlow(s.x, s.y, p.r * (2.2 + fade * 1.4), p.color, 0.12 * alpha);
       } else if (p.kind === "streak") {
         ctx.globalCompositeOperation = "lighter";
         ctx.shadowBlur = 12;
