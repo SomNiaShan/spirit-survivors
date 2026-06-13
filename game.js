@@ -157,6 +157,18 @@
     groundDecalAtlas.src = "assets/premium-ground-decal-atlas-v1.png";
   }
 
+  const environmentPropAtlas = typeof Image !== "undefined" ? new Image() : null;
+  if (environmentPropAtlas) {
+    environmentPropAtlas.decoding = "async";
+    environmentPropAtlas.onload = () => {
+      if (!QA_MODE) return;
+      state.qa.visualDone = false;
+      updateQaDataset();
+      render();
+    };
+    environmentPropAtlas.src = "assets/premium-environment-prop-atlas-v1.png";
+  }
+
   const itemIconAtlas = typeof Image !== "undefined" ? new Image() : null;
   if (itemIconAtlas) {
     itemIconAtlas.decoding = "async";
@@ -239,6 +251,19 @@
     lightningSigil: { x: 1024, y: 512, w: 512, h: 512 },
     soulVortex: { x: 1536, y: 512, w: 512, h: 512 }
   };
+
+  const environmentPropFrames = {
+    obelisk: { x: 0, y: 0, w: 512, h: 512 },
+    ringRuin: { x: 512, y: 0, w: 512, h: 512 },
+    spiritCrystals: { x: 1024, y: 0, w: 512, h: 512 },
+    boneAltar: { x: 1536, y: 0, w: 512, h: 512 },
+    talismanLantern: { x: 0, y: 512, w: 512, h: 512 },
+    mossRubble: { x: 512, y: 512, w: 512, h: 512 },
+    voidShard: { x: 1024, y: 512, w: 512, h: 512 },
+    sigilPlate: { x: 1536, y: 512, w: 512, h: 512 }
+  };
+
+  const environmentPropIds = Object.keys(environmentPropFrames);
 
   const itemIconFrames = {
     flyingSword: [0, 0],
@@ -634,7 +659,7 @@
     hudSignature: "",
     forceNextChestEvolution: false,
     lastResult: null,
-    qa: { mode: null, autoChoices: false, autoMove: false, timeScale: 1, maxSteps: 1, syncRunning: false, syncSteps: 0, syncMs: 0, visualDone: false, groundDecalDraws: 0 },
+    qa: { mode: null, autoChoices: false, autoMove: false, timeScale: 1, maxSteps: 1, syncRunning: false, syncSteps: 0, syncMs: 0, visualDone: false, groundDecalDraws: 0, environmentPropDraws: 0 },
     wave: 1,
     spawnTimer: 0,
     eliteSchedule: [90, 180, 300, 450, 600, 760],
@@ -1087,6 +1112,7 @@
     state.forceNextChestEvolution = false;
     state.lastResult = null;
     state.qa.groundDecalDraws = 0;
+    state.qa.environmentPropDraws = 0;
     state.wave = 1;
     state.spawnTimer = 0;
     state.eliteIndex = 0;
@@ -1100,8 +1126,8 @@
         x: rand(-2400, 2400),
         y: rand(-2400, 2400),
         r: rand(8, 28),
-        kind: Math.floor(rand(0, 5)),
-        rot: rand(0, TAU)
+        kind: Math.floor(rand(0, environmentPropIds.length)),
+        rot: rand(-0.16, 0.16)
       });
     }
   }
@@ -2536,6 +2562,8 @@
     document.body.dataset.qaPremiumPickupAtlasReady = premiumPickupAtlasReady() ? "1" : "0";
     document.body.dataset.qaGroundDecalAtlasReady = groundDecalAtlasReady() ? "1" : "0";
     document.body.dataset.qaGroundDecalDraws = String(state.qa.groundDecalDraws || 0);
+    document.body.dataset.qaEnvironmentPropAtlasReady = environmentPropAtlasReady() ? "1" : "0";
+    document.body.dataset.qaEnvironmentPropDraws = String(state.qa.environmentPropDraws || 0);
     document.body.dataset.qaItemAtlasReady = itemIconAtlasReady() ? "1" : "0";
     document.body.dataset.qaArenaReady = arenaBackgroundReady() ? "1" : "0";
     const boss = state.enemies.find((e) => e.boss && e.hp > 0);
@@ -2929,6 +2957,10 @@
     return Boolean(groundDecalAtlas && groundDecalAtlas.complete && groundDecalAtlas.naturalWidth > 0);
   }
 
+  function environmentPropAtlasReady() {
+    return Boolean(environmentPropAtlas && environmentPropAtlas.complete && environmentPropAtlas.naturalWidth > 0);
+  }
+
   function itemIconAtlasReady() {
     return Boolean(itemIconAtlas && itemIconAtlas.complete && itemIconAtlas.naturalWidth > 0);
   }
@@ -2943,10 +2975,6 @@
 
   function allowCreatureAtlas(unitCount = state.enemies.length) {
     return creatureAtlasReady() && unitCount <= 150;
-  }
-
-  function allowPremiumMinionAtlas(unitCount = state.enemies.length) {
-    return premiumMinionAtlasReady() && unitCount <= 180;
   }
 
   function drawAtlasFrame(id, x, y, w, h, alpha = 1, rotation = 0, blend = "lighter") {
@@ -3035,6 +3063,19 @@
     ctx.translate(x, y);
     ctx.rotate(rotation);
     ctx.drawImage(groundDecalAtlas, frame.x, frame.y, frame.w, frame.h, -w / 2, -h / 2, w, h);
+    ctx.restore();
+    return true;
+  }
+
+  function drawEnvironmentPropFrame(id, x, y, w, h, alpha = 0.9, rotation = 0, flip = 1) {
+    const frame = environmentPropFrames[id];
+    if (!frame || !environmentPropAtlasReady()) return false;
+    ctx.save();
+    ctx.globalAlpha *= alpha;
+    ctx.translate(x, y);
+    ctx.rotate(rotation);
+    ctx.scale(flip, 1);
+    ctx.drawImage(environmentPropAtlas, frame.x, frame.y, frame.w, frame.h, -w / 2, -h / 2, w, h);
     ctx.restore();
     return true;
   }
@@ -3380,27 +3421,6 @@
     }
   }
 
-  function drawPremiumProjectileTrail(pr) {
-    const fast = len(pr.vx, pr.vy);
-    const trail = clamp(fast * 0.045, 16, 72);
-    ctx.save();
-    ctx.globalCompositeOperation = "lighter";
-    ctx.shadowColor = pr.color;
-    ctx.shadowBlur = Math.max(10, pr.r * 1.2);
-    ctx.lineWidth = Math.max(1.2, pr.r * 0.42);
-    const grad = ctx.createLinearGradient(-trail, 0, pr.r * 1.8, 0);
-    grad.addColorStop(0, colorAlpha(pr.color, 0));
-    grad.addColorStop(0.44, colorAlpha(pr.color, 0.16));
-    grad.addColorStop(0.82, colorAlpha("#ffffff", 0.34));
-    grad.addColorStop(1, colorAlpha(pr.color, 0.18));
-    ctx.strokeStyle = grad;
-    ctx.beginPath();
-    ctx.moveTo(-trail, 0);
-    ctx.quadraticCurveTo(-trail * 0.34, pr.r * 0.12, pr.r * 1.55, 0);
-    ctx.stroke();
-    ctx.restore();
-  }
-
   function drawProjectileTrail(pr) {
     const fast = len(pr.vx, pr.vy);
     const longKinds = ["thousandSword", "dragonBolt", "glacierNeedle", "fireSea", "fire"];
@@ -3427,6 +3447,49 @@
       ctx.stroke();
     }
     ctx.restore();
+  }
+
+  function environmentPropSpec(id, r) {
+    switch (id) {
+      case "obelisk":
+        return { w: r * 5.1, h: r * 5.7, y: -r * 0.3, glow: colors.jade, glowA: 0.08 };
+      case "ringRuin":
+        return { w: r * 6.2, h: r * 4.8, y: r * 0.05, glow: colors.gold, glowA: 0.035 };
+      case "spiritCrystals":
+        return { w: r * 5.2, h: r * 4.7, y: -r * 0.08, glow: colors.frost, glowA: 0.13 };
+      case "boneAltar":
+        return { w: r * 6.3, h: r * 4.9, y: 0, glow: colors.danger, glowA: 0.08 };
+      case "talismanLantern":
+        return { w: r * 5.6, h: r * 4.2, y: r * 0.08, glow: colors.gold, glowA: 0.11 };
+      case "mossRubble":
+        return { w: r * 5.4, h: r * 4.25, y: r * 0.05, glow: colors.poison, glowA: 0.055 };
+      case "voidShard":
+        return { w: r * 5.05, h: r * 5.05, y: -r * 0.1, glow: colors.violet, glowA: 0.12 };
+      case "sigilPlate":
+        return { w: r * 6.5, h: r * 4.6, y: r * 0.05, glow: colors.gold, glowA: 0.035 };
+      default:
+        return { w: r * 5, h: r * 4.5, y: 0, glow: colors.jade, glowA: 0.05 };
+    }
+  }
+
+  function drawEnvironmentProp(id, d, s, texturedArena, withGlow = true) {
+    if (!environmentPropAtlasReady()) return false;
+    const spec = environmentPropSpec(id, d.r);
+    const flip = hash2(Math.floor(d.x / 97), Math.floor(d.y / 103)) > 0.5 ? -1 : 1;
+    const alpha = texturedArena ? 0.86 : 0.9;
+    ctx.save();
+    ctx.globalCompositeOperation = "source-over";
+    ctx.fillStyle = texturedArena ? "rgba(0, 0, 0, 0.16)" : "rgba(0, 0, 0, 0.22)";
+    ctx.beginPath();
+    ctx.ellipse(s.x, s.y + spec.h * 0.24, spec.w * 0.31, spec.h * 0.13, d.rot, 0, TAU);
+    ctx.fill();
+    drawEnvironmentPropFrame(id, s.x, s.y + spec.y, spec.w, spec.h, alpha, d.rot, flip);
+    if (withGlow && spec.glowA > 0) {
+      ctx.globalCompositeOperation = "lighter";
+      drawGlow(s.x, s.y + spec.y, Math.max(spec.w, spec.h) * 0.44, spec.glow, spec.glowA);
+    }
+    ctx.restore();
+    return true;
   }
 
   function renderWorld() {
@@ -3562,59 +3625,18 @@
     }
     ctx.restore();
 
+    const compactWorld = Math.min(w, h) < 560;
+    const propBudget = compactWorld ? 5 : state.enemies.length >= SWARM_RENDER_LIMIT ? 48 : 86;
+    let propDraws = 0;
     for (const d of state.decorations) {
       const s = worldToScreen(d.x, d.y);
-      if (s.x < -80 || s.x > w + 80 || s.y < -80 || s.y > h + 80) continue;
-      ctx.save();
-      ctx.translate(s.x, s.y);
-      ctx.rotate(d.rot);
-      ctx.globalCompositeOperation = "lighter";
-      const dustAlpha = texturedArena ? 0.095 : 0.15;
-      if (d.kind === 0) {
-        ctx.strokeStyle = `rgba(174, 160, 119, ${dustAlpha})`;
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(-d.r * 0.48, -d.r * 0.08);
-        ctx.lineTo(d.r * 0.52, d.r * 0.08);
-        ctx.stroke();
-        ctx.fillStyle = `rgba(124, 215, 175, ${dustAlpha * 0.42})`;
-        ctx.fillRect(-1, -1, 2, 2);
-      } else if (d.kind === 1) {
-        ctx.strokeStyle = `rgba(124, 215, 175, ${dustAlpha * 0.82})`;
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(-d.r * 0.36, d.r * 0.28);
-        ctx.lineTo(0, -d.r * 0.42);
-        ctx.lineTo(d.r * 0.36, d.r * 0.28);
-        ctx.stroke();
-      } else if (d.kind === 2) {
-        ctx.strokeStyle = `rgba(241, 198, 106, ${dustAlpha * 1.15})`;
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.arc(0, 0, d.r * 0.72, 0, TAU);
-        ctx.stroke();
-      } else if (d.kind === 3) {
-        ctx.strokeStyle = `rgba(242, 234, 215, ${dustAlpha * 0.65})`;
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.ellipse(0, 0, d.r * 0.62, d.r * 0.28, 0, 0, TAU);
-        ctx.stroke();
-      } else {
-        ctx.strokeStyle = `rgba(124, 215, 175, ${dustAlpha})`;
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(-d.r * 0.55, 0);
-        ctx.lineTo(d.r * 0.55, 0);
-        ctx.moveTo(0, -d.r * 0.38);
-        ctx.lineTo(0, d.r * 0.38);
-        ctx.stroke();
-        ctx.fillStyle = `rgba(124, 215, 175, ${dustAlpha * 0.38})`;
-        ctx.beginPath();
-        ctx.arc(0, 0, Math.max(1.2, d.r * 0.12), 0, TAU);
-        ctx.fill();
+      if (s.x < -130 || s.x > w + 130 || s.y < -130 || s.y > h + 130) continue;
+      const propId = environmentPropIds[d.kind % environmentPropIds.length];
+      if (propDraws < propBudget && drawEnvironmentProp(propId, d, s, texturedArena, !compactWorld)) {
+        propDraws += 1;
       }
-      ctx.restore();
     }
+    if (QA_MODE) state.qa.environmentPropDraws = propDraws;
 
     const fogOffset = now / 3600;
     for (let i = 0; i < 5; i++) {
@@ -3825,7 +3847,7 @@
         continue;
       }
       const atlasCreatureId = enemyCreatureSprite(e);
-      const usePremiumMinionSprite = premiumMinionId && !premiumEnemySprite(e) && (e.elite || allowPremiumMinionAtlas());
+      const usePremiumMinionSprite = premiumMinionId && !premiumEnemySprite(e);
       const useCreatureSprite = usePremiumMinionSprite || (atlasCreatureId && (e.boss || e.elite || allowCreatureAtlas()));
       if (useCreatureSprite) {
         drawSpriteEnemy(e, atlasCreatureId, t, pulse, usePremiumMinionSprite ? premiumMinionId : null);
@@ -4411,14 +4433,19 @@
     for (const pr of state.projectiles) {
       const s = worldToScreen(pr.x, pr.y);
       if (s.x < -80 || s.x > window.innerWidth + 80 || s.y < -80 || s.y > window.innerHeight + 80) continue;
+      const premiumProjectileFrame = atlasFx ? projectileAtlasFrameId(pr.kind) : null;
       ctx.save();
       ctx.translate(s.x, s.y);
       ctx.rotate(Math.atan2(pr.vy, pr.vx) + pr.spin * 0.05);
       ctx.shadowColor = pr.color;
       ctx.shadowBlur = ["fire", "fireSea", "dragonBolt", "thousandSword", "glacierNeedle"].includes(pr.kind) ? 22 : 12;
       ctx.fillStyle = pr.color;
-      if (atlasFx && projectileAtlasFrameId(pr.kind)) drawPremiumProjectileTrail(pr);
-      else drawProjectileTrail(pr);
+      if (!premiumProjectileFrame) drawProjectileTrail(pr);
+      else {
+        ctx.globalCompositeOperation = "lighter";
+        drawGlow(pr.r * 0.35, 0, pr.r * 3.1, pr.color, 0.075);
+        ctx.globalCompositeOperation = "source-over";
+      }
       if (pr.kind === "thousandSword") {
         ctx.globalCompositeOperation = "lighter";
         drawGlow(pr.r * 0.8, 0, pr.r * 4.5, pr.color, 0.18);
@@ -5524,6 +5551,12 @@
           chests: state.chests.length,
           runCoins: state.runCoins,
           kills: state.kills,
+          perf: {
+            frames: state.perf.frames,
+            workFrames: state.perf.workFrames,
+            avgWorkMs: state.perf.workFrames ? state.perf.totalWorkMs / state.perf.workFrames : 0,
+            maxWorkMs: state.perf.maxWorkMs
+          },
           player: state.player ? {
             hp: state.player.hp,
             maxHp: state.player.maxHp,
@@ -5536,6 +5569,7 @@
       resetPerf() {
         state.perf = { frames: 0, totalDt: 0, maxDt: 0, workFrames: 0, totalWorkMs: 0, maxWorkMs: 0 };
         state.qa.groundDecalDraws = 0;
+        state.qa.environmentPropDraws = 0;
         updateQaDataset();
         return true;
       }
