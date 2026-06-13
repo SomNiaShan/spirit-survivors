@@ -183,7 +183,7 @@
       updateQaDataset();
       render();
     };
-    groundDecalAtlas.src = "assets/premium-ground-decal-atlas-v1.png";
+    groundDecalAtlas.src = "assets/premium-ground-decal-atlas-v2.png";
   }
 
   const environmentPropAtlas = typeof Image !== "undefined" ? new Image() : null;
