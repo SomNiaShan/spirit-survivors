@@ -96,6 +96,18 @@
     creatureAtlas.src = "assets/creature-atlas-v1.png";
   }
 
+  const premiumCreatureAtlas = typeof Image !== "undefined" ? new Image() : null;
+  if (premiumCreatureAtlas) {
+    premiumCreatureAtlas.decoding = "async";
+    premiumCreatureAtlas.onload = () => {
+      if (!QA_MODE) return;
+      state.qa.visualDone = false;
+      updateQaDataset();
+      render();
+    };
+    premiumCreatureAtlas.src = "assets/premium-creature-atlas-v2.png";
+  }
+
   const itemIconAtlas = typeof Image !== "undefined" ? new Image() : null;
   if (itemIconAtlas) {
     itemIconAtlas.decoding = "async";
@@ -138,6 +150,11 @@
     stone: { x: 443, y: 443, w: 444, h: 444 },
     summoner: { x: 887, y: 443, w: 443, h: 444 },
     boss: { x: 1330, y: 443, w: 444, h: 444 }
+  };
+
+  const premiumCreatureFrames = {
+    eliteDemon: { x: 0, y: 0, w: 512, h: 512 },
+    stoneGolem: { x: 512, y: 0, w: 512, h: 512 }
   };
 
   const itemIconFrames = {
@@ -2410,6 +2427,7 @@
     document.body.dataset.qaPowerups = String(state.powerups.length);
     document.body.dataset.qaAtlasReady = atlasReady() ? "1" : "0";
     document.body.dataset.qaCreatureAtlasReady = creatureAtlasReady() ? "1" : "0";
+    document.body.dataset.qaPremiumCreatureAtlasReady = premiumCreatureAtlasReady() ? "1" : "0";
     document.body.dataset.qaItemAtlasReady = itemIconAtlasReady() ? "1" : "0";
     document.body.dataset.qaArenaReady = arenaBackgroundReady() ? "1" : "0";
     const boss = state.enemies.find((e) => e.boss && e.hp > 0);
@@ -2774,6 +2792,10 @@
     return Boolean(creatureAtlas && creatureAtlas.complete && creatureAtlas.naturalWidth > 0);
   }
 
+  function premiumCreatureAtlasReady() {
+    return Boolean(premiumCreatureAtlas && premiumCreatureAtlas.complete && premiumCreatureAtlas.naturalWidth > 0);
+  }
+
   function itemIconAtlasReady() {
     return Boolean(itemIconAtlas && itemIconAtlas.complete && itemIconAtlas.naturalWidth > 0);
   }
@@ -2816,6 +2838,19 @@
     return true;
   }
 
+  function drawPremiumCreatureSprite(id, x, y, w, h, alpha = 0.9, rotation = 0, flip = 1) {
+    const frame = premiumCreatureFrames[id];
+    if (!frame || !premiumCreatureAtlasReady()) return false;
+    ctx.save();
+    ctx.globalAlpha *= alpha;
+    ctx.translate(x, y);
+    ctx.rotate(rotation);
+    ctx.scale(flip, 1);
+    ctx.drawImage(premiumCreatureAtlas, frame.x, frame.y, frame.w, frame.h, -w / 2, -h / 2, w, h);
+    ctx.restore();
+    return true;
+  }
+
   function playerCreatureSprite(characterId) {
     if (characterId === "sword") return "heroSword";
     if (characterId === "talisman") return "heroTalisman";
@@ -2850,6 +2885,13 @@
     }
   }
 
+  function premiumEnemySprite(e) {
+    if (!premiumCreatureAtlasReady()) return null;
+    if (e.boss) return "stoneGolem";
+    if (e.elite && e.type.id === "eliteBrute") return "eliteDemon";
+    return null;
+  }
+
   function itemIconMarkup(id, item, extraClass = "") {
     const frame = itemIconFrames[id] || itemIconFrames.coins;
     const x = frame[0] * 20;
@@ -2867,7 +2909,36 @@
     return [4.9, 4.9];
   }
 
+  function premiumEnemySpriteScale(id) {
+    if (id === "stoneGolem") return [4.9, 5.85];
+    if (id === "eliteDemon") return [4.05, 5.35];
+    return [4.6, 5.2];
+  }
+
   function spawnDeathSprite(e) {
+    const premiumSprite = premiumEnemySprite(e);
+    if (premiumSprite) {
+      const allowPremium = e.boss || e.elite || (state.enemies.length < 150 && state.particles.length < MAX_PARTICLES - 40 && chance(0.42));
+      if (!allowPremium) return;
+      const scale = premiumEnemySpriteScale(premiumSprite);
+      const max = e.boss ? 0.9 : 0.62;
+      state.particles.push({
+        x: e.x,
+        y: e.y,
+        vx: 0,
+        vy: e.boss ? -18 : -12,
+        life: max,
+        max,
+        r: e.r,
+        w: e.r * scale[0],
+        h: e.r * scale[1],
+        color: e.color,
+        kind: "deathSprite",
+        premiumSprite,
+        rot: rand(-0.06, 0.06)
+      });
+      return;
+    }
     const sprite = enemyCreatureSprite(e);
     if (!sprite || !creatureAtlasReady()) return;
     const allow = e.boss || e.elite || (state.enemies.length < 150 && state.particles.length < MAX_PARTICLES - 40 && chance(0.42));
@@ -3391,17 +3462,24 @@
   function renderEnemies() {
     const t = performance.now() / 1000;
     const swarmMode = state.enemies.length >= SWARM_RENDER_LIMIT;
+    const camX = state.camera.x;
+    const camY = state.camera.y;
+    const halfW = window.innerWidth / 2;
+    const halfH = window.innerHeight / 2;
+    const viewW = window.innerWidth;
+    const viewH = window.innerHeight;
     for (const e of state.enemies) {
-      const s = worldToScreen(e.x, e.y);
-      if (s.x < -120 || s.x > window.innerWidth + 120 || s.y < -120 || s.y > window.innerHeight + 120) continue;
+      const sx = e.x - camX + halfW;
+      const sy = e.y - camY + halfH;
+      if (sx < -120 || sx > viewW + 120 || sy < -120 || sy > viewH + 120) continue;
       const pulse = Math.sin(t * (e.boss ? 2.6 : e.elite ? 3.2 : 4.5) + e.x * 0.01 + e.y * 0.01);
       const detailed = e.boss || e.elite || state.enemies.length <= DETAIL_ENEMY_LIMIT;
       if (swarmMode && !e.boss && !e.elite) {
-        drawSwarmEnemyAt(e, s.x, s.y, t);
+        drawSwarmEnemyAt(e, sx, sy, t);
         continue;
       }
       ctx.save();
-      ctx.translate(s.x, s.y);
+      ctx.translate(sx, sy);
       if (!e.boss && !e.elite && !detailed) {
         drawHordeEnemy(e, t);
         ctx.restore();
@@ -3603,14 +3681,20 @@
     else if (e.elite) drawRunicRing(0, 0, e.r * 1.18, colors.gold, t, 8, 0.26);
     ctx.restore();
 
-    const scale = creatureSpriteScale(creatureId);
+    const premiumSprite = premiumEnemySprite(e);
+    const scale = premiumSprite ? premiumEnemySpriteScale(premiumSprite) : creatureSpriteScale(creatureId);
     const gait = Math.sin(t * (e.boss ? 2.2 : e.elite ? 3.2 : 5.4) + e.x * 0.013 + e.y * 0.011);
     const squash = e.boss ? 0.012 : e.elite ? 0.018 : 0.026;
-    const bob = creatureId === "wolf" ? gait * e.r * 0.04 : -Math.abs(gait) * e.r * 0.052;
+    const bob = premiumSprite ? -Math.abs(gait) * e.r * 0.025 : creatureId === "wolf" ? gait * e.r * 0.04 : -Math.abs(gait) * e.r * 0.052;
     const lean = clamp((e.vx || 0) * 0.00065, -0.08, 0.08);
-    const alpha = e.boss ? 0.92 : e.elite ? 0.86 : 0.8;
+    const alpha = e.flash > 0 ? 0.62 : e.boss ? 0.94 : e.elite ? 0.9 : 0.8;
     const flip = creatureId === "wolf" && state.player && e.x < state.player.x ? -1 : 1;
-    drawCreatureSprite(creatureId, 0, (creatureId === "wolf" ? -e.r * 0.12 : 0) + bob, e.r * scale[0] * (1 + gait * squash), e.r * scale[1] * (1 - gait * squash * 0.72), alpha, lean, flip);
+    if (premiumSprite) {
+      const y = (premiumSprite === "stoneGolem" ? -e.r * 0.4 : -e.r * 0.48) + bob;
+      drawPremiumCreatureSprite(premiumSprite, 0, y, e.r * scale[0] * (1 + gait * squash), e.r * scale[1] * (1 - gait * squash * 0.72), alpha, lean, 1);
+    } else {
+      drawCreatureSprite(creatureId, 0, (creatureId === "wolf" ? -e.r * 0.12 : 0) + bob, e.r * scale[0] * (1 + gait * squash), e.r * scale[1] * (1 - gait * squash * 0.72), alpha, lean, flip);
+    }
 
     if (e.flash > 0) {
       ctx.save();
@@ -4452,7 +4536,11 @@
         const fade = 1 - alpha;
         const scale = 1 + fade * 0.32;
         ctx.globalCompositeOperation = "source-over";
-        drawCreatureSprite(p.sprite, s.x, s.y - fade * p.r * 0.72, p.w * scale, p.h * scale, alpha * 0.62, (p.rot || 0) + fade * 0.08, p.flip || 1);
+        if (p.premiumSprite) {
+          drawPremiumCreatureSprite(p.premiumSprite, s.x, s.y - fade * p.r * 0.82, p.w * scale, p.h * scale, alpha * 0.68, (p.rot || 0) + fade * 0.06, 1);
+        } else {
+          drawCreatureSprite(p.sprite, s.x, s.y - fade * p.r * 0.72, p.w * scale, p.h * scale, alpha * 0.62, (p.rot || 0) + fade * 0.08, p.flip || 1);
+        }
         ctx.globalCompositeOperation = "lighter";
         drawGlow(s.x, s.y, p.r * (2.2 + fade * 1.4), p.color, 0.12 * alpha);
       } else if (p.kind === "streak") {
@@ -4740,6 +4828,15 @@
       state.elapsed = RUN_DURATION - 59;
       state.bossSpawned = true;
       spawnEnemy(true, bossType);
+      const boss = state.enemies.find((e) => e.boss);
+      if (boss) {
+        boss.x = state.player.x + 230;
+        boss.y = state.player.y - 20;
+        boss.hp = 900000;
+        boss.maxHp = 900000;
+        boss.speed *= 0.35;
+        boss.damage = 0;
+      }
       updateHud();
       updateQaDataset();
       return;
