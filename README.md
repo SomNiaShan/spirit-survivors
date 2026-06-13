@@ -30,6 +30,7 @@ python -m http.server 4173
 - 本地存档和永久升级
 - 原创菜单背景图和程序化战斗视觉
 - 高品质视觉方向稿 `assets/concept-visual-target.png`
+- 战斗资源方向图 `assets/combat-asset-reference-v1.png`
 - 程序化音效、氛围音和静音开关
 - 成就系统和角色解锁
 - 回血、吸附、清屏三类场上道具
@@ -40,7 +41,7 @@ python -m http.server 4173
 
 ## 美术方向
 
-当前目标是暗黑修仙题材的高可读 2.5D 幸存者画面：深色战场、强轮廓怪潮、中心法阵、粗亮弹道、清晰颜色分区和大面积技能领域。`assets/concept-visual-target.png` 是本轮生成的原创方向稿，用于后续把角色、怪物和技能逐步资产化。
+当前目标是暗黑修仙题材的高可读 2.5D 幸存者画面：深色战场、强轮廓怪潮、中心法阵、粗亮弹道、清晰颜色分区和大面积技能领域。`assets/concept-visual-target.png` 是整体氛围方向稿，`assets/combat-asset-reference-v1.png` 是战斗资源方向图，用于继续把角色、怪物和技能逐步资产化。
 
 ## 成就与解锁
 
