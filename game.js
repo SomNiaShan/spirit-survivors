@@ -49,6 +49,10 @@
   const TAU = Math.PI * 2;
   const RUN_DURATION = 15 * 60;
   const MAX_ENEMIES = 520;
+  const ENEMY_GRID_CELL = 192;
+  const MAX_PARTICLES = 720;
+  const MAX_GEMS = 720;
+  const MAX_COINS = 420;
   const QA_MODE = new URLSearchParams(window.location.search).has("qa");
   const STORAGE_KEY = QA_MODE ? "spirit-survivors-save-qa-v1" : "spirit-survivors-save-v2";
 
@@ -415,6 +419,7 @@
     pausedReason: null,
     player: null,
     enemies: [],
+    enemyGrid: new Map(),
     projectiles: [],
     enemyProjectiles: [],
     gems: [],
@@ -866,6 +871,7 @@
   function resetWorld() {
     state.elapsed = 0;
     state.enemies = [];
+    state.enemyGrid.clear();
     state.projectiles = [];
     state.enemyProjectiles = [];
     state.gems = [];
@@ -1327,25 +1333,36 @@
   function nearestEnemy(range = Infinity, from = state.player, exclude = null) {
     let best = null;
     let bestD = range * range;
-    for (const e of state.enemies) {
-      if (e === exclude || e.hp <= 0) continue;
+    const visit = (e) => {
+      if (e === exclude || e.hp <= 0) return;
       const d = dist2(from, e);
       if (d < bestD) {
         bestD = d;
         best = e;
       }
+    };
+    if (Number.isFinite(range) && state.enemyGrid.size) {
+      forEnemiesNear(from.x, from.y, range + 96, visit);
+    } else {
+      for (const e of state.enemies) visit(e);
     }
     return best;
   }
 
   function randomEnemyOnScreen() {
-    const visible = state.enemies.filter((e) => {
+    let picked = null;
+    let count = 0;
+    const range = Math.hypot(window.innerWidth, window.innerHeight) * 0.62 + 180;
+    const visit = (e) => {
       const sx = e.x - state.camera.x + window.innerWidth / 2;
       const sy = e.y - state.camera.y + window.innerHeight / 2;
-      return sx > -120 && sx < window.innerWidth + 120 && sy > -120 && sy < window.innerHeight + 120;
-    });
-    if (!visible.length) return nearestEnemy();
-    return visible[Math.floor(rand(0, visible.length))];
+      if (sx <= -120 || sx >= window.innerWidth + 120 || sy <= -120 || sy >= window.innerHeight + 120) return;
+      count += 1;
+      if (Math.random() < 1 / count) picked = e;
+    };
+    if (state.enemyGrid.size) forEnemiesNear(state.camera.x, state.camera.y, range, visit);
+    else for (const e of state.enemies) if (e.hp > 0) visit(e);
+    return picked || nearestEnemy();
   }
 
   function weaponTimer(id, cooldown, dt) {
@@ -1585,9 +1602,9 @@
       const a = t * speed + (TAU / count) * i;
       const bx = p.x + Math.cos(a) * radius;
       const by = p.y + Math.sin(a) * radius;
-      for (const e of state.enemies) {
-        if (e.hp <= 0) continue;
-        if ((e.hit[evolved ? "moonWheel" : "spinningBlade"] || 0) > 0) continue;
+      forEnemiesNear(bx, by, bladeR + 64, (e) => {
+        if (e.hp <= 0) return;
+        if ((e.hit[evolved ? "moonWheel" : "spinningBlade"] || 0) > 0) return;
         const rr = e.r + bladeR;
         const dx = e.x - bx;
         const dy = e.y - by;
@@ -1595,7 +1612,7 @@
           damageEnemy(e, damage, evolved ? weapons.moonWheel.color : weapons.spinningBlade.color);
           e.hit[evolved ? "moonWheel" : "spinningBlade"] = evolved ? 0.18 : 0.32;
         }
-      }
+      });
       state.particles.push({ x: bx, y: by, vx: 0, vy: 0, life: 0.08, max: 0.08, r: bladeR, color: evolved ? weapons.moonWheel.color : weapons.spinningBlade.color, kind: evolved ? "moonBlade" : "blade" });
     }
   }
@@ -1694,8 +1711,8 @@
       }
       pr.x += pr.vx * dt;
       pr.y += pr.vy * dt;
-      for (const e of state.enemies) {
-        if (e.hp <= 0 || pr.pierce <= 0) continue;
+      forEnemiesNear(pr.x, pr.y, pr.r + 96, (e) => {
+        if (e.hp <= 0 || pr.pierce <= 0) return;
         const rr = e.r + pr.r;
         const dx = e.x - pr.x;
         const dy = e.y - pr.y;
@@ -1715,7 +1732,7 @@
           }
           pr.pierce -= 1;
         }
-      }
+      });
       if (pr.life <= 0 || pr.pierce <= 0) {
         if ((pr.kind === "fire" || pr.kind === "fireSea") && pr.area) {
           addArea(pr.x, pr.y, {
@@ -1755,15 +1772,15 @@
       if (area.tickLeft <= 0) {
         area.tickLeft = area.tick;
         const r2 = area.r * area.r;
-        for (const e of state.enemies) {
-          if (e.hp <= 0) continue;
+        forEnemiesNear(area.x, area.y, area.r + 96, (e) => {
+          if (e.hp <= 0) return;
           const dx = e.x - area.x;
           const dy = e.y - area.y;
           if (dx * dx + dy * dy <= r2) {
             damageEnemy(e, area.damage, area.color, false);
             if (area.slow) e.slow = Math.max(e.slow, area.slow);
           }
-        }
+        });
       }
       if (area.life <= 0) state.areas.splice(i, 1);
     }
@@ -1858,7 +1875,7 @@
     if (text && chance(0.22)) {
       floatingText(e.x, e.y - e.r, Math.ceil(amount).toString(), color, 12);
     }
-    if (state.particles.length < 900 && chance(text ? 0.28 : 0.08)) {
+    if (state.particles.length < MAX_PARTICLES && chance(text ? 0.28 : 0.08)) {
       state.particles.push({
         x: e.x + rand(-e.r * 0.4, e.r * 0.4),
         y: e.y + rand(-e.r * 0.4, e.r * 0.4),
@@ -1877,20 +1894,33 @@
     state.kills += 1;
     const xpValue = Math.max(1, Math.round(e.xp * (e.elite ? 1.4 : 1)));
     const gemCount = e.elite ? 5 : chance(0.12) ? 2 : 1;
-    for (let i = 0; i < gemCount; i++) {
-      state.gems.push({
-        x: e.x + rand(-10, 10),
-        y: e.y + rand(-10, 10),
-        value: Math.max(1, Math.round(xpValue / gemCount)),
-        r: e.elite ? 7 : 5,
-        color: e.elite ? colors.gold : colors.blue,
-        vx: rand(-24, 24),
-        vy: rand(-24, 24)
-      });
+    if (state.gems.length >= MAX_GEMS && state.gems.length) {
+      const g = state.gems[Math.floor(rand(0, state.gems.length))];
+      g.value += xpValue;
+      g.r = Math.min(11, g.r + 0.2);
+      g.color = colors.gold;
+    } else {
+      for (let i = 0; i < gemCount; i++) {
+        state.gems.push({
+          x: e.x + rand(-10, 10),
+          y: e.y + rand(-10, 10),
+          value: Math.max(1, Math.round(xpValue / gemCount)),
+          r: e.elite ? 7 : 5,
+          color: e.elite ? colors.gold : colors.blue,
+          vx: rand(-24, 24),
+          vy: rand(-24, 24)
+        });
+      }
     }
     if (chance(e.elite ? 0.9 : 0.08)) {
       const coinValue = e.elite ? 15 : 1 + Math.floor(rand(0, 3));
-      state.coins.push({ x: e.x, y: e.y, value: coinValue, r: e.elite ? 8 : 5, vx: rand(-30, 30), vy: rand(-30, 30) });
+      if (state.coins.length >= MAX_COINS && state.coins.length) {
+        const c = state.coins[Math.floor(rand(0, state.coins.length))];
+        c.value += coinValue;
+        c.r = Math.min(10, c.r + 0.15);
+      } else {
+        state.coins.push({ x: e.x, y: e.y, value: coinValue, r: e.elite ? 8 : 5, vx: rand(-30, 30), vy: rand(-30, 30) });
+      }
     }
     maybeDropPowerup(e);
     if (e.elite) {
@@ -2052,15 +2082,16 @@
     }
     if (type === "bomb") {
       let hit = 0;
-      for (const e of state.enemies) {
+      const scanR = Math.max(window.innerWidth, window.innerHeight) * 0.82 + 220;
+      forEnemiesNear(p.x, p.y, scanR, (e) => {
         const s = worldToScreen(e.x, e.y);
         const onScreen = s.x > -160 && s.x < window.innerWidth + 160 && s.y > -160 && s.y < window.innerHeight + 160;
-        if (!onScreen) continue;
+        if (!onScreen) return;
         const damage = e.boss ? 1200 : e.elite ? 900 : e.maxHp * 1.4;
         damageEnemy(e, damage, info.color, false);
         e.slow = Math.max(e.slow, 0.5);
         hit += 1;
-      }
+      });
       addArea(p.x, p.y, {
         r: Math.max(window.innerWidth, window.innerHeight) * 0.55,
         life: 0.42,
@@ -2123,6 +2154,9 @@
       p.vx *= 0.92;
       p.vy *= 0.92;
       if (p.life <= 0) state.particles.splice(i, 1);
+    }
+    if (state.particles.length > MAX_PARTICLES) {
+      state.particles.splice(0, state.particles.length - MAX_PARTICLES);
     }
     state.shake = Math.max(0, state.shake - dt * 28);
     if (state.player) {
@@ -2234,6 +2268,7 @@
     document.body.dataset.qaBossDefeated = state.bossDefeated ? "1" : "0";
     document.body.dataset.qaBossAlive = state.enemies.some((e) => e.boss && e.hp > 0) ? "1" : "0";
     document.body.dataset.qaEnemies = String(state.enemies.length);
+    document.body.dataset.qaGridCells = String(state.enemyGrid.size);
     document.body.dataset.qaProjectiles = String(state.projectiles.length);
     document.body.dataset.qaEnemyProjectiles = String(state.enemyProjectiles.length);
     document.body.dataset.qaAreas = String(state.areas.length);
@@ -2328,6 +2363,7 @@
     updateSpawn(dt);
     updateQaAutoInput(dt);
     updateInput(dt);
+    rebuildEnemyGrid();
     updateWeapons(dt);
     updateProjectiles(dt);
     updateAreas(dt);
@@ -2407,6 +2443,48 @@
       x: x + state.camera.x - window.innerWidth / 2,
       y: y + state.camera.y - window.innerHeight / 2
     };
+  }
+
+  function enemyGridKey(cx, cy) {
+    return `${cx},${cy}`;
+  }
+
+  function rebuildEnemyGrid() {
+    state.enemyGrid.clear();
+    for (const e of state.enemies) {
+      if (e.hp <= 0) continue;
+      const cx = Math.floor(e.x / ENEMY_GRID_CELL);
+      const cy = Math.floor(e.y / ENEMY_GRID_CELL);
+      const key = enemyGridKey(cx, cy);
+      let bucket = state.enemyGrid.get(key);
+      if (!bucket) {
+        bucket = [];
+        state.enemyGrid.set(key, bucket);
+      }
+      bucket.push(e);
+    }
+  }
+
+  function forEnemiesNear(x, y, radius, fn) {
+    if (!state.enemyGrid.size) {
+      for (const e of state.enemies) {
+        if (e.hp > 0) fn(e);
+      }
+      return;
+    }
+    const minX = Math.floor((x - radius) / ENEMY_GRID_CELL);
+    const maxX = Math.floor((x + radius) / ENEMY_GRID_CELL);
+    const minY = Math.floor((y - radius) / ENEMY_GRID_CELL);
+    const maxY = Math.floor((y + radius) / ENEMY_GRID_CELL);
+    for (let cx = minX; cx <= maxX; cx++) {
+      for (let cy = minY; cy <= maxY; cy++) {
+        const bucket = state.enemyGrid.get(enemyGridKey(cx, cy));
+        if (!bucket) continue;
+        for (const e of bucket) {
+          if (e.hp > 0) fn(e);
+        }
+      }
+    }
   }
 
   function render() {
@@ -3685,7 +3763,7 @@
     const mode = params.get("qa");
     if (!mode) return;
     state.qa.mode = mode;
-    state.qa.autoChoices = mode === "soak" || mode === "powerups" || mode === "evolution";
+    state.qa.autoChoices = mode === "soak" || mode === "powerups" || mode === "evolution" || mode === "stress";
     state.qa.autoMove = mode === "soak";
     state.qa.timeScale = mode === "soak" ? clamp(Number(params.get("speed")) || 40, 1, 80) : 1;
     state.qa.maxSteps = mode === "soak" ? clamp(Math.ceil(state.qa.timeScale), 1, 80) : 1;
@@ -3717,6 +3795,7 @@
       const p = state.player;
       p.hp = Math.max(1, Math.floor(p.maxHp * 0.45));
       state.enemies = [];
+      state.enemyGrid.clear();
       for (let i = 0; i < 10; i++) {
         spawnEnemy(false);
         const e = state.enemies[state.enemies.length - 1];
@@ -3729,6 +3808,7 @@
       state.gems.push({ x: p.x + 210, y: p.y, value: 24, r: 6, color: colors.blue, vx: 0, vy: 0 });
       state.coins.push({ x: p.x + 230, y: p.y + 12, value: 11, r: 6, vx: 0, vy: 0 });
       state.powerups.push({ x: p.x, y: p.y, type: "bomb", r: 12, vx: 0, vy: 0, pulse: 0 });
+      rebuildEnemyGrid();
       updatePickups(1 / 30);
       updateEnemies(0);
       state.powerups = [];
@@ -3760,6 +3840,37 @@
       state.qa.syncMs = Date.now() - started;
       for (let i = 0; i < 52; i++) spawnEnemy(false);
       updateHud();
+      render();
+      return;
+    }
+    if (mode === "stress") {
+      grantQaEvolvedBuild();
+      state.elapsed = RUN_DURATION - 190;
+      state.enemies = [];
+      state.enemyGrid.clear();
+      const p = state.player;
+      p.maxHp = 9999;
+      p.hp = p.maxHp;
+      for (let i = 0; i < 460; i++) {
+        spawnEnemy(i % 55 === 0);
+        const e = state.enemies[state.enemies.length - 1];
+        if (!e) continue;
+        const a = (i * 2.399963) % TAU;
+        const band = 170 + (i % 12) * 48;
+        e.x = p.x + Math.cos(a) * band + rand(-24, 24);
+        e.y = p.y + Math.sin(a) * band * 0.78 + rand(-24, 24);
+        e.hp *= 280;
+        e.maxHp *= 280;
+        e.speed *= 0.42;
+        e.damage = 0;
+      }
+      const started = Date.now();
+      state.qa.syncRunning = true;
+      for (let i = 0; i < 240 && state.screen === "playing"; i++) update(1 / 30);
+      state.qa.syncRunning = false;
+      state.qa.syncMs = Date.now() - started;
+      updateHud();
+      updateQaDataset();
       render();
       return;
     }

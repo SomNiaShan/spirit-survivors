@@ -233,9 +233,10 @@ canvas {
   place-items: center;
   padding: 22px;
   background:
-    linear-gradient(90deg, rgba(5, 8, 10, 0.82), rgba(8, 12, 14, 0.4), rgba(5, 8, 10, 0.78)),
-    linear-gradient(180deg, rgba(5, 8, 10, 0.35), rgba(5, 8, 10, 0.86)),
-    url("assets/menu-bg.png") center / cover no-repeat,
+    radial-gradient(circle at 52% 54%, rgba(124, 215, 175, 0.18), rgba(5, 8, 10, 0.08) 34%, rgba(5, 8, 10, 0.78) 76%),
+    linear-gradient(90deg, rgba(5, 8, 10, 0.9), rgba(8, 12, 14, 0.38), rgba(5, 8, 10, 0.86)),
+    linear-gradient(180deg, rgba(5, 8, 10, 0.16), rgba(5, 8, 10, 0.9)),
+    url("assets/concept-visual-target.png") center / cover no-repeat,
     rgba(8, 10, 12, 0.68);
   backdrop-filter: blur(2px);
 }
