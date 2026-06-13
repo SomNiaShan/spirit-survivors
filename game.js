@@ -104,6 +104,18 @@
     itemIconAtlas.src = "assets/item-icon-atlas-v1.png";
   }
 
+  const arenaBackground = typeof Image !== "undefined" ? new Image() : null;
+  if (arenaBackground) {
+    arenaBackground.decoding = "async";
+    arenaBackground.onload = () => {
+      if (!QA_MODE) return;
+      state.qa.visualDone = false;
+      updateQaDataset();
+      render();
+    };
+    arenaBackground.src = "assets/arena-bg-v1.png";
+  }
+
   const atlasFrames = {
     swordFan: { x: 0, y: 620, w: 335, h: 300 },
     talismanWheel: { x: 320, y: 625, w: 270, h: 292 },
@@ -1956,7 +1968,8 @@
   function damageEnemy(e, amount, color, text = true) {
     e.hp -= amount;
     e.flash = 1;
-    if (text && chance(0.22)) {
+    const textChance = state.enemies.length > DETAIL_ENEMY_LIMIT ? 0.08 : 0.22;
+    if (text && chance(textChance)) {
       floatingText(e.x, e.y - e.r, Math.ceil(amount).toString(), color, 12);
     }
     if (state.particles.length < MAX_PARTICLES - 8 && allowHighFx() && chance(text ? 0.36 : 0.09)) {
@@ -2389,6 +2402,7 @@
     document.body.dataset.qaAtlasReady = atlasReady() ? "1" : "0";
     document.body.dataset.qaCreatureAtlasReady = creatureAtlasReady() ? "1" : "0";
     document.body.dataset.qaItemAtlasReady = itemIconAtlasReady() ? "1" : "0";
+    document.body.dataset.qaArenaReady = arenaBackgroundReady() ? "1" : "0";
     const boss = state.enemies.find((e) => e.boss && e.hp > 0);
     document.body.dataset.qaBossHp = boss ? String(Math.ceil(boss.hp)) : "0";
     document.body.dataset.qaKills = String(state.kills);
@@ -2638,6 +2652,43 @@
     }
   }
 
+  function renderArenaTexture(camX, camY, w, h) {
+    if (!arenaBackgroundReady()) return;
+    const tileW = arenaBackground.naturalWidth * 1.08;
+    const tileH = arenaBackground.naturalHeight * 1.08;
+    const left = camX - w / 2;
+    const top = camY - h / 2;
+    const originX = -tileW / 2;
+    const originY = -tileH / 2;
+    const startX = Math.floor((left - originX) / tileW) * tileW + originX;
+    const startY = Math.floor((top - originY) / tileH) * tileH + originY;
+    ctx.save();
+    ctx.globalAlpha = 0.78;
+    for (let x = startX; x < left + w + tileW; x += tileW) {
+      for (let y = startY; y < top + h + tileH; y += tileH) {
+        const tileX = Math.round(x / tileW);
+        const tileY = Math.round(y / tileH);
+        const flipX = Math.abs(tileX) % 2 === 1;
+        const flipY = Math.abs(tileY) % 2 === 1;
+        const sx = Math.round(x - camX + w / 2);
+        const sy = Math.round(y - camY + h / 2);
+        ctx.save();
+        ctx.translate(sx + (flipX ? tileW : 0), sy + (flipY ? tileH : 0));
+        ctx.scale(flipX ? -1 : 1, flipY ? -1 : 1);
+        ctx.drawImage(arenaBackground, 0, 0, tileW, tileH);
+        ctx.restore();
+      }
+    }
+    ctx.globalAlpha = 1;
+    const shade = ctx.createRadialGradient(w * 0.5, h * 0.45, Math.min(w, h) * 0.12, w * 0.5, h * 0.5, Math.max(w, h) * 0.72);
+    shade.addColorStop(0, "rgba(0, 0, 0, 0.08)");
+    shade.addColorStop(0.62, "rgba(0, 0, 0, 0.18)");
+    shade.addColorStop(1, "rgba(0, 0, 0, 0.48)");
+    ctx.fillStyle = shade;
+    ctx.fillRect(0, 0, w, h);
+    ctx.restore();
+  }
+
   function colorAlpha(color, alpha) {
     if (!color || color[0] !== "#") return color || `rgba(255,255,255,${alpha})`;
     const hex = color.slice(1);
@@ -2716,6 +2767,10 @@
 
   function itemIconAtlasReady() {
     return Boolean(itemIconAtlas && itemIconAtlas.complete && itemIconAtlas.naturalWidth > 0);
+  }
+
+  function arenaBackgroundReady() {
+    return Boolean(arenaBackground && arenaBackground.complete && arenaBackground.naturalWidth > 0);
   }
 
   function allowAtlasFx() {
@@ -2981,12 +3036,14 @@
     const h = window.innerHeight;
     const now = performance.now();
     const t = now / 1000;
+    const texturedArena = arenaBackgroundReady();
     const bg = ctx.createLinearGradient(0, 0, w, h);
     bg.addColorStop(0, "#101722");
     bg.addColorStop(0.45, "#161c1c");
     bg.addColorStop(1, "#090b12");
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, w, h);
+    renderArenaTexture(camX, camY, w, h);
 
     const moon = ctx.createRadialGradient(w * 0.18, h * 0.08, 10, w * 0.18, h * 0.08, Math.max(w, h) * 0.72);
     moon.addColorStop(0, "rgba(124, 215, 175, 0.22)");
@@ -3012,12 +3069,12 @@
         const sx = Math.round(x - camX + w / 2);
         const sy = Math.round(y - camY + h / 2);
         const hsh = hash2(Math.floor(x / tile), Math.floor(y / tile));
-        ctx.fillStyle = hsh > 0.52 ? "rgba(255, 255, 255, 0.01)" : "rgba(0, 0, 0, 0.018)";
+        ctx.fillStyle = hsh > 0.52 ? `rgba(255, 255, 255, ${texturedArena ? 0.004 : 0.01})` : `rgba(0, 0, 0, ${texturedArena ? 0.007 : 0.018})`;
         ctx.fillRect(sx + 1, sy + 1, tile - 2, tile - 2);
-        ctx.strokeStyle = hsh > 0.65 ? "rgba(241, 198, 106, 0.028)" : "rgba(242, 234, 215, 0.024)";
+        ctx.strokeStyle = hsh > 0.65 ? `rgba(241, 198, 106, ${texturedArena ? 0.01 : 0.028})` : `rgba(242, 234, 215, ${texturedArena ? 0.008 : 0.024})`;
         ctx.strokeRect(sx + 0.5, sy + 0.5, tile, tile);
         if (hsh > 0.72) {
-          ctx.strokeStyle = "rgba(242, 234, 215, 0.05)";
+          ctx.strokeStyle = `rgba(242, 234, 215, ${texturedArena ? 0.016 : 0.05})`;
           ctx.beginPath();
           ctx.moveTo(sx + tile * 0.18, sy + tile * (0.25 + hsh * 0.2));
           ctx.lineTo(sx + tile * 0.52, sy + tile * (0.42 + hsh * 0.12));
@@ -3027,7 +3084,7 @@
         if (hsh > 0.88) {
           ctx.save();
           ctx.globalCompositeOperation = "lighter";
-          ctx.strokeStyle = "rgba(124, 215, 175, 0.10)";
+          ctx.strokeStyle = `rgba(124, 215, 175, ${texturedArena ? 0.035 : 0.10})`;
           ctx.lineWidth = 1;
           ctx.beginPath();
           ctx.arc(sx + tile * 0.5, sy + tile * 0.5, tile * (0.12 + hsh * 0.08), 0, TAU);
@@ -3316,6 +3373,11 @@
       const detailed = e.boss || e.elite || state.enemies.length <= DETAIL_ENEMY_LIMIT;
       ctx.save();
       ctx.translate(s.x, s.y);
+      if (!e.boss && !e.elite && !detailed) {
+        drawHordeEnemy(e, t);
+        ctx.restore();
+        continue;
+      }
       ctx.fillStyle = e.boss ? "rgba(0, 0, 0, 0.46)" : "rgba(0, 0, 0, 0.32)";
       ctx.beginPath();
       ctx.ellipse(0, e.r * 0.84, e.r * 1.08, e.r * 0.36, 0, 0, TAU);
@@ -3460,6 +3522,92 @@
       }
       ctx.restore();
     }
+  }
+
+  function drawHordeEnemy(e, t) {
+    const r = e.r;
+    const pulse = 1 + Math.sin(t * 5 + e.x * 0.017 + e.y * 0.013) * 0.035;
+    const lean = clamp((e.vx || 0) * 0.00055, -0.1, 0.1);
+    ctx.fillStyle = "rgba(0, 0, 0, 0.34)";
+    ctx.beginPath();
+    ctx.ellipse(0, r * 0.86, r * 1.04, r * 0.34, 0, 0, TAU);
+    ctx.fill();
+    ctx.save();
+    ctx.rotate(lean);
+    ctx.scale(pulse, 1 / pulse);
+    ctx.globalAlpha = 0.84;
+    ctx.fillStyle = e.color;
+    ctx.strokeStyle = e.flash > 0 ? "rgba(255, 244, 190, 0.84)" : "rgba(7, 9, 12, 0.72)";
+    ctx.lineWidth = e.flash > 0 ? 2.2 : 1.5;
+    switch (e.type.id) {
+      case "wolf":
+      case "runner":
+        ctx.beginPath();
+        ctx.moveTo(-r * 0.92, r * 0.12);
+        ctx.quadraticCurveTo(-r * 0.42, -r * 0.76, r * 0.54, -r * 0.48);
+        ctx.lineTo(r * 0.98, -r * 0.06);
+        ctx.quadraticCurveTo(r * 0.42, r * 0.72, -r * 0.72, r * 0.52);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        break;
+      case "wisp":
+        ctx.globalAlpha = e.flash > 0 ? 0.98 : 0.72;
+        ctx.beginPath();
+        ctx.moveTo(0, -r * 1.1);
+        ctx.bezierCurveTo(r * 0.92, -r * 0.42, r * 0.72, r * 0.84, 0, r);
+        ctx.bezierCurveTo(-r * 0.72, r * 0.84, -r * 0.92, -r * 0.42, 0, -r * 1.1);
+        ctx.fill();
+        break;
+      case "stone":
+      case "brute":
+        ctx.beginPath();
+        ctx.moveTo(0, -r);
+        ctx.lineTo(r * 0.92, -r * 0.18);
+        ctx.lineTo(r * 0.6, r * 0.88);
+        ctx.lineTo(-r * 0.62, r * 0.82);
+        ctx.lineTo(-r * 0.94, -r * 0.16);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        break;
+      case "bug":
+        ctx.beginPath();
+        ctx.ellipse(0, 0, r * 0.72, r, 0, 0, TAU);
+        ctx.fill();
+        ctx.stroke();
+        ctx.strokeStyle = "rgba(242, 234, 215, 0.20)";
+        ctx.beginPath();
+        ctx.moveTo(-r * 0.9, -r * 0.15);
+        ctx.lineTo(r * 0.9, -r * 0.15);
+        ctx.moveTo(-r * 0.78, r * 0.24);
+        ctx.lineTo(r * 0.78, r * 0.24);
+        ctx.stroke();
+        break;
+      default:
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, TAU);
+        ctx.fill();
+        ctx.stroke();
+        break;
+    }
+    ctx.globalAlpha = 1;
+    if (e.flash > 0) {
+      ctx.globalCompositeOperation = "lighter";
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.34)";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 0.92, 0, TAU);
+      ctx.stroke();
+      ctx.globalCompositeOperation = "source-over";
+    }
+    ctx.fillStyle = "rgba(255, 232, 164, 0.78)";
+    const eye = Math.max(1.8, r * 0.14);
+    ctx.beginPath();
+    ctx.arc(-r * 0.3, -r * 0.12, eye, 0, TAU);
+    ctx.arc(r * 0.3, -r * 0.12, eye, 0, TAU);
+    ctx.fill();
+    ctx.restore();
   }
 
   function drawEnemySilhouette(e, detailed = true) {
