@@ -2219,11 +2219,12 @@
     e.hp -= amount;
     e.flash = 1;
     const premiumTarget = hasPremiumEnemyArt(e);
+    const suppressLegacyFx = suppressLegacyEnemyFx(e);
     const textChance = state.enemies.length >= SWARM_RENDER_LIMIT ? 0.025 : state.enemies.length > DETAIL_ENEMY_LIMIT ? 0.08 : 0.22;
     if (text && chance(textChance)) {
       floatingText(e.x, e.y - e.r, Math.ceil(amount).toString(), color, 12);
     }
-    if (premiumTarget && hitAtlasReady() && hasParticleRoom(14)) {
+    if (premiumTarget && !suppressLegacyFx && hitAtlasReady() && hasParticleRoom(14)) {
       const dense = state.enemies.length >= SWARM_RENDER_LIMIT;
       const hitChance = e.boss ? 0.72 : e.elite ? 0.46 : dense ? 0.035 : state.enemies.length > DETAIL_ENEMY_LIMIT ? 0.08 : 0.18;
       if (chance(text ? hitChance : hitChance * 0.45)) {
@@ -2244,7 +2245,7 @@
         });
       }
     }
-    if (!premiumTarget && hasParticleRoom(8) && allowHighFx() && chance(text ? 0.36 : 0.09)) {
+    if (!premiumTarget && !suppressLegacyFx && hasParticleRoom(8) && allowHighFx() && chance(text ? 0.36 : 0.09)) {
       const from = state.player || { x: e.x - 1, y: e.y };
       const angle = Math.atan2(e.y - from.y, e.x - from.x) + rand(-0.42, 0.42);
       state.particles.push({
@@ -2260,7 +2261,7 @@
         angle
       });
     }
-    if (!premiumTarget && hasParticleRoom() && chance(text ? 0.28 : 0.08)) {
+    if (!premiumTarget && !suppressLegacyFx && hasParticleRoom() && chance(text ? 0.28 : 0.08)) {
       state.particles.push({
         x: e.x + rand(-e.r * 0.4, e.r * 0.4),
         y: e.y + rand(-e.r * 0.4, e.r * 0.4),
@@ -2322,8 +2323,9 @@
       state.shake = Math.max(state.shake, 20);
     }
     const premiumDeath = hasPremiumEnemyArt(e);
+    const suppressLegacyFx = suppressLegacyEnemyFx(e);
     spawnDeathSprite(e);
-    if (hitAtlasReady() && hasParticleRoom(6) && (premiumDeath || e.elite || e.boss || state.enemies.length < DETAIL_ENEMY_LIMIT)) {
+    if (!suppressLegacyFx && hitAtlasReady() && hasParticleRoom(6) && (premiumDeath || e.elite || e.boss || state.enemies.length < DETAIL_ENEMY_LIMIT)) {
       state.particles.push({
         x: e.x,
         y: e.y,
@@ -2338,10 +2340,12 @@
         angle: rand(-0.16, 0.16)
       });
     }
-    if (premiumDeath) {
-      burst(e.x, e.y, e.color, e.elite ? 10 : 3, e.elite ? 130 : 72, { impact: false, minR: 1.4, maxR: 3.2, life: 0.42 });
-    } else {
-      burst(e.x, e.y, e.color, e.elite ? 20 : 7, e.elite ? 160 : 90);
+    if (!suppressLegacyFx) {
+      if (premiumDeath) {
+        burst(e.x, e.y, e.color, e.elite ? 10 : 3, e.elite ? 130 : 72, { impact: false, minR: 1.4, maxR: 3.2, life: 0.42 });
+      } else {
+        burst(e.x, e.y, e.color, e.elite ? 20 : 7, e.elite ? 160 : 90);
+      }
     }
   }
 
@@ -2689,14 +2693,26 @@
     let deathSprites = 0;
     let slashParticles = 0;
     let impactParticles = 0;
+    let premiumHitParticles = 0;
+    let premiumDeathParticles = 0;
+    let sparkParticles = 0;
+    let streakParticles = 0;
     for (const particle of state.particles) {
       if (particle.kind === "deathSprite") deathSprites += 1;
       else if (particle.kind === "slash") slashParticles += 1;
       else if (particle.kind === "impact") impactParticles += 1;
+      else if (particle.kind === "premiumHit") premiumHitParticles += 1;
+      else if (particle.kind === "premiumDeath") premiumDeathParticles += 1;
+      else if (particle.kind === "spark") sparkParticles += 1;
+      else if (particle.kind === "streak") streakParticles += 1;
     }
     document.body.dataset.qaDeathSprites = String(deathSprites);
     document.body.dataset.qaSlashParticles = String(slashParticles);
     document.body.dataset.qaImpactParticles = String(impactParticles);
+    document.body.dataset.qaPremiumHitParticles = String(premiumHitParticles);
+    document.body.dataset.qaPremiumDeathParticles = String(premiumDeathParticles);
+    document.body.dataset.qaSparkParticles = String(sparkParticles);
+    document.body.dataset.qaStreakParticles = String(streakParticles);
     document.body.dataset.qaGems = String(state.gems.length);
     document.body.dataset.qaCoins = String(state.coins.length);
     document.body.dataset.qaChests = String(state.chests.length);
@@ -3095,7 +3111,7 @@
   function fxParticleRenderBudget() {
     const compact = Math.min(window.innerWidth, window.innerHeight) < 560;
     if (state.enemies.length >= SWARM_RENDER_LIMIT) return compact ? 110 : 135;
-    if (state.enemies.length > DETAIL_ENEMY_LIMIT) return compact ? 140 : 220;
+    if (state.enemies.length > DETAIL_ENEMY_LIMIT) return compact ? 110 : 165;
     if (state.enemies.length > 180) return compact ? 170 : 260;
     return compact ? 240 : 420;
   }
@@ -3103,7 +3119,7 @@
   function hordeSpriteRenderBudget() {
     const compact = Math.min(window.innerWidth, window.innerHeight) < 560;
     if (state.enemies.length >= SWARM_RENDER_LIMIT) return compact ? 210 : 350;
-    if (state.enemies.length > DETAIL_ENEMY_LIMIT) return compact ? 300 : 460;
+    if (state.enemies.length > DETAIL_ENEMY_LIMIT) return compact ? 220 : 420;
     return Infinity;
   }
 
@@ -3488,6 +3504,14 @@
       default:
         return null;
     }
+  }
+
+  function suppressLegacyEnemyFx(e) {
+    return Boolean(premiumEnemySprite(e) || premiumHordeSprite(e) || premiumMinionSprite(e));
+  }
+
+  function recordLegacyEnemyFallback(e) {
+    if (QA_MODE && suppressLegacyEnemyFx(e)) state.qa.legacyVectorOverlays += 1;
   }
 
   function hasPremiumEnemyArt(e) {
@@ -4366,7 +4390,10 @@
           if (drawSwarmImpostorEnemyAt(e, sx, sy, t, premiumMinionId)) swarmImpostorDraws += 1;
           else drawSwarmSpriteEnemyAt(e, sx, sy, t, premiumMinionId);
         }
-        else drawSwarmEnemyAt(e, sx, sy, t);
+        else {
+          recordLegacyEnemyFallback(e);
+          drawSwarmEnemyAt(e, sx, sy, t);
+        }
         continue;
       }
       ctx.save();
@@ -4476,6 +4503,7 @@
           ctx.globalCompositeOperation = "source-over";
         }
       } else {
+        recordLegacyEnemyFallback(e);
         const body = ctx.createRadialGradient(-e.r * 0.24, -e.r * 0.28, e.r * 0.12, 0, 0, e.r * 1.2);
         body.addColorStop(0, colorAlpha("#ffffff", 0.32));
         body.addColorStop(0.32, enemyColor);
@@ -4732,92 +4760,6 @@
       ctx.fillStyle = e.boss ? colors.danger : colors.gold;
       ctx.fillRect(-hpw / 2, -e.r - 14, hpw * clamp(e.hp / e.maxHp, 0, 1), 6);
     }
-  }
-
-  function drawHordeEnemy(e, t) {
-    const r = e.r;
-    const pulse = 1 + Math.sin(t * 5 + e.x * 0.017 + e.y * 0.013) * 0.035;
-    const lean = clamp((e.vx || 0) * 0.00055, -0.1, 0.1);
-    ctx.fillStyle = "rgba(0, 0, 0, 0.34)";
-    ctx.beginPath();
-    ctx.ellipse(0, r * 0.86, r * 1.04, r * 0.34, 0, 0, TAU);
-    ctx.fill();
-    ctx.save();
-    ctx.rotate(lean);
-    ctx.scale(pulse, 1 / pulse);
-    ctx.globalAlpha = 0.84;
-    ctx.fillStyle = e.color;
-    ctx.strokeStyle = e.flash > 0 ? "rgba(255, 244, 190, 0.84)" : "rgba(7, 9, 12, 0.72)";
-    ctx.lineWidth = e.flash > 0 ? 2.2 : 1.5;
-    switch (e.type.id) {
-      case "wolf":
-      case "runner":
-        ctx.beginPath();
-        ctx.moveTo(-r * 0.92, r * 0.12);
-        ctx.quadraticCurveTo(-r * 0.42, -r * 0.76, r * 0.54, -r * 0.48);
-        ctx.lineTo(r * 0.98, -r * 0.06);
-        ctx.quadraticCurveTo(r * 0.42, r * 0.72, -r * 0.72, r * 0.52);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-        break;
-      case "wisp":
-        ctx.globalAlpha = e.flash > 0 ? 0.98 : 0.72;
-        ctx.beginPath();
-        ctx.moveTo(0, -r * 1.1);
-        ctx.bezierCurveTo(r * 0.92, -r * 0.42, r * 0.72, r * 0.84, 0, r);
-        ctx.bezierCurveTo(-r * 0.72, r * 0.84, -r * 0.92, -r * 0.42, 0, -r * 1.1);
-        ctx.fill();
-        break;
-      case "stone":
-      case "brute":
-        ctx.beginPath();
-        ctx.moveTo(0, -r);
-        ctx.lineTo(r * 0.92, -r * 0.18);
-        ctx.lineTo(r * 0.6, r * 0.88);
-        ctx.lineTo(-r * 0.62, r * 0.82);
-        ctx.lineTo(-r * 0.94, -r * 0.16);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-        break;
-      case "bug":
-        ctx.beginPath();
-        ctx.ellipse(0, 0, r * 0.72, r, 0, 0, TAU);
-        ctx.fill();
-        ctx.stroke();
-        ctx.strokeStyle = "rgba(242, 234, 215, 0.20)";
-        ctx.beginPath();
-        ctx.moveTo(-r * 0.9, -r * 0.15);
-        ctx.lineTo(r * 0.9, -r * 0.15);
-        ctx.moveTo(-r * 0.78, r * 0.24);
-        ctx.lineTo(r * 0.78, r * 0.24);
-        ctx.stroke();
-        break;
-      default:
-        ctx.beginPath();
-        ctx.arc(0, 0, r, 0, TAU);
-        ctx.fill();
-        ctx.stroke();
-        break;
-    }
-    ctx.globalAlpha = 1;
-    if (e.flash > 0) {
-      ctx.globalCompositeOperation = "lighter";
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.34)";
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.arc(0, 0, r * 0.92, 0, TAU);
-      ctx.stroke();
-      ctx.globalCompositeOperation = "source-over";
-    }
-    ctx.fillStyle = "rgba(255, 232, 164, 0.78)";
-    const eye = Math.max(1.8, r * 0.14);
-    ctx.beginPath();
-    ctx.arc(-r * 0.3, -r * 0.12, eye, 0, TAU);
-    ctx.arc(r * 0.3, -r * 0.12, eye, 0, TAU);
-    ctx.fill();
-    ctx.restore();
   }
 
   function drawEnemySilhouette(e, detailed = true) {
@@ -5390,7 +5332,7 @@
         continue;
       }
       const lowPriority = p.kind === "spark" || p.kind === "streak" || p.kind === "impact" || !p.kind;
-      const budgetedPremiumFx = state.enemies.length >= SWARM_RENDER_LIMIT && (p.kind === "premiumHit" || p.kind === "premiumDeath");
+      const budgetedPremiumFx = state.enemies.length > DETAIL_ENEMY_LIMIT && (p.kind === "premiumHit" || p.kind === "premiumDeath");
       if ((lowPriority || budgetedPremiumFx) && renderedParticles >= renderBudget) {
         culledParticles += 1;
         continue;
@@ -6031,6 +5973,11 @@
           gems: state.gems.length,
           powerups: state.powerups.length,
           chests: state.chests.length,
+          particleKinds: state.particles.reduce((counts, p) => {
+            const key = p.kind || "unknown";
+            counts[key] = (counts[key] || 0) + 1;
+            return counts;
+          }, {}),
           runCoins: state.runCoins,
           kills: state.kills,
           visuals: {
@@ -6081,6 +6028,8 @@
         state.qa.particlesRendered = 0;
         state.qa.particlesCulled = 0;
         state.qa.swarmImpostorDraws = 0;
+        state.qa.legacyVectorOverlays = 0;
+        state.qa.premiumAtlasFxDraws = 0;
         updateQaDataset();
         return true;
       }
