@@ -121,7 +121,7 @@
       updateQaDataset();
       render();
     };
-    premiumCreatureAtlas.src = "assets/premium-creature-atlas-v2.png";
+    premiumCreatureAtlas.src = "assets/premium-boss-elite-atlas-v1.png";
   }
 
   const premiumMinionAtlas = typeof Image !== "undefined" ? new Image() : null;
@@ -290,8 +290,10 @@
   };
 
   const premiumCreatureFrames = {
-    eliteDemon: { x: 0, y: 0, w: 512, h: 512 },
-    stoneGolem: { x: 512, y: 0, w: 512, h: 512 }
+    eliteDemon: { x: 0, y: 0, w: 768, h: 512 },
+    eliteWispKing: { x: 768, y: 0, w: 768, h: 512 },
+    eliteSoulPriest: { x: 0, y: 512, w: 768, h: 512 },
+    tideDemonLord: { x: 768, y: 512, w: 768, h: 512 }
   };
 
   const premiumMinionFrames = {
@@ -781,7 +783,7 @@
     hudSignature: "",
     forceNextChestEvolution: false,
     lastResult: null,
-    qa: { mode: null, autoChoices: false, autoMove: false, timeScale: 1, maxSteps: 1, syncRunning: false, syncSteps: 0, syncMs: 0, visualDone: false, groundDecalDraws: 0, environmentPropDraws: 0, atmosphereDraws: 0, hitAtlasDraws: 0, threatDraws: 0, hordeSpriteDraws: 0, hordeSpritesSkipped: 0, hordeRenderBudget: 0, hordeBudgetUsed: 0, projectileSpriteDraws: 0, projectilesSkipped: 0, projectileRenderBudget: 0, particlesRendered: 0, particlesCulled: 0, swarmImpostorDraws: 0, legacyVectorOverlays: 0, premiumAtlasFxDraws: 0 },
+    qa: { mode: null, autoChoices: false, autoMove: false, timeScale: 1, maxSteps: 1, syncRunning: false, syncSteps: 0, syncMs: 0, visualDone: false, groundDecalDraws: 0, environmentPropDraws: 0, atmosphereDraws: 0, hitAtlasDraws: 0, threatDraws: 0, hordeSpriteDraws: 0, hordeSpritesSkipped: 0, hordeRenderBudget: 0, hordeBudgetUsed: 0, projectileSpriteDraws: 0, projectilesSkipped: 0, projectileRenderBudget: 0, particlesRendered: 0, particlesCulled: 0, swarmImpostorDraws: 0, legacyVectorOverlays: 0, legacyFallbackFx: 0, premiumAtlasFxDraws: 0 },
     wave: 1,
     spawnTimer: 0,
     eliteSchedule: [90, 180, 300, 450, 600, 760],
@@ -2774,6 +2776,7 @@
     document.body.dataset.qaParticleRenderBudget = String(fxParticleRenderBudget());
     document.body.dataset.qaSwarmImpostorDraws = String(state.qa.swarmImpostorDraws || 0);
     document.body.dataset.qaLegacyVectorOverlays = String(state.qa.legacyVectorOverlays || 0);
+    document.body.dataset.qaLegacyFallbackFx = String(state.qa.legacyFallbackFx || 0);
     document.body.dataset.qaPremiumAtlasFxDraws = String(state.qa.premiumAtlasFxDraws || 0);
     document.body.dataset.qaItemAtlasReady = itemIconAtlasReady() ? "1" : "0";
     document.body.dataset.qaArenaReady = arenaBackgroundReady() ? "1" : "0";
@@ -2999,6 +3002,7 @@
   function render() {
     resize();
     state.qa.legacyVectorOverlays = 0;
+    state.qa.legacyFallbackFx = 0;
     state.qa.premiumAtlasFxDraws = 0;
     state.qa.atmosphereDraws = 0;
     state.qa.hitAtlasDraws = 0;
@@ -3409,6 +3413,7 @@
   }
 
   function drawSoftProjectileFallback(pr, alpha = 0.16) {
+    recordLegacyFallbackFx();
     const length = Math.max(8, pr.r * 3.2);
     const width = Math.max(4, pr.r * 1.05);
     ctx.save();
@@ -3426,6 +3431,7 @@
   }
 
   function drawSoftParticleFallback(x, y, r, color, alpha = 0.14, rotation = 0, stretch = 1) {
+    recordLegacyFallbackFx();
     const radius = Math.max(3, r);
     ctx.save();
     ctx.globalCompositeOperation = "lighter";
@@ -3444,6 +3450,7 @@
   }
 
   function drawSoftAreaFallback(area, x, y, alpha, now, compact = false) {
+    recordLegacyFallbackFx();
     const stretch = area.kind === "plagueDomain" || area.kind === "poison" || area.kind === "fireSea" ? 1.18 : 1;
     const radius = area.r * (compact ? 0.82 : 1);
     ctx.save();
@@ -3507,8 +3514,10 @@
 
   function premiumEnemySprite(e) {
     if (!premiumCreatureAtlasReady()) return null;
-    if (e.boss) return "stoneGolem";
+    if (e.boss) return "tideDemonLord";
     if (e.elite && e.type.id === "eliteBrute") return "eliteDemon";
+    if (e.elite && e.type.id === "eliteWisp") return "eliteWispKing";
+    if (e.elite && e.type.id === "eliteSummoner") return "eliteSoulPriest";
     return null;
   }
 
@@ -3573,9 +3582,13 @@
     if (QA_MODE && suppressLegacyEnemyFx(e)) state.qa.legacyVectorOverlays += 1;
   }
 
+  function recordLegacyFallbackFx() {
+    if (QA_MODE) state.qa.legacyFallbackFx = (state.qa.legacyFallbackFx || 0) + 1;
+  }
+
   function hasPremiumEnemyArt(e) {
     if (e.boss) return true;
-    if (e.elite && e.type.id === "eliteBrute") return true;
+    if (e.elite) return true;
     switch (e.type.id) {
       case "imp":
       case "runner":
@@ -3614,9 +3627,18 @@
   }
 
   function premiumEnemySpriteScale(id) {
-    if (id === "stoneGolem") return [4.9, 5.85];
-    if (id === "eliteDemon") return [4.05, 5.35];
+    if (id === "tideDemonLord") return [6.05, 5.25];
+    if (id === "eliteDemon") return [5.05, 5.35];
+    if (id === "eliteWispKing") return [5.55, 5.65];
+    if (id === "eliteSoulPriest") return [5.55, 5.75];
     return [4.6, 5.2];
+  }
+
+  function premiumEnemySpriteY(id, r) {
+    if (id === "tideDemonLord") return -r * 0.22;
+    if (id === "eliteWispKing") return -r * 0.5;
+    if (id === "eliteSoulPriest") return -r * 0.42;
+    return -r * 0.38;
   }
 
   function premiumMinionSpriteScale(id) {
@@ -3944,6 +3966,7 @@
   }
 
   function drawProjectileTrail(pr) {
+    recordLegacyFallbackFx();
     const fast = len(pr.vx, pr.vy);
     const longKinds = ["thousandSword", "dragonBolt", "glacierNeedle", "fireSea", "fire"];
     const trail = clamp(fast * 0.055, 18, longKinds.includes(pr.kind) ? 108 : 64);
@@ -4272,6 +4295,7 @@
       const s = worldToScreen(e.x, e.y);
       const cull = e.r * 7.5;
       if (s.x < -cull || s.x > w + cull || s.y < -cull || s.y > h + cull) continue;
+      if (premiumEnemySprite(e)) continue;
       const hpRatio = clamp(e.hp / e.maxHp, 0, 1);
       const pulse = 1 + Math.sin(t * (e.boss ? 1.8 : 2.4) + e.x * 0.003) * 0.045;
       if (e.boss) {
@@ -4813,6 +4837,8 @@
   }
 
   function drawSpriteEnemy(e, creatureId, t, pulse, premiumMinionId = null, premiumHordeId = null) {
+    const premiumSprite = premiumEnemySprite(e);
+    const cleanPremiumSprite = Boolean(premiumSprite || premiumHordeId || premiumMinionId);
     ctx.fillStyle = e.boss ? "rgba(0, 0, 0, 0.42)" : e.elite ? "rgba(0, 0, 0, 0.30)" : "rgba(0, 0, 0, 0.18)";
     ctx.beginPath();
     ctx.ellipse(0, e.r * 0.88, e.r * 1.08, e.r * 0.36, 0, 0, TAU);
@@ -4820,12 +4846,18 @@
 
     ctx.save();
     ctx.globalCompositeOperation = "lighter";
-    drawGlow(0, 0, e.boss ? e.r * 2.35 : e.elite ? e.r * 1.85 : (premiumHordeId || premiumMinionId) ? e.r * 1.55 : e.r * 1.05, e.boss ? colors.danger : e.elite ? colors.gold : e.color, e.boss ? 0.18 : e.elite ? 0.12 : (premiumHordeId || premiumMinionId) ? 0.105 : 0.035);
-    if (e.boss) {
+    drawGlow(
+      0,
+      0,
+      e.boss ? e.r * 2.1 : e.elite ? e.r * 1.62 : cleanPremiumSprite ? e.r * 1.28 : e.r * 1.05,
+      e.boss ? colors.danger : e.elite ? colors.gold : e.color,
+      cleanPremiumSprite ? (e.boss ? 0.07 : e.elite ? 0.055 : 0.045) : (e.boss ? 0.18 : e.elite ? 0.12 : 0.035)
+    );
+    if (!premiumSprite && e.boss) {
       if (!drawThreatFrame("dangerReticle", 0, 0, e.r * 3.25, e.r * 3.25, 0.22, -t * 0.15, "lighter")) {
         drawSoftParticleFallback(0, 0, e.r * 1.5, colors.danger, 0.14, -t * 0.15, 1.12);
       }
-    } else if (e.elite) {
+    } else if (!premiumSprite && e.elite) {
       const threatId = eliteThreatFrame(e);
       if (!drawThreatFrame(threatId, 0, -e.r * 0.1, e.r * (threatId === "summonPortal" ? 3.35 : 3.0), e.r * (threatId === "summonPortal" ? 3.4 : 2.45), 0.2, threatId === "eliteCrown" ? 0 : t * 0.08, "lighter")) {
         drawSoftParticleFallback(0, 0, e.r * 1.22, colors.gold, 0.12, t * 0.08, 1.08);
@@ -4833,7 +4865,6 @@
     }
     ctx.restore();
 
-    const premiumSprite = premiumEnemySprite(e);
     const scale = premiumSprite ? premiumEnemySpriteScale(premiumSprite) : premiumHordeId ? premiumHordeSpriteScale(premiumHordeId) : premiumMinionId ? premiumMinionSpriteScale(premiumMinionId) : creatureSpriteScale(creatureId);
     const gait = Math.sin(t * (e.boss ? 2.2 : e.elite ? 3.2 : 5.4) + e.x * 0.013 + e.y * 0.011);
     const squash = e.boss ? 0.012 : e.elite ? 0.018 : 0.026;
@@ -4843,7 +4874,7 @@
     const alpha = e.flash > 0 ? Math.min(0.98, baseAlpha + 0.08) : baseAlpha;
     const flip = ((premiumHordeId && premiumHordeLowProfile(premiumHordeId)) || premiumMinionId === "lavaWolf" || premiumMinionId === "plagueCrawler" || creatureId === "wolf") && state.player && e.x < state.player.x ? -1 : 1;
     if (premiumSprite) {
-      const y = (premiumSprite === "stoneGolem" ? -e.r * 0.4 : -e.r * 0.48) + bob;
+      const y = premiumEnemySpriteY(premiumSprite, e.r) + bob;
       drawPremiumCreatureSprite(premiumSprite, 0, y, e.r * scale[0] * (1 + gait * squash), e.r * scale[1] * (1 - gait * squash * 0.72), alpha, lean, 1);
     } else if (premiumHordeId) {
       const y = premiumHordeSpriteY(premiumHordeId, e.r) + bob;
@@ -6137,6 +6168,7 @@
             particleLimit: fxParticleLimit(),
             particleRenderBudget: fxParticleRenderBudget(),
             legacyVectorOverlays: state.qa.legacyVectorOverlays || 0,
+            legacyFallbackFx: state.qa.legacyFallbackFx || 0,
             premiumAtlasFxDraws: state.qa.premiumAtlasFxDraws || 0
           },
           perf: {
@@ -6172,6 +6204,7 @@
         state.qa.particlesCulled = 0;
         state.qa.swarmImpostorDraws = 0;
         state.qa.legacyVectorOverlays = 0;
+        state.qa.legacyFallbackFx = 0;
         state.qa.premiumAtlasFxDraws = 0;
         updateQaDataset();
         return true;
