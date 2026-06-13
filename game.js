@@ -60,6 +60,9 @@
   const GROUND_DECAL_DENSE_LIMIT = 72;
   const QA_MODE = new URLSearchParams(window.location.search).has("qa");
   const STORAGE_KEY = QA_MODE ? "spirit-survivors-save-qa-v1" : "spirit-survivors-save-v2";
+  const SWARM_IMPOSTOR_BASE_R = 18;
+  const SWARM_IMPOSTOR_CANVAS = 160;
+  const swarmImpostorCache = new Map();
 
   const colors = {
     ink: "#f2ead7",
@@ -113,6 +116,7 @@
   if (premiumMinionAtlas) {
     premiumMinionAtlas.decoding = "async";
     premiumMinionAtlas.onload = () => {
+      swarmImpostorCache.clear();
       if (!QA_MODE) return;
       state.qa.visualDone = false;
       updateQaDataset();
@@ -659,7 +663,7 @@
     hudSignature: "",
     forceNextChestEvolution: false,
     lastResult: null,
-    qa: { mode: null, autoChoices: false, autoMove: false, timeScale: 1, maxSteps: 1, syncRunning: false, syncSteps: 0, syncMs: 0, visualDone: false, groundDecalDraws: 0, environmentPropDraws: 0 },
+    qa: { mode: null, autoChoices: false, autoMove: false, timeScale: 1, maxSteps: 1, syncRunning: false, syncSteps: 0, syncMs: 0, visualDone: false, groundDecalDraws: 0, environmentPropDraws: 0, swarmImpostorDraws: 0 },
     wave: 1,
     spawnTimer: 0,
     eliteSchedule: [90, 180, 300, 450, 600, 760],
@@ -1113,6 +1117,7 @@
     state.lastResult = null;
     state.qa.groundDecalDraws = 0;
     state.qa.environmentPropDraws = 0;
+    state.qa.swarmImpostorDraws = 0;
     state.wave = 1;
     state.spawnTimer = 0;
     state.eliteIndex = 0;
@@ -2110,7 +2115,7 @@
     e.hp -= amount;
     e.flash = 1;
     const premiumTarget = hasPremiumEnemyArt(e);
-    const textChance = state.enemies.length > DETAIL_ENEMY_LIMIT ? 0.08 : 0.22;
+    const textChance = state.enemies.length >= SWARM_RENDER_LIMIT ? 0.025 : state.enemies.length > DETAIL_ENEMY_LIMIT ? 0.08 : 0.22;
     if (text && chance(textChance)) {
       floatingText(e.x, e.y - e.r, Math.ceil(amount).toString(), color, 12);
     }
@@ -2539,6 +2544,7 @@
     document.body.dataset.qaEnemyProjectiles = String(state.enemyProjectiles.length);
     document.body.dataset.qaAreas = String(state.areas.length);
     document.body.dataset.qaParticles = String(state.particles.length);
+    document.body.dataset.qaTexts = String(state.texts.length);
     let deathSprites = 0;
     let slashParticles = 0;
     let impactParticles = 0;
@@ -2564,6 +2570,7 @@
     document.body.dataset.qaGroundDecalDraws = String(state.qa.groundDecalDraws || 0);
     document.body.dataset.qaEnvironmentPropAtlasReady = environmentPropAtlasReady() ? "1" : "0";
     document.body.dataset.qaEnvironmentPropDraws = String(state.qa.environmentPropDraws || 0);
+    document.body.dataset.qaSwarmImpostorDraws = String(state.qa.swarmImpostorDraws || 0);
     document.body.dataset.qaItemAtlasReady = itemIconAtlasReady() ? "1" : "0";
     document.body.dataset.qaArenaReady = arenaBackgroundReady() ? "1" : "0";
     const boss = state.enemies.find((e) => e.boss && e.hp > 0);
@@ -3209,6 +3216,50 @@
     return [5.55, 5.65];
   }
 
+  function getSwarmImpostorSprite(id, flip) {
+    const frame = premiumMinionFrames[id];
+    if (!frame || !premiumMinionAtlasReady() || typeof document === "undefined") return null;
+    const key = `${id}:${flip}`;
+    const cached = swarmImpostorCache.get(key);
+    if (cached) return cached;
+    const canvasEl = document.createElement("canvas");
+    canvasEl.width = SWARM_IMPOSTOR_CANVAS;
+    canvasEl.height = SWARM_IMPOSTOR_CANVAS;
+    const g = canvasEl.getContext("2d");
+    if (!g) return null;
+    const r = SWARM_IMPOSTOR_BASE_R;
+    const scale = premiumMinionSpriteScale(id);
+    const lowProfile = id === "lavaWolf" || id === "plagueCrawler";
+    const spriteY = lowProfile ? -r * 0.05 : id === "voidSummoner" ? -r * 0.38 : -r * 0.16;
+    const w = r * scale[0] * 0.88;
+    const h = r * scale[1] * 0.88;
+    const cx = SWARM_IMPOSTOR_CANVAS / 2;
+    const cy = SWARM_IMPOSTOR_CANVAS / 2;
+
+    g.save();
+    g.translate(cx, cy);
+    g.fillStyle = "rgba(0, 0, 0, 0.24)";
+    g.beginPath();
+    g.ellipse(0, r * 0.84, r * 1.06, r * 0.34, 0, 0, TAU);
+    g.fill();
+    const glow = g.createRadialGradient(0, spriteY, r * 0.2, 0, spriteY, r * 3.0);
+    glow.addColorStop(0, "rgba(124, 215, 175, 0.12)");
+    glow.addColorStop(1, "rgba(124, 215, 175, 0)");
+    g.globalCompositeOperation = "lighter";
+    g.fillStyle = glow;
+    g.beginPath();
+    g.arc(0, spriteY, r * 3.0, 0, TAU);
+    g.fill();
+    g.globalCompositeOperation = "source-over";
+    g.globalAlpha = 0.88;
+    g.scale(flip, 1);
+    g.drawImage(premiumMinionAtlas, frame.x, frame.y, frame.w, frame.h, -w / 2, spriteY - h / 2, w, h);
+    g.restore();
+
+    swarmImpostorCache.set(key, canvasEl);
+    return canvasEl;
+  }
+
   function premiumPlayerSpriteScale(id) {
     if (id === "heroSword") return [5.95, 5.95];
     if (id === "heroTalisman") return [5.75, 5.75];
@@ -3828,6 +3879,7 @@
     const halfH = window.innerHeight / 2;
     const viewW = window.innerWidth;
     const viewH = window.innerHeight;
+    let swarmImpostorDraws = 0;
     for (const e of state.enemies) {
       const sx = e.x - camX + halfW;
       const sy = e.y - camY + halfH;
@@ -3836,7 +3888,10 @@
       const detailed = e.boss || e.elite || state.enemies.length <= DETAIL_ENEMY_LIMIT;
       const premiumMinionId = premiumMinionSprite(e);
       if (swarmMode && !e.boss && !e.elite) {
-        if (premiumMinionId) drawSwarmSpriteEnemyAt(e, sx, sy, t, premiumMinionId);
+        if (premiumMinionId) {
+          if (drawSwarmImpostorEnemyAt(e, sx, sy, t, premiumMinionId)) swarmImpostorDraws += 1;
+          else drawSwarmSpriteEnemyAt(e, sx, sy, t, premiumMinionId);
+        }
         else drawSwarmEnemyAt(e, sx, sy, t);
         continue;
       }
@@ -3985,6 +4040,7 @@
       }
       ctx.restore();
     }
+    if (QA_MODE) state.qa.swarmImpostorDraws = swarmImpostorDraws;
   }
 
   function drawSwarmEnemyAt(e, x, y, t) {
@@ -4030,6 +4086,26 @@
     ctx.fill();
     ctx.stroke();
     ctx.globalAlpha = 1;
+  }
+
+  function drawSwarmImpostorEnemyAt(e, x, y, t, premiumMinionId) {
+    const flip = (premiumMinionId === "lavaWolf" || premiumMinionId === "plagueCrawler") && state.player && e.x < state.player.x ? -1 : 1;
+    const sprite = getSwarmImpostorSprite(premiumMinionId, flip);
+    if (!sprite) return false;
+    const r = e.r;
+    const gait = Math.sin(t * 5.2 + e.x * 0.013 + e.y * 0.011);
+    const lowProfile = premiumMinionId === "lavaWolf" || premiumMinionId === "plagueCrawler";
+    const bob = lowProfile ? gait * r * 0.025 : -Math.abs(gait) * r * 0.035;
+    const size = SWARM_IMPOSTOR_CANVAS * (r / SWARM_IMPOSTOR_BASE_R) * (1 + gait * 0.006);
+    ctx.save();
+    ctx.globalAlpha = e.flash > 0 ? 0.96 : 0.8;
+    ctx.drawImage(sprite, x - size / 2, y + bob - size / 2, size, size);
+    if (e.flash > 0) {
+      ctx.globalCompositeOperation = "lighter";
+      drawGlow(x, y - r * 0.08, r * 1.05, e.color, 0.08 * e.flash);
+    }
+    ctx.restore();
+    return true;
   }
 
   function drawSwarmSpriteEnemyAt(e, x, y, t, premiumMinionId) {
@@ -5604,6 +5680,7 @@
         state.perf = { frames: 0, totalDt: 0, maxDt: 0, workFrames: 0, totalWorkMs: 0, maxWorkMs: 0 };
         state.qa.groundDecalDraws = 0;
         state.qa.environmentPropDraws = 0;
+        state.qa.swarmImpostorDraws = 0;
         updateQaDataset();
         return true;
       }
