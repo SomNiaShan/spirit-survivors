@@ -82,7 +82,7 @@
       updateQaDataset();
       render();
     };
-    visualAtlas.src = "assets/premium-combat-fx-atlas-v2.png";
+    visualAtlas.src = "assets/premium-combat-fx-atlas-v3.png";
   }
 
   const creatureAtlas = typeof Image !== "undefined" ? new Image() : null;
@@ -198,8 +198,8 @@
     voidSeal: { x: 1152, y: 0, w: 384, h: 512 },
     frostBurst: { x: 0, y: 512, w: 384, h: 512 },
     plaguePool: { x: 384, y: 512, w: 384, h: 512 },
-    eliteDemon: { x: 768, y: 512, w: 384, h: 512 },
-    stoneGolem: { x: 1152, y: 512, w: 384, h: 512 }
+    dragonBolt: { x: 768, y: 512, w: 384, h: 512 },
+    thunderSigil: { x: 1152, y: 512, w: 384, h: 512 }
   };
 
   const creatureFrames = {
@@ -3416,6 +3416,8 @@
       case "fireSea":
       case "fire":
         return "spiritFire";
+      case "dragonBolt":
+        return "dragonBolt";
       default:
         return null;
     }
@@ -4443,7 +4445,7 @@
       if (!premiumProjectileFrame) drawProjectileTrail(pr);
       else {
         ctx.globalCompositeOperation = "lighter";
-        drawGlow(pr.r * 0.35, 0, pr.r * 3.1, pr.color, 0.075);
+        drawGlow(pr.r * 0.35, 0, pr.r * 3.25, pr.color, 0.11);
         ctx.globalCompositeOperation = "source-over";
       }
       if (pr.kind === "thousandSword") {
@@ -4482,20 +4484,23 @@
       } else if (pr.kind === "dragonBolt") {
         ctx.globalCompositeOperation = "lighter";
         drawGlow(pr.r * 0.4, 0, pr.r * 5, pr.color, 0.2);
+        const drewAtlas = atlasFx && drawAtlasFrame("dragonBolt", pr.r * 0.12, 0, pr.r * 8.4, pr.r * 5.4, 0.84, 0, "source-over");
         ctx.globalCompositeOperation = "source-over";
-        ctx.beginPath();
-        ctx.moveTo(pr.r * 2.6, 0);
-        ctx.bezierCurveTo(pr.r * 0.9, pr.r * 1.1, -pr.r * 1.2, pr.r * 0.8, -pr.r * 1.55, 0);
-        ctx.bezierCurveTo(-pr.r * 1.2, -pr.r * 0.8, pr.r * 0.9, -pr.r * 1.1, pr.r * 2.6, 0);
-        ctx.fill();
-        ctx.strokeStyle = "rgba(255,255,255,0.66)";
-        ctx.lineWidth = 1.2;
-        ctx.stroke();
-        ctx.fillStyle = "rgba(255,255,255,0.62)";
-        ctx.beginPath();
-        ctx.arc(pr.r * 0.35, 0, pr.r * 0.34, 0, TAU);
-        ctx.fill();
-        if (highFx) {
+        if (!drewAtlas) {
+          ctx.beginPath();
+          ctx.moveTo(pr.r * 2.6, 0);
+          ctx.bezierCurveTo(pr.r * 0.9, pr.r * 1.1, -pr.r * 1.2, pr.r * 0.8, -pr.r * 1.55, 0);
+          ctx.bezierCurveTo(-pr.r * 1.2, -pr.r * 0.8, pr.r * 0.9, pr.r * -1.1, pr.r * 2.6, 0);
+          ctx.fill();
+          ctx.strokeStyle = "rgba(255,255,255,0.66)";
+          ctx.lineWidth = 1.2;
+          ctx.stroke();
+          ctx.fillStyle = "rgba(255,255,255,0.62)";
+          ctx.beginPath();
+          ctx.arc(pr.r * 0.35, 0, pr.r * 0.34, 0, TAU);
+          ctx.fill();
+        }
+        if (!drewAtlas && highFx) {
           ctx.strokeStyle = colorAlpha("#ffffff", 0.34);
           ctx.lineWidth = 1.2;
           for (let i = 0; i < 3; i++) {
@@ -4619,6 +4624,15 @@
     }
   }
 
+  function impactAtlasFrameId(color) {
+    if (color === weapons.thunderArray.color || color === weapons.thunderPearl.color) return "thunderSigil";
+    if (color === weapons.frostNeedle.color || color === weapons.glacierRain.color || color === colors.frost) return "frostBurst";
+    if (color === weapons.poisonMist.color || color === weapons.plagueDomain.color || color === colors.poison) return "plaguePool";
+    if (color === weapons.talisman.color || color === weapons.voidSeal.color || color === colors.gold || color === colors.violet) return "talismanWheel";
+    if (color === weapons.spiritFire.color || color === weapons.fireSea.color || color === colors.danger) return "spiritFire";
+    return "swordFan";
+  }
+
   function areaGroundDecalSpec(area, now) {
     let id = null;
     if (area.kind === "voidSeal") id = "voidRift";
@@ -4686,7 +4700,7 @@
         continue;
       }
       if (atlasSpec && drawAtlasFrame(atlasSpec.id, s.x, s.y, atlasSpec.w, atlasSpec.h, atlasSpec.alpha * alpha, atlasSpec.rotation, "source-over")) {
-        drawGlow(s.x, s.y, area.r * 1.18, area.color, 0.12 * alpha);
+        drawGlow(s.x, s.y, area.r * 1.22, area.color, 0.16 * alpha);
         ctx.shadowBlur = 0;
         ctx.restore();
         continue;
@@ -4967,21 +4981,35 @@
       } else if (p.kind === "lightning") {
         ctx.globalCompositeOperation = "lighter";
         ctx.shadowBlur = 24;
-        ctx.lineWidth = 4;
-        ctx.beginPath();
-        ctx.moveTo(s.x, s.y - p.r);
-        for (let i = 1; i < 7; i++) {
-          const offset = p.jag ? p.jag[i - 1] : Math.sin(i * 12.989 + p.x * 0.03 + p.y * 0.02) * 18;
-          ctx.lineTo(s.x + offset * (0.85 + alpha * 0.15), s.y - p.r + (p.r * 2 * i) / 7);
+        const drewAtlas = atlasFx && drawAtlasFrame("thunderSigil", s.x, s.y, p.r * 2.12, p.r * 2.12, 0.62, (p.x + p.y) * 0.0018 + performance.now() / 980, "source-over");
+        if (drewAtlas) {
+          ctx.globalAlpha = alpha * 0.72;
+          ctx.strokeStyle = colorAlpha("#ffffff", 0.72);
+          ctx.lineWidth = Math.max(1.6, p.r * 0.05);
+          for (let fork = -1; fork <= 1; fork += 2) {
+            ctx.beginPath();
+            ctx.moveTo(s.x + fork * p.r * 0.34, s.y - p.r * 0.58);
+            ctx.quadraticCurveTo(s.x - fork * p.r * 0.12, s.y, s.x + fork * p.r * 0.46, s.y + p.r * 0.62);
+            ctx.stroke();
+          }
+          drawGlow(s.x, s.y, p.r * 1.65, p.color, 0.18 * alpha);
+        } else {
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.moveTo(s.x, s.y - p.r);
+          for (let i = 1; i < 7; i++) {
+            const offset = p.jag ? p.jag[i - 1] : Math.sin(i * 12.989 + p.x * 0.03 + p.y * 0.02) * 18;
+            ctx.lineTo(s.x + offset * (0.85 + alpha * 0.15), s.y - p.r + (p.r * 2 * i) / 7);
+          }
+          ctx.stroke();
+          ctx.globalAlpha = alpha * 0.32;
+          ctx.lineWidth = 10;
+          ctx.stroke();
+          ctx.globalAlpha = alpha;
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, p.r * (1 - alpha * 0.4), 0, TAU);
+          ctx.stroke();
         }
-        ctx.stroke();
-        ctx.globalAlpha = alpha * 0.32;
-        ctx.lineWidth = 10;
-        ctx.stroke();
-        ctx.globalAlpha = alpha;
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, p.r * (1 - alpha * 0.4), 0, TAU);
-        ctx.stroke();
       } else if (p.kind === "spark") {
         ctx.globalCompositeOperation = "lighter";
         ctx.shadowBlur = 12;
@@ -5002,13 +5030,19 @@
       } else if (p.kind === "impact") {
         ctx.globalCompositeOperation = "lighter";
         ctx.shadowBlur = 14;
-        ctx.lineWidth = 1.45;
-        ctx.globalAlpha = alpha * 0.42;
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, p.r * (1.16 - alpha * 0.52), 0, TAU);
-        ctx.stroke();
-        ctx.globalAlpha = alpha * 0.12;
-        drawGlow(s.x, s.y, p.r * 1.65, p.color, 0.24);
+        const impactFrame = impactAtlasFrameId(p.color);
+        const drewAtlas = atlasFx && drawAtlasFrame(impactFrame, s.x, s.y, p.r * 2.7, p.r * 2.2, 0.36, (p.x + p.y) * 0.002 + performance.now() / 1500, "source-over");
+        if (drewAtlas) {
+          drawGlow(s.x, s.y, p.r * 1.7, p.color, 0.11 * alpha);
+        } else {
+          ctx.lineWidth = 1.45;
+          ctx.globalAlpha = alpha * 0.42;
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, p.r * (1.16 - alpha * 0.52), 0, TAU);
+          ctx.stroke();
+          ctx.globalAlpha = alpha * 0.12;
+          drawGlow(s.x, s.y, p.r * 1.65, p.color, 0.24);
+        }
       } else if (p.kind === "slash") {
         ctx.globalCompositeOperation = "lighter";
         ctx.translate(s.x, s.y);
