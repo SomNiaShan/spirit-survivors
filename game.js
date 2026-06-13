@@ -125,6 +125,19 @@
     premiumMinionAtlas.src = "assets/premium-minion-atlas-v3.png";
   }
 
+  const premiumHordeAtlas = typeof Image !== "undefined" ? new Image() : null;
+  if (premiumHordeAtlas) {
+    premiumHordeAtlas.decoding = "async";
+    premiumHordeAtlas.onload = () => {
+      swarmImpostorCache.clear();
+      if (!QA_MODE) return;
+      state.qa.visualDone = false;
+      updateQaDataset();
+      render();
+    };
+    premiumHordeAtlas.src = "assets/premium-horde-atlas-v1.png";
+  }
+
   const premiumPlayerAtlas = typeof Image !== "undefined" ? new Image() : null;
   if (premiumPlayerAtlas) {
     premiumPlayerAtlas.decoding = "async";
@@ -265,6 +278,17 @@
     plagueCrawler: { x: 0, y: 512, w: 512, h: 512 },
     stoneBrute: { x: 512, y: 512, w: 512, h: 512 },
     voidSummoner: { x: 1024, y: 512, w: 512, h: 512 }
+  };
+
+  const premiumHordeFrames = {
+    impAssassin: { x: 0, y: 0, w: 384, h: 512 },
+    armoredWolf: { x: 384, y: 0, w: 384, h: 512 },
+    spectralWisp: { x: 768, y: 0, w: 384, h: 512 },
+    goldScarab: { x: 1152, y: 0, w: 384, h: 512 },
+    boneShieldBrute: { x: 0, y: 512, w: 384, h: 512 },
+    clawRunner: { x: 384, y: 512, w: 384, h: 512 },
+    emberSpitter: { x: 768, y: 512, w: 384, h: 512 },
+    shadowCultist: { x: 1152, y: 512, w: 384, h: 512 }
   };
 
   const premiumPlayerFrames = {
@@ -734,7 +758,7 @@
     hudSignature: "",
     forceNextChestEvolution: false,
     lastResult: null,
-    qa: { mode: null, autoChoices: false, autoMove: false, timeScale: 1, maxSteps: 1, syncRunning: false, syncSteps: 0, syncMs: 0, visualDone: false, groundDecalDraws: 0, environmentPropDraws: 0, atmosphereDraws: 0, hitAtlasDraws: 0, threatDraws: 0, particlesRendered: 0, particlesCulled: 0, swarmImpostorDraws: 0, legacyVectorOverlays: 0, premiumAtlasFxDraws: 0 },
+    qa: { mode: null, autoChoices: false, autoMove: false, timeScale: 1, maxSteps: 1, syncRunning: false, syncSteps: 0, syncMs: 0, visualDone: false, groundDecalDraws: 0, environmentPropDraws: 0, atmosphereDraws: 0, hitAtlasDraws: 0, threatDraws: 0, hordeSpriteDraws: 0, hordeSpritesSkipped: 0, particlesRendered: 0, particlesCulled: 0, swarmImpostorDraws: 0, legacyVectorOverlays: 0, premiumAtlasFxDraws: 0 },
     wave: 1,
     spawnTimer: 0,
     eliteSchedule: [90, 180, 300, 450, 600, 760],
@@ -1191,6 +1215,8 @@
     state.qa.atmosphereDraws = 0;
     state.qa.hitAtlasDraws = 0;
     state.qa.threatDraws = 0;
+    state.qa.hordeSpriteDraws = 0;
+    state.qa.hordeSpritesSkipped = 0;
     state.qa.particlesRendered = 0;
     state.qa.particlesCulled = 0;
     state.qa.swarmImpostorDraws = 0;
@@ -2677,6 +2703,7 @@
     document.body.dataset.qaCreatureAtlasReady = creatureAtlasReady() ? "1" : "0";
     document.body.dataset.qaPremiumCreatureAtlasReady = premiumCreatureAtlasReady() ? "1" : "0";
     document.body.dataset.qaPremiumMinionAtlasReady = premiumMinionAtlasReady() ? "1" : "0";
+    document.body.dataset.qaPremiumHordeAtlasReady = premiumHordeAtlasReady() ? "1" : "0";
     document.body.dataset.qaPremiumPlayerAtlasReady = premiumPlayerAtlasReady() ? "1" : "0";
     document.body.dataset.qaPremiumPickupAtlasReady = premiumPickupAtlasReady() ? "1" : "0";
     document.body.dataset.qaGroundDecalAtlasReady = groundDecalAtlasReady() ? "1" : "0";
@@ -2689,6 +2716,8 @@
     document.body.dataset.qaHitAtlasDraws = String(state.qa.hitAtlasDraws || 0);
     document.body.dataset.qaThreatAtlasReady = threatAtlasReady() ? "1" : "0";
     document.body.dataset.qaThreatDraws = String(state.qa.threatDraws || 0);
+    document.body.dataset.qaHordeSpriteDraws = String(state.qa.hordeSpriteDraws || 0);
+    document.body.dataset.qaHordeSpritesSkipped = String(state.qa.hordeSpritesSkipped || 0);
     document.body.dataset.qaParticlesRendered = String(state.qa.particlesRendered || 0);
     document.body.dataset.qaParticlesCulled = String(state.qa.particlesCulled || 0);
     document.body.dataset.qaParticleLimit = String(fxParticleLimit());
@@ -2924,6 +2953,8 @@
     state.qa.atmosphereDraws = 0;
     state.qa.hitAtlasDraws = 0;
     state.qa.threatDraws = 0;
+    state.qa.hordeSpriteDraws = 0;
+    state.qa.hordeSpritesSkipped = 0;
     state.qa.particlesRendered = 0;
     state.qa.particlesCulled = 0;
     ctx.save();
@@ -3063,6 +3094,13 @@
     return compact ? 240 : 420;
   }
 
+  function hordeSpriteRenderBudget() {
+    const compact = Math.min(window.innerWidth, window.innerHeight) < 560;
+    if (state.enemies.length >= SWARM_RENDER_LIMIT) return compact ? 210 : 430;
+    if (state.enemies.length > DETAIL_ENEMY_LIMIT) return compact ? 300 : 460;
+    return Infinity;
+  }
+
   function atlasReady() {
     return Boolean(visualAtlas && visualAtlas.complete && visualAtlas.naturalWidth > 0);
   }
@@ -3077,6 +3115,10 @@
 
   function premiumMinionAtlasReady() {
     return Boolean(premiumMinionAtlas && premiumMinionAtlas.complete && premiumMinionAtlas.naturalWidth > 0);
+  }
+
+  function premiumHordeAtlasReady() {
+    return Boolean(premiumHordeAtlas && premiumHordeAtlas.complete && premiumHordeAtlas.naturalWidth > 0);
   }
 
   function premiumPlayerAtlasReady() {
@@ -3172,6 +3214,20 @@
     ctx.scale(flip, 1);
     ctx.drawImage(premiumMinionAtlas, frame.x, frame.y, frame.w, frame.h, -w / 2, -h / 2, w, h);
     ctx.restore();
+    return true;
+  }
+
+  function drawPremiumHordeSprite(id, x, y, w, h, alpha = 0.9, rotation = 0, flip = 1) {
+    const frame = premiumHordeFrames[id];
+    if (!frame || !premiumHordeAtlasReady()) return false;
+    ctx.save();
+    ctx.globalAlpha *= alpha;
+    ctx.translate(x, y);
+    ctx.rotate(rotation);
+    ctx.scale(flip, 1);
+    ctx.drawImage(premiumHordeAtlas, frame.x, frame.y, frame.w, frame.h, -w / 2, -h / 2, w, h);
+    ctx.restore();
+    if (QA_MODE) state.qa.hordeSpriteDraws += 1;
     return true;
   }
 
@@ -3402,6 +3458,32 @@
     }
   }
 
+  function premiumHordeSprite(e) {
+    if (!premiumHordeAtlasReady() || e.boss || e.elite) return null;
+    switch (e.type.id) {
+      case "imp":
+        return "impAssassin";
+      case "wolf":
+        return "armoredWolf";
+      case "wisp":
+        return "spectralWisp";
+      case "bug":
+        return "goldScarab";
+      case "brute":
+      case "stone":
+        return "boneShieldBrute";
+      case "runner":
+        return "clawRunner";
+      case "spitter":
+        return "emberSpitter";
+      case "summoner":
+      case "shadow":
+        return "shadowCultist";
+      default:
+        return null;
+    }
+  }
+
   function hasPremiumEnemyArt(e) {
     if (e.boss) return true;
     if (e.elite && e.type.id === "eliteBrute") return true;
@@ -3457,6 +3539,28 @@
     return [5.55, 5.65];
   }
 
+  function premiumHordeSpriteScale(id) {
+    if (id === "armoredWolf") return [8.2, 5.55];
+    if (id === "goldScarab") return [8.0, 5.2];
+    if (id === "boneShieldBrute") return [6.15, 6.45];
+    if (id === "spectralWisp") return [6.1, 6.7];
+    if (id === "shadowCultist") return [5.65, 6.9];
+    if (id === "clawRunner") return [6.45, 6.2];
+    if (id === "emberSpitter") return [6.7, 6.2];
+    return [6.0, 5.9];
+  }
+
+  function premiumHordeLowProfile(id) {
+    return id === "armoredWolf" || id === "goldScarab" || id === "clawRunner" || id === "emberSpitter";
+  }
+
+  function premiumHordeSpriteY(id, r) {
+    if (id === "shadowCultist") return -r * 0.44;
+    if (id === "spectralWisp") return -r * 0.24;
+    if (id === "boneShieldBrute") return -r * 0.18;
+    return premiumHordeLowProfile(id) ? -r * 0.06 : -r * 0.14;
+  }
+
   function getSwarmImpostorSprite(id, flip) {
     const frame = premiumMinionFrames[id];
     if (!frame || !premiumMinionAtlasReady() || typeof document === "undefined") return null;
@@ -3501,6 +3605,49 @@
     return canvasEl;
   }
 
+  function getHordeImpostorSprite(id, flip) {
+    const frame = premiumHordeFrames[id];
+    if (!frame || !premiumHordeAtlasReady() || typeof document === "undefined") return null;
+    const key = `horde:${id}:${flip}`;
+    const cached = swarmImpostorCache.get(key);
+    if (cached) return cached;
+    const canvasEl = document.createElement("canvas");
+    canvasEl.width = SWARM_IMPOSTOR_CANVAS;
+    canvasEl.height = SWARM_IMPOSTOR_CANVAS;
+    const g = canvasEl.getContext("2d");
+    if (!g) return null;
+    const r = SWARM_IMPOSTOR_BASE_R;
+    const scale = premiumHordeSpriteScale(id);
+    const spriteY = premiumHordeSpriteY(id, r);
+    const w = r * scale[0] * 0.86;
+    const h = r * scale[1] * 0.86;
+    const cx = SWARM_IMPOSTOR_CANVAS / 2;
+    const cy = SWARM_IMPOSTOR_CANVAS / 2;
+
+    g.save();
+    g.translate(cx, cy);
+    g.fillStyle = "rgba(0, 0, 0, 0.23)";
+    g.beginPath();
+    g.ellipse(0, r * 0.86, r * 1.08, r * 0.34, 0, 0, TAU);
+    g.fill();
+    const glow = g.createRadialGradient(0, spriteY, r * 0.25, 0, spriteY, r * 2.9);
+    glow.addColorStop(0, "rgba(111, 214, 205, 0.13)");
+    glow.addColorStop(1, "rgba(111, 214, 205, 0)");
+    g.globalCompositeOperation = "lighter";
+    g.fillStyle = glow;
+    g.beginPath();
+    g.arc(0, spriteY, r * 2.9, 0, TAU);
+    g.fill();
+    g.globalCompositeOperation = "source-over";
+    g.globalAlpha = 0.9;
+    g.scale(flip, 1);
+    g.drawImage(premiumHordeAtlas, frame.x, frame.y, frame.w, frame.h, -w / 2, spriteY - h / 2, w, h);
+    g.restore();
+
+    swarmImpostorCache.set(key, canvasEl);
+    return canvasEl;
+  }
+
   function premiumPlayerSpriteScale(id) {
     if (id === "heroSword") return [5.95, 5.95];
     if (id === "heroTalisman") return [5.75, 5.75];
@@ -3530,6 +3677,30 @@
         kind: "deathSprite",
         premiumSprite,
         rot: rand(-0.06, 0.06)
+      });
+      return;
+    }
+    const premiumHordeId = premiumHordeSprite(e);
+    if (premiumHordeId) {
+      const allowPremiumHorde = state.enemies.length < 210 && hasParticleRoom(40) && chance(0.45);
+      if (!allowPremiumHorde) return;
+      const scale = premiumHordeSpriteScale(premiumHordeId);
+      const max = 0.4;
+      state.particles.push({
+        x: e.x,
+        y: e.y,
+        vx: 0,
+        vy: -10,
+        life: max,
+        max,
+        r: e.r,
+        w: e.r * scale[0],
+        h: e.r * scale[1],
+        color: e.color,
+        kind: "deathSprite",
+        premiumHordeSprite: premiumHordeId,
+        flip: premiumHordeLowProfile(premiumHordeId) && state.player && e.x < state.player.x ? -1 : 1,
+        rot: rand(-0.07, 0.07)
       });
       return;
     }
@@ -4157,15 +4328,29 @@
     const viewW = window.innerWidth;
     const viewH = window.innerHeight;
     let swarmImpostorDraws = 0;
+    let hordeSpritesSkipped = 0;
+    const hordeBudget = hordeSpriteRenderBudget();
+    let hordeBudgetUsed = 0;
     for (const e of state.enemies) {
       const sx = e.x - camX + halfW;
       const sy = e.y - camY + halfH;
       if (sx < -120 || sx > viewW + 120 || sy < -120 || sy > viewH + 120) continue;
       const pulse = Math.sin(t * (e.boss ? 2.6 : e.elite ? 3.2 : 4.5) + e.x * 0.01 + e.y * 0.01);
       const detailed = e.boss || e.elite || state.enemies.length <= DETAIL_ENEMY_LIMIT;
+      const premiumHordeId = premiumHordeSprite(e);
       const premiumMinionId = premiumMinionSprite(e);
-      if (swarmMode && !e.boss && !e.elite) {
-        if (premiumMinionId) {
+      if (!e.boss && !e.elite && (swarmMode || !detailed)) {
+        const nearPlayer = Math.abs(sx - halfW) < 72 && Math.abs(sy - halfH) < 108;
+        if (hordeBudgetUsed >= hordeBudget && !nearPlayer && e.flash <= 0) {
+          hordeSpritesSkipped += 1;
+          continue;
+        }
+        hordeBudgetUsed += 1;
+        if (premiumHordeId) {
+          if (drawSwarmHordeImpostorEnemyAt(e, sx, sy, t, premiumHordeId)) swarmImpostorDraws += 1;
+          else drawHordeSpriteEnemyAt(e, sx, sy, t, premiumHordeId);
+        }
+        else if (premiumMinionId) {
           if (drawSwarmImpostorEnemyAt(e, sx, sy, t, premiumMinionId)) swarmImpostorDraws += 1;
           else drawSwarmSpriteEnemyAt(e, sx, sy, t, premiumMinionId);
         }
@@ -4174,17 +4359,12 @@
       }
       ctx.save();
       ctx.translate(sx, sy);
-      if (!e.boss && !e.elite && !detailed) {
-        if (premiumMinionId) drawSwarmSpriteEnemyAt(e, 0, 0, t, premiumMinionId);
-        else drawHordeEnemy(e, t);
-        ctx.restore();
-        continue;
-      }
       const atlasCreatureId = enemyCreatureSprite(e);
+      const usePremiumHordeSprite = premiumHordeId && !premiumEnemySprite(e);
       const usePremiumMinionSprite = premiumMinionId && !premiumEnemySprite(e);
-      const useCreatureSprite = usePremiumMinionSprite || (atlasCreatureId && (e.boss || e.elite || allowCreatureAtlas()));
+      const useCreatureSprite = usePremiumHordeSprite || usePremiumMinionSprite || (atlasCreatureId && (e.boss || e.elite || allowCreatureAtlas()));
       if (useCreatureSprite) {
-        drawSpriteEnemy(e, atlasCreatureId, t, pulse, usePremiumMinionSprite ? premiumMinionId : null);
+        drawSpriteEnemy(e, atlasCreatureId, t, pulse, usePremiumMinionSprite ? premiumMinionId : null, usePremiumHordeSprite ? premiumHordeId : null);
         ctx.restore();
         continue;
       }
@@ -4322,6 +4502,7 @@
       ctx.restore();
     }
     if (QA_MODE) state.qa.swarmImpostorDraws = swarmImpostorDraws;
+    if (QA_MODE) state.qa.hordeSpritesSkipped = hordeSpritesSkipped;
   }
 
   function drawSwarmEnemyAt(e, x, y, t) {
@@ -4389,6 +4570,26 @@
     return true;
   }
 
+  function drawSwarmHordeImpostorEnemyAt(e, x, y, t, premiumHordeId) {
+    const flip = premiumHordeLowProfile(premiumHordeId) && state.player && e.x < state.player.x ? -1 : 1;
+    const sprite = getHordeImpostorSprite(premiumHordeId, flip);
+    if (!sprite) return false;
+    const r = e.r;
+    const gait = Math.sin(t * 5.2 + e.x * 0.013 + e.y * 0.011);
+    const bob = premiumHordeLowProfile(premiumHordeId) ? gait * r * 0.023 : -Math.abs(gait) * r * 0.034;
+    const size = SWARM_IMPOSTOR_CANVAS * (r / SWARM_IMPOSTOR_BASE_R) * (1 + gait * 0.006);
+    ctx.save();
+    ctx.globalAlpha = e.flash > 0 ? 0.98 : 0.84;
+    ctx.drawImage(sprite, x - size / 2, y + bob - size / 2, size, size);
+    if (e.flash > 0) {
+      ctx.globalCompositeOperation = "lighter";
+      drawGlow(x, y - r * 0.08, r * 1.08, e.color, 0.1 * e.flash);
+    }
+    ctx.restore();
+    if (QA_MODE) state.qa.hordeSpriteDraws += 1;
+    return true;
+  }
+
   function drawSwarmSpriteEnemyAt(e, x, y, t, premiumMinionId) {
     const r = e.r;
     const gait = Math.sin(t * 5.2 + e.x * 0.013 + e.y * 0.011);
@@ -4422,7 +4623,39 @@
     ctx.restore();
   }
 
-  function drawSpriteEnemy(e, creatureId, t, pulse, premiumMinionId = null) {
+  function drawHordeSpriteEnemyAt(e, x, y, t, premiumHordeId) {
+    const r = e.r;
+    const gait = Math.sin(t * 5.2 + e.x * 0.013 + e.y * 0.011);
+    const scale = premiumHordeSpriteScale(premiumHordeId);
+    const lean = clamp((e.vx || 0) * 0.00045, -0.07, 0.07);
+    const flip = premiumHordeLowProfile(premiumHordeId) && state.player && e.x < state.player.x ? -1 : 1;
+    const bob = premiumHordeLowProfile(premiumHordeId) ? gait * r * 0.023 : -Math.abs(gait) * r * 0.034;
+    const spriteY = premiumHordeSpriteY(premiumHordeId, r) + bob;
+    const alpha = e.flash > 0 ? 0.95 : 0.84;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.fillStyle = "rgba(0, 0, 0, 0.21)";
+    ctx.beginPath();
+    ctx.ellipse(0, r * 0.86, r * 1.02, r * 0.31, 0, 0, TAU);
+    ctx.fill();
+    drawPremiumHordeSprite(
+      premiumHordeId,
+      0,
+      spriteY,
+      r * scale[0] * 0.88 * (1 + gait * 0.018),
+      r * scale[1] * 0.88 * (1 - gait * 0.012),
+      alpha,
+      lean,
+      flip
+    );
+    if (e.flash > 0) {
+      ctx.globalCompositeOperation = "lighter";
+      drawGlow(0, -r * 0.08, r * 1.12, e.color, 0.1 * e.flash);
+    }
+    ctx.restore();
+  }
+
+  function drawSpriteEnemy(e, creatureId, t, pulse, premiumMinionId = null, premiumHordeId = null) {
     ctx.fillStyle = e.boss ? "rgba(0, 0, 0, 0.42)" : e.elite ? "rgba(0, 0, 0, 0.30)" : "rgba(0, 0, 0, 0.18)";
     ctx.beginPath();
     ctx.ellipse(0, e.r * 0.88, e.r * 1.08, e.r * 0.36, 0, 0, TAU);
@@ -4430,7 +4663,7 @@
 
     ctx.save();
     ctx.globalCompositeOperation = "lighter";
-    drawGlow(0, 0, e.boss ? e.r * 2.35 : e.elite ? e.r * 1.85 : premiumMinionId ? e.r * 1.55 : e.r * 1.05, e.boss ? colors.danger : e.elite ? colors.gold : e.color, e.boss ? 0.18 : e.elite ? 0.12 : premiumMinionId ? 0.105 : 0.035);
+    drawGlow(0, 0, e.boss ? e.r * 2.35 : e.elite ? e.r * 1.85 : (premiumHordeId || premiumMinionId) ? e.r * 1.55 : e.r * 1.05, e.boss ? colors.danger : e.elite ? colors.gold : e.color, e.boss ? 0.18 : e.elite ? 0.12 : (premiumHordeId || premiumMinionId) ? 0.105 : 0.035);
     if (e.boss) {
       if (!drawThreatFrame("dangerReticle", 0, 0, e.r * 3.25, e.r * 3.25, 0.22, -t * 0.15, "lighter")) {
         drawSoftParticleFallback(0, 0, e.r * 1.5, colors.danger, 0.14, -t * 0.15, 1.12);
@@ -4444,17 +4677,20 @@
     ctx.restore();
 
     const premiumSprite = premiumEnemySprite(e);
-    const scale = premiumSprite ? premiumEnemySpriteScale(premiumSprite) : premiumMinionId ? premiumMinionSpriteScale(premiumMinionId) : creatureSpriteScale(creatureId);
+    const scale = premiumSprite ? premiumEnemySpriteScale(premiumSprite) : premiumHordeId ? premiumHordeSpriteScale(premiumHordeId) : premiumMinionId ? premiumMinionSpriteScale(premiumMinionId) : creatureSpriteScale(creatureId);
     const gait = Math.sin(t * (e.boss ? 2.2 : e.elite ? 3.2 : 5.4) + e.x * 0.013 + e.y * 0.011);
     const squash = e.boss ? 0.012 : e.elite ? 0.018 : 0.026;
-    const bob = premiumSprite ? -Math.abs(gait) * e.r * 0.025 : premiumMinionId ? -Math.abs(gait) * e.r * 0.035 : creatureId === "wolf" ? gait * e.r * 0.04 : -Math.abs(gait) * e.r * 0.052;
+    const bob = premiumSprite ? -Math.abs(gait) * e.r * 0.025 : premiumHordeId ? (premiumHordeLowProfile(premiumHordeId) ? gait * e.r * 0.023 : -Math.abs(gait) * e.r * 0.034) : premiumMinionId ? -Math.abs(gait) * e.r * 0.035 : creatureId === "wolf" ? gait * e.r * 0.04 : -Math.abs(gait) * e.r * 0.052;
     const lean = clamp((e.vx || 0) * 0.00065, -0.08, 0.08);
-    const baseAlpha = e.boss ? 0.94 : e.elite ? 0.9 : premiumMinionId ? 0.86 : 0.8;
+    const baseAlpha = e.boss ? 0.94 : e.elite ? 0.9 : premiumHordeId ? 0.88 : premiumMinionId ? 0.86 : 0.8;
     const alpha = e.flash > 0 ? Math.min(0.98, baseAlpha + 0.08) : baseAlpha;
-    const flip = (premiumMinionId === "lavaWolf" || premiumMinionId === "plagueCrawler" || creatureId === "wolf") && state.player && e.x < state.player.x ? -1 : 1;
+    const flip = ((premiumHordeId && premiumHordeLowProfile(premiumHordeId)) || premiumMinionId === "lavaWolf" || premiumMinionId === "plagueCrawler" || creatureId === "wolf") && state.player && e.x < state.player.x ? -1 : 1;
     if (premiumSprite) {
       const y = (premiumSprite === "stoneGolem" ? -e.r * 0.4 : -e.r * 0.48) + bob;
       drawPremiumCreatureSprite(premiumSprite, 0, y, e.r * scale[0] * (1 + gait * squash), e.r * scale[1] * (1 - gait * squash * 0.72), alpha, lean, 1);
+    } else if (premiumHordeId) {
+      const y = premiumHordeSpriteY(premiumHordeId, e.r) + bob;
+      drawPremiumHordeSprite(premiumHordeId, 0, y, e.r * scale[0] * (1 + gait * squash), e.r * scale[1] * (1 - gait * squash * 0.72), alpha, lean, flip);
     } else if (premiumMinionId) {
       const y = (premiumMinionId === "lavaWolf" || premiumMinionId === "plagueCrawler" ? -e.r * 0.08 : premiumMinionId === "voidSummoner" ? -e.r * 0.42 : -e.r * 0.18) + bob;
       drawPremiumMinionSprite(premiumMinionId, 0, y, e.r * scale[0] * (1 + gait * squash), e.r * scale[1] * (1 - gait * squash * 0.72), alpha, lean, flip);
@@ -5239,6 +5475,8 @@
         ctx.globalCompositeOperation = "source-over";
         if (p.premiumSprite) {
           drawPremiumCreatureSprite(p.premiumSprite, s.x, s.y - fade * p.r * 0.82, p.w * scale, p.h * scale, alpha * 0.68, (p.rot || 0) + fade * 0.06, 1);
+        } else if (p.premiumHordeSprite) {
+          drawPremiumHordeSprite(p.premiumHordeSprite, s.x, s.y - fade * p.r * 0.72, p.w * scale, p.h * scale, alpha * 0.64, (p.rot || 0) + fade * 0.08, p.flip || 1);
         } else if (p.premiumMinionSprite) {
           drawPremiumMinionSprite(p.premiumMinionSprite, s.x, s.y - fade * p.r * 0.72, p.w * scale, p.h * scale, alpha * 0.62, (p.rot || 0) + fade * 0.08, p.flip || 1);
         } else {
@@ -5785,6 +6023,9 @@
             hitDraws: state.qa.hitAtlasDraws || 0,
             threatReady: threatAtlasReady(),
             threatDraws: state.qa.threatDraws || 0,
+            hordeReady: premiumHordeAtlasReady(),
+            hordeSpriteDraws: state.qa.hordeSpriteDraws || 0,
+            hordeSpritesSkipped: state.qa.hordeSpritesSkipped || 0,
             particlesRendered: state.qa.particlesRendered || 0,
             particlesCulled: state.qa.particlesCulled || 0,
             particleLimit: fxParticleLimit(),
@@ -5814,6 +6055,8 @@
         state.qa.atmosphereDraws = 0;
         state.qa.hitAtlasDraws = 0;
         state.qa.threatDraws = 0;
+        state.qa.hordeSpriteDraws = 0;
+        state.qa.hordeSpritesSkipped = 0;
         state.qa.particlesRendered = 0;
         state.qa.particlesCulled = 0;
         state.qa.swarmImpostorDraws = 0;
