@@ -54,6 +54,8 @@
   const MAX_GEMS = 720;
   const MAX_COINS = 420;
   const DETAIL_ENEMY_LIMIT = 260;
+  const SWARM_RENDER_LIMIT = 420;
+  const DENSE_AREA_LIMIT = 48;
   const HIGH_FX_LIMIT = 560;
   const QA_MODE = new URLSearchParams(window.location.search).has("qa");
   const STORAGE_KEY = QA_MODE ? "spirit-survivors-save-qa-v1" : "spirit-survivors-save-v2";
@@ -79,7 +81,7 @@
       updateQaDataset();
       render();
     };
-    visualAtlas.src = "assets/combat-asset-reference-v1.png";
+    visualAtlas.src = "assets/premium-combat-fx-atlas-v2.png";
   }
 
   const creatureAtlas = typeof Image !== "undefined" ? new Image() : null;
@@ -117,12 +119,14 @@
   }
 
   const atlasFrames = {
-    swordFan: { x: 0, y: 620, w: 335, h: 300 },
-    talismanWheel: { x: 320, y: 625, w: 270, h: 292 },
-    spiritFire: { x: 585, y: 620, w: 235, h: 305 },
-    voidSeal: { x: 800, y: 610, w: 265, h: 315 },
-    frostBurst: { x: 1048, y: 600, w: 265, h: 325 },
-    plaguePool: { x: 1286, y: 602, w: 386, h: 326 }
+    swordFan: { x: 0, y: 0, w: 384, h: 512 },
+    talismanWheel: { x: 384, y: 0, w: 384, h: 512 },
+    spiritFire: { x: 768, y: 0, w: 384, h: 512 },
+    voidSeal: { x: 1152, y: 0, w: 384, h: 512 },
+    frostBurst: { x: 0, y: 512, w: 384, h: 512 },
+    plaguePool: { x: 384, y: 512, w: 384, h: 512 },
+    eliteDemon: { x: 768, y: 512, w: 384, h: 512 },
+    stoneGolem: { x: 1152, y: 512, w: 384, h: 512 }
   };
 
   const creatureFrames = {
@@ -1888,13 +1892,18 @@
       const e = state.enemies[i];
       e.flash = Math.max(0, e.flash - dt * 4);
       e.slow = Math.max(0, e.slow - dt * 0.65);
-      for (const key of Object.keys(e.hit)) e.hit[key] -= dt;
+      for (const key in e.hit) {
+        e.hit[key] -= dt;
+        if (e.hit[key] < -1) delete e.hit[key];
+      }
       const dx = p.x - e.x;
       const dy = p.y - e.y;
-      const d = Math.hypot(dx, dy) || 1;
+      const d2 = dx * dx + dy * dy;
+      const d = Math.sqrt(d2) || 1;
+      const invD = 1 / d;
       const slowMult = e.slow > 0 ? 0.52 : 1;
-      e.vx = (dx / d) * e.speed * slowMult;
-      e.vy = (dy / d) * e.speed * slowMult;
+      e.vx = dx * invD * e.speed * slowMult;
+      e.vy = dy * invD * e.speed * slowMult;
       e.x += e.vx * dt;
       e.y += e.vy * dt;
 
@@ -1951,8 +1960,8 @@
       const touch = p.r + e.r;
       if (d <= touch) {
         const push = (touch - d) * 0.5;
-        e.x -= (dx / d) * push;
-        e.y -= (dy / d) * push;
+        e.x -= dx * invD * push;
+        e.y -= dy * invD * push;
         hurtPlayer(e.damage * 0.25);
       }
 
@@ -3381,11 +3390,16 @@
 
   function renderEnemies() {
     const t = performance.now() / 1000;
+    const swarmMode = state.enemies.length >= SWARM_RENDER_LIMIT;
     for (const e of state.enemies) {
       const s = worldToScreen(e.x, e.y);
       if (s.x < -120 || s.x > window.innerWidth + 120 || s.y < -120 || s.y > window.innerHeight + 120) continue;
       const pulse = Math.sin(t * (e.boss ? 2.6 : e.elite ? 3.2 : 4.5) + e.x * 0.01 + e.y * 0.01);
       const detailed = e.boss || e.elite || state.enemies.length <= DETAIL_ENEMY_LIMIT;
+      if (swarmMode && !e.boss && !e.elite) {
+        drawSwarmEnemyAt(e, s.x, s.y, t);
+        continue;
+      }
       ctx.save();
       ctx.translate(s.x, s.y);
       if (!e.boss && !e.elite && !detailed) {
@@ -3529,6 +3543,51 @@
       }
       ctx.restore();
     }
+  }
+
+  function drawSwarmEnemyAt(e, x, y, t) {
+    const r = e.r;
+    const flash = e.flash > 0;
+    ctx.fillStyle = "rgba(0, 0, 0, 0.18)";
+    ctx.beginPath();
+    ctx.ellipse(x, y + r * 0.78, r * 0.82, r * 0.22, 0, 0, TAU);
+    ctx.fill();
+
+    ctx.globalAlpha = flash ? 0.98 : 0.72;
+    ctx.fillStyle = flash ? "#fff6d5" : e.color;
+    ctx.strokeStyle = flash ? "rgba(255, 246, 190, 0.66)" : "rgba(5, 7, 10, 0.52)";
+    ctx.lineWidth = flash ? 2 : 1;
+    const lean = clamp((e.vx || 0) * 0.00038, -0.08, 0.08);
+    const pulse = 1 + Math.sin(t * 4.5 + e.x * 0.011 + e.y * 0.009) * 0.025;
+
+    ctx.beginPath();
+    switch (e.type.id) {
+      case "wolf":
+      case "runner":
+        ctx.ellipse(x, y, r * 0.98 * pulse, r * 0.52, lean, 0, TAU);
+        break;
+      case "stone":
+      case "brute":
+        ctx.moveTo(x, y - r * 0.92);
+        ctx.lineTo(x + r * 0.78, y - r * 0.1);
+        ctx.lineTo(x + r * 0.46, y + r * 0.82);
+        ctx.lineTo(x - r * 0.5, y + r * 0.76);
+        ctx.lineTo(x - r * 0.82, y - r * 0.06);
+        ctx.closePath();
+        break;
+      case "wisp":
+      case "shadow":
+        ctx.moveTo(x, y - r);
+        ctx.bezierCurveTo(x + r * 0.82, y - r * 0.28, x + r * 0.58, y + r * 0.82, x, y + r);
+        ctx.bezierCurveTo(x - r * 0.58, y + r * 0.82, x - r * 0.82, y - r * 0.28, x, y - r);
+        break;
+      default:
+        ctx.ellipse(x, y, r * 0.68, r * 0.86 * pulse, lean, 0, TAU);
+        break;
+    }
+    ctx.fill();
+    ctx.stroke();
+    ctx.globalAlpha = 1;
   }
 
   function drawSpriteEnemy(e, creatureId, t, pulse) {
@@ -3901,7 +3960,7 @@
       if (pr.kind === "thousandSword") {
         ctx.globalCompositeOperation = "lighter";
         drawGlow(pr.r * 0.8, 0, pr.r * 4.5, pr.color, 0.18);
-        const drewAtlas = atlasFx && drawAtlasFrame("swordFan", -pr.r * 0.55, 0, pr.r * 10.8, pr.r * 7.4, 0.56, 0, "screen");
+        const drewAtlas = atlasFx && drawAtlasFrame("swordFan", -pr.r * 0.55, 0, pr.r * 10.8, pr.r * 7.4, 0.8, 0, "source-over");
         if (!drewAtlas && highFx) {
           for (let i = -1; i <= 1; i += 2) {
             ctx.save();
@@ -3916,7 +3975,7 @@
       } else if (pr.kind === "glacierNeedle") {
         ctx.globalCompositeOperation = "lighter";
         drawGlow(0, 0, pr.r * 4, pr.color, 0.16);
-        const drewAtlas = atlasFx && drawAtlasFrame("frostBurst", 0, 0, pr.r * 6.2, pr.r * 4.6, 0.5, 0, "screen");
+        const drewAtlas = atlasFx && drawAtlasFrame("frostBurst", 0, 0, pr.r * 6.2, pr.r * 4.6, 0.76, 0, "source-over");
         if (!drewAtlas && highFx) drawShardCluster(-pr.r * 0.6, 0, pr.r * 1.2, pr.color, now, 5);
         ctx.globalCompositeOperation = "source-over";
         if (!drewAtlas) {
@@ -3963,7 +4022,7 @@
       } else if (pr.kind === "talisman") {
         ctx.save();
         ctx.rotate(Math.sin(now / 120 + pr.spin) * 0.08);
-        const drewAtlas = atlasFx && drawAtlasFrame("talismanWheel", 0, 0, pr.r * 5.4, pr.r * 5.4, 0.52, -now / 900, "screen");
+        const drewAtlas = atlasFx && drawAtlasFrame("talismanWheel", 0, 0, pr.r * 5.4, pr.r * 5.4, 0.8, -now / 900, "source-over");
         if (!drewAtlas && highFx) {
           ctx.globalCompositeOperation = "lighter";
           for (let i = 1; i <= 2; i++) {
@@ -3979,7 +4038,7 @@
       } else if (pr.kind === "fireSea") {
         ctx.globalCompositeOperation = "lighter";
         drawGlow(0, 0, pr.r * 3.8, pr.color, 0.22);
-        const drewAtlas = atlasFx && drawAtlasFrame("spiritFire", 0, 0, pr.r * 7.2, pr.r * 5.6, 0.55, 0, "screen");
+        const drewAtlas = atlasFx && drawAtlasFrame("spiritFire", 0, 0, pr.r * 7.2, pr.r * 5.6, 0.8, 0, "source-over");
         ctx.globalCompositeOperation = "source-over";
         if (!drewAtlas) {
           ctx.beginPath();
@@ -4002,7 +4061,7 @@
           }
         }
       } else if (pr.kind === "fire") {
-        const drewAtlas = atlasFx && drawAtlasFrame("spiritFire", -pr.r * 0.12, 0, pr.r * 5.6, pr.r * 3.9, 0.5, 0, "screen");
+        const drewAtlas = atlasFx && drawAtlasFrame("spiritFire", -pr.r * 0.12, 0, pr.r * 5.6, pr.r * 3.9, 0.76, 0, "source-over");
         if (!drewAtlas) {
           ctx.beginPath();
           ctx.moveTo(pr.r * 1.75, 0);
@@ -4075,6 +4134,7 @@
     const now = performance.now();
     const highFx = allowHighFx();
     const atlasFx = allowAtlasFx();
+    const denseAreas = state.areas.length >= DENSE_AREA_LIMIT || state.enemies.length >= SWARM_RENDER_LIMIT;
     for (const area of state.areas) {
       const s = worldToScreen(area.x, area.y);
       const alpha = clamp(area.life / area.maxLife, 0, 1);
@@ -4083,8 +4143,23 @@
       ctx.globalAlpha = area.kind === "voidSeal" ? 0.18 + alpha * 0.26 : 0.16 + alpha * 0.24;
       ctx.shadowColor = area.color;
       ctx.shadowBlur = area.kind === "plagueDomain" || area.kind === "fireSea" ? 34 : 24;
+      if (denseAreas) {
+        ctx.shadowBlur = 10;
+        ctx.fillStyle = colorAlpha(area.color, 0.26);
+        ctx.beginPath();
+        ctx.ellipse(s.x, s.y, area.r * 0.92, area.r * 0.68, now / 1800, 0, TAU);
+        ctx.fill();
+        ctx.globalAlpha = 0.42 * alpha;
+        ctx.strokeStyle = area.color;
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, area.r * (0.72 + Math.sin(now / 210) * 0.03), 0, TAU);
+        ctx.stroke();
+        ctx.restore();
+        continue;
+      }
       const atlasSpec = atlasFx ? areaAtlasSpec(area, now) : null;
-      if (atlasSpec && drawAtlasFrame(atlasSpec.id, s.x, s.y, atlasSpec.w, atlasSpec.h, atlasSpec.alpha * alpha, atlasSpec.rotation, "screen")) {
+      if (atlasSpec && drawAtlasFrame(atlasSpec.id, s.x, s.y, atlasSpec.w, atlasSpec.h, atlasSpec.alpha * alpha, atlasSpec.rotation, "source-over")) {
         drawGlow(s.x, s.y, area.r * 1.18, area.color, 0.12 * alpha);
         ctx.shadowBlur = 0;
         ctx.restore();
