@@ -2666,6 +2666,7 @@
     document.body.dataset.qaParticlesRendered = String(state.qa.particlesRendered || 0);
     document.body.dataset.qaParticlesCulled = String(state.qa.particlesCulled || 0);
     document.body.dataset.qaParticleLimit = String(fxParticleLimit());
+    document.body.dataset.qaParticleRenderBudget = String(fxParticleRenderBudget());
     document.body.dataset.qaSwarmImpostorDraws = String(state.qa.swarmImpostorDraws || 0);
     document.body.dataset.qaLegacyVectorOverlays = String(state.qa.legacyVectorOverlays || 0);
     document.body.dataset.qaPremiumAtlasFxDraws = String(state.qa.premiumAtlasFxDraws || 0);
@@ -3045,13 +3046,22 @@
 
   function fxParticleLimit() {
     const compact = Math.min(window.innerWidth, window.innerHeight) < 560;
-    if (state.enemies.length >= SWARM_RENDER_LIMIT) return compact ? 260 : 360;
-    if (state.enemies.length > DETAIL_ENEMY_LIMIT) return compact ? 340 : 500;
+    if (state.enemies.length >= SWARM_RENDER_LIMIT) return compact ? 240 : 340;
+    if (state.enemies.length > DETAIL_ENEMY_LIMIT) return compact ? 290 : 430;
+    if (state.enemies.length > 180) return compact ? 320 : 420;
     return compact ? 560 : MAX_PARTICLES;
   }
 
   function hasParticleRoom(buffer = 0) {
     return state.particles.length < fxParticleLimit() - buffer;
+  }
+
+  function fxParticleRenderBudget() {
+    const compact = Math.min(window.innerWidth, window.innerHeight) < 560;
+    if (state.enemies.length >= SWARM_RENDER_LIMIT) return compact ? 110 : 170;
+    if (state.enemies.length > DETAIL_ENEMY_LIMIT) return compact ? 140 : 220;
+    if (state.enemies.length > 180) return compact ? 170 : 260;
+    return compact ? 240 : 420;
   }
 
   function atlasReady() {
@@ -5316,12 +5326,18 @@
     const atlasFx = allowAtlasFx();
     const viewW = window.innerWidth;
     const viewH = window.innerHeight;
+    const renderBudget = fxParticleRenderBudget();
     let renderedParticles = 0;
     let culledParticles = 0;
     for (const p of state.particles) {
       const s = worldToScreen(p.x, p.y);
       const cull = p.kind === "deathSprite" ? Math.max(p.w || 0, p.h || 0, p.r * 5) * 0.55 : Math.max(86, p.r * 5.8);
       if (s.x < -cull || s.x > viewW + cull || s.y < -cull || s.y > viewH + cull) {
+        culledParticles += 1;
+        continue;
+      }
+      const lowPriority = p.kind === "spark" || p.kind === "streak" || p.kind === "impact" || !p.kind;
+      if (lowPriority && renderedParticles >= renderBudget) {
         culledParticles += 1;
         continue;
       }
@@ -6042,6 +6058,7 @@
             particlesRendered: state.qa.particlesRendered || 0,
             particlesCulled: state.qa.particlesCulled || 0,
             particleLimit: fxParticleLimit(),
+            particleRenderBudget: fxParticleRenderBudget(),
             legacyVectorOverlays: state.qa.legacyVectorOverlays || 0,
             premiumAtlasFxDraws: state.qa.premiumAtlasFxDraws || 0
           },
