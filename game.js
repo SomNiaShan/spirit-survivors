@@ -57,6 +57,7 @@
   const SWARM_RENDER_LIMIT = 420;
   const DENSE_AREA_LIMIT = 48;
   const HIGH_FX_LIMIT = 560;
+  const PICKUP_SPRITE_LIMIT = 260;
   const QA_MODE = new URLSearchParams(window.location.search).has("qa");
   const STORAGE_KEY = QA_MODE ? "spirit-survivors-save-qa-v1" : "spirit-survivors-save-v2";
 
@@ -132,6 +133,18 @@
     premiumPlayerAtlas.src = "assets/premium-player-atlas-v2.png";
   }
 
+  const premiumPickupAtlas = typeof Image !== "undefined" ? new Image() : null;
+  if (premiumPickupAtlas) {
+    premiumPickupAtlas.decoding = "async";
+    premiumPickupAtlas.onload = () => {
+      if (!QA_MODE) return;
+      state.qa.visualDone = false;
+      updateQaDataset();
+      render();
+    };
+    premiumPickupAtlas.src = "assets/premium-pickup-atlas-v1.png";
+  }
+
   const itemIconAtlas = typeof Image !== "undefined" ? new Image() : null;
   if (itemIconAtlas) {
     itemIconAtlas.decoding = "async";
@@ -193,6 +206,15 @@
   const premiumPlayerFrames = {
     heroSword: { x: 0, y: 0, w: 512, h: 512 },
     heroTalisman: { x: 512, y: 0, w: 512, h: 512 }
+  };
+
+  const premiumPickupFrames = {
+    xpCrystal: { x: 0, y: 0, w: 512, h: 512 },
+    spiritCoin: { x: 512, y: 0, w: 512, h: 512 },
+    treasureChest: { x: 1024, y: 0, w: 512, h: 512 },
+    healGourd: { x: 0, y: 512, w: 512, h: 512 },
+    magnetArray: { x: 512, y: 512, w: 512, h: 512 },
+    thunderBomb: { x: 1024, y: 512, w: 512, h: 512 }
   };
 
   const itemIconFrames = {
@@ -1436,7 +1458,7 @@
   }
 
   function updateSpawn(dt) {
-    if (QA_MODE && state.qa.mode === "minions") {
+    if (QA_MODE && (state.qa.mode === "minions" || state.qa.mode === "loot")) {
       state.wave = 1;
       return;
     }
@@ -2472,6 +2494,7 @@
     document.body.dataset.qaPremiumCreatureAtlasReady = premiumCreatureAtlasReady() ? "1" : "0";
     document.body.dataset.qaPremiumMinionAtlasReady = premiumMinionAtlasReady() ? "1" : "0";
     document.body.dataset.qaPremiumPlayerAtlasReady = premiumPlayerAtlasReady() ? "1" : "0";
+    document.body.dataset.qaPremiumPickupAtlasReady = premiumPickupAtlasReady() ? "1" : "0";
     document.body.dataset.qaItemAtlasReady = itemIconAtlasReady() ? "1" : "0";
     document.body.dataset.qaArenaReady = arenaBackgroundReady() ? "1" : "0";
     const boss = state.enemies.find((e) => e.boss && e.hp > 0);
@@ -2854,6 +2877,10 @@
     return Boolean(premiumPlayerAtlas && premiumPlayerAtlas.complete && premiumPlayerAtlas.naturalWidth > 0);
   }
 
+  function premiumPickupAtlasReady() {
+    return Boolean(premiumPickupAtlas && premiumPickupAtlas.complete && premiumPickupAtlas.naturalWidth > 0);
+  }
+
   function itemIconAtlasReady() {
     return Boolean(itemIconAtlas && itemIconAtlas.complete && itemIconAtlas.naturalWidth > 0);
   }
@@ -2935,6 +2962,18 @@
     ctx.rotate(rotation);
     ctx.scale(flip, 1);
     ctx.drawImage(premiumPlayerAtlas, frame.x, frame.y, frame.w, frame.h, -w / 2, -h / 2, w, h);
+    ctx.restore();
+    return true;
+  }
+
+  function drawPremiumPickupSprite(id, x, y, w, h, alpha = 0.95, rotation = 0) {
+    const frame = premiumPickupFrames[id];
+    if (!frame || !premiumPickupAtlasReady()) return false;
+    ctx.save();
+    ctx.globalAlpha *= alpha;
+    ctx.translate(x, y);
+    ctx.rotate(rotation);
+    ctx.drawImage(premiumPickupAtlas, frame.x, frame.y, frame.w, frame.h, -w / 2, -h / 2, w, h);
     ctx.restore();
     return true;
   }
@@ -4540,47 +4579,66 @@
   }
 
   function renderPickups() {
+    const now = performance.now() / 1000;
+    const pickupSpriteBudget = state.gems.length + state.coins.length <= PICKUP_SPRITE_LIMIT;
+    const usePremiumSmallPickups = premiumPickupAtlasReady() && pickupSpriteBudget;
+    const usePremiumLoot = premiumPickupAtlasReady();
+    const viewW = window.innerWidth;
+    const viewH = window.innerHeight;
     for (const g of state.gems) {
       const s = worldToScreen(g.x, g.y);
+      if (s.x < -70 || s.x > viewW + 70 || s.y < -70 || s.y > viewH + 70) continue;
+      const bob = Math.sin(now * 4.6 + g.x * 0.012 + g.y * 0.01) * 1.1;
       ctx.save();
       ctx.globalCompositeOperation = "lighter";
-      drawGlow(s.x, s.y, g.r * 4.5, g.color, 0.14);
+      drawGlow(s.x, s.y, g.r * (usePremiumSmallPickups ? 5.6 : 4.5), g.color, usePremiumSmallPickups ? 0.18 : 0.14);
       ctx.restore();
-      ctx.fillStyle = g.color;
-      ctx.shadowColor = g.color;
-      ctx.shadowBlur = 9;
-      ctx.beginPath();
-      ctx.moveTo(s.x, s.y - g.r);
-      ctx.lineTo(s.x + g.r, s.y);
-      ctx.lineTo(s.x, s.y + g.r);
-      ctx.lineTo(s.x - g.r, s.y);
-      ctx.closePath();
-      ctx.fill();
-      ctx.shadowBlur = 0;
-      ctx.fillStyle = "rgba(255,255,255,0.48)";
-      ctx.beginPath();
-      ctx.arc(s.x - g.r * 0.18, s.y - g.r * 0.22, Math.max(1.2, g.r * 0.24), 0, TAU);
-      ctx.fill();
+      if (usePremiumSmallPickups) {
+        drawPremiumPickupSprite("xpCrystal", s.x, s.y + bob, g.r * 6.4, g.r * 7.1, 0.88, Math.sin(now * 2.2 + g.x * 0.01) * 0.12);
+      } else {
+        ctx.fillStyle = g.color;
+        ctx.shadowColor = g.color;
+        ctx.shadowBlur = 9;
+        ctx.beginPath();
+        ctx.moveTo(s.x, s.y - g.r);
+        ctx.lineTo(s.x + g.r, s.y);
+        ctx.lineTo(s.x, s.y + g.r);
+        ctx.lineTo(s.x - g.r, s.y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = "rgba(255,255,255,0.48)";
+        ctx.beginPath();
+        ctx.arc(s.x - g.r * 0.18, s.y - g.r * 0.22, Math.max(1.2, g.r * 0.24), 0, TAU);
+        ctx.fill();
+      }
     }
     for (const c of state.coins) {
       const s = worldToScreen(c.x, c.y);
+      if (s.x < -70 || s.x > viewW + 70 || s.y < -70 || s.y > viewH + 70) continue;
+      const bob = Math.sin(now * 4.2 + c.x * 0.013 + c.y * 0.009) * 0.9;
       ctx.save();
       ctx.globalCompositeOperation = "lighter";
-      drawGlow(s.x, s.y, c.r * 4.2, colors.gold, 0.16);
+      drawGlow(s.x, s.y, c.r * (usePremiumSmallPickups ? 5.2 : 4.2), colors.gold, usePremiumSmallPickups ? 0.2 : 0.16);
       ctx.restore();
-      ctx.fillStyle = colors.gold;
-      ctx.shadowColor = colors.gold;
-      ctx.shadowBlur = 8;
-      ctx.beginPath();
-      ctx.arc(s.x, s.y, c.r, 0, TAU);
-      ctx.fill();
-      ctx.shadowBlur = 0;
-      ctx.fillStyle = "#6f4518";
-      ctx.fillRect(s.x - 1, s.y - c.r * 0.6, 2, c.r * 1.2);
+      if (usePremiumSmallPickups) {
+        drawPremiumPickupSprite("spiritCoin", s.x, s.y + bob, c.r * 6.2, c.r * 6.2, 0.9, Math.sin(now * 3 + c.x * 0.01) * 0.1);
+      } else {
+        ctx.fillStyle = colors.gold;
+        ctx.shadowColor = colors.gold;
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, c.r, 0, TAU);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = "#6f4518";
+        ctx.fillRect(s.x - 1, s.y - c.r * 0.6, 2, c.r * 1.2);
+      }
     }
     for (const item of state.powerups) {
       const info = powerupTypes[item.type];
       const s = worldToScreen(item.x, item.y);
+      if (s.x < -90 || s.x > viewW + 90 || s.y < -90 || s.y > viewH + 90) continue;
       const pulse = Math.sin(item.pulse) * 2;
       ctx.save();
       ctx.translate(s.x, s.y);
@@ -4589,7 +4647,16 @@
       ctx.fillStyle = info.color;
       ctx.strokeStyle = "rgba(255,255,255,0.75)";
       ctx.lineWidth = 2;
-      if (item.type === "heal") {
+      if (usePremiumLoot) {
+        const sprite = item.type === "heal" ? "healGourd" : item.type === "magnet" ? "magnetArray" : "thunderBomb";
+        ctx.restore();
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        drawGlow(s.x, s.y, item.r * 4.8 + pulse * 2, info.color, 0.22);
+        ctx.restore();
+        drawPremiumPickupSprite(sprite, s.x, s.y - 2 + pulse * 0.25, item.r * 4.5 + pulse, item.r * 4.5 + pulse, 0.95, item.type === "magnet" ? item.pulse * 0.08 : Math.sin(item.pulse * 0.4) * 0.08);
+        continue;
+      } else if (item.type === "heal") {
         ctx.beginPath();
         ctx.arc(-4, -2, 6 + pulse * 0.2, 0, TAU);
         ctx.arc(4, -2, 6 + pulse * 0.2, 0, TAU);
@@ -4622,20 +4689,25 @@
     }
     for (const chest of state.chests) {
       const s = worldToScreen(chest.x, chest.y);
+      if (s.x < -100 || s.x > viewW + 100 || s.y < -100 || s.y > viewH + 100) continue;
       const pulse = Math.sin(chest.pulse * 5) * 2;
       ctx.save();
       ctx.globalCompositeOperation = "lighter";
       drawGlow(s.x, s.y, 42 + pulse * 2, colors.gold, 0.2);
       ctx.restore();
-      ctx.shadowColor = colors.gold;
-      ctx.shadowBlur = 14;
-      ctx.fillStyle = "#8b5726";
-      ctx.fillRect(s.x - 15 - pulse, s.y - 10 - pulse, 30 + pulse * 2, 22 + pulse * 2);
-      ctx.fillStyle = colors.gold;
-      ctx.fillRect(s.x - 15 - pulse, s.y - 13 - pulse, 30 + pulse * 2, 7);
-      ctx.strokeStyle = "rgba(255, 232, 160, 0.8)";
-      ctx.strokeRect(s.x - 15 - pulse, s.y - 13 - pulse, 30 + pulse * 2, 25 + pulse * 2);
-      ctx.shadowBlur = 0;
+      if (usePremiumLoot) {
+        drawPremiumPickupSprite("treasureChest", s.x, s.y - 4 + pulse * 0.25, chest.r * 4.35 + pulse * 2, chest.r * 3.65 + pulse * 2, 0.96, Math.sin(chest.pulse * 1.3) * 0.04);
+      } else {
+        ctx.shadowColor = colors.gold;
+        ctx.shadowBlur = 14;
+        ctx.fillStyle = "#8b5726";
+        ctx.fillRect(s.x - 15 - pulse, s.y - 10 - pulse, 30 + pulse * 2, 22 + pulse * 2);
+        ctx.fillStyle = colors.gold;
+        ctx.fillRect(s.x - 15 - pulse, s.y - 13 - pulse, 30 + pulse * 2, 7);
+        ctx.strokeStyle = "rgba(255, 232, 160, 0.8)";
+        ctx.strokeRect(s.x - 15 - pulse, s.y - 13 - pulse, 30 + pulse * 2, 25 + pulse * 2);
+        ctx.shadowBlur = 0;
+      }
     }
   }
 
@@ -5033,6 +5105,35 @@
     render();
   }
 
+  function setupQaLootGallery() {
+    const p = state.player;
+    if (!p) return;
+    p.weapons = {};
+    p.passives = {};
+    applyStats(false);
+    p.hp = p.maxHp;
+    state.elapsed = 90;
+    state.enemies = [];
+    state.enemyGrid.clear();
+    state.projectiles = [];
+    state.enemyProjectiles = [];
+    state.areas = [];
+    state.particles = [];
+    state.gems = [];
+    state.coins = [];
+    state.powerups = [];
+    state.chests = [];
+    state.gems.push({ x: p.x - 260, y: p.y - 90, value: 24, r: 7, color: colors.blue, vx: 0, vy: 0 });
+    state.coins.push({ x: p.x - 150, y: p.y - 88, value: 12, r: 6, vx: 0, vy: 0 });
+    state.chests.push({ x: p.x, y: p.y - 112, r: 17, pulse: 0 });
+    state.powerups.push({ x: p.x + 150, y: p.y - 88, type: "heal", r: 12, vx: 0, vy: 0, pulse: 1.2 });
+    state.powerups.push({ x: p.x + 260, y: p.y - 90, type: "magnet", r: 12, vx: 0, vy: 0, pulse: 2.4 });
+    state.powerups.push({ x: p.x, y: p.y + 178, type: "bomb", r: 12, vx: 0, vy: 0, pulse: 3.1 });
+    updateHud();
+    updateQaDataset();
+    render();
+  }
+
   function startQaMode() {
     const params = new URLSearchParams(window.location.search);
     const mode = params.get("qa");
@@ -5065,6 +5166,10 @@
     }
     if (mode === "minions") {
       setupQaMinionGallery();
+      return;
+    }
+    if (mode === "loot") {
+      setupQaLootGallery();
       return;
     }
     grantQaBuild();
