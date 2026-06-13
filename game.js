@@ -3094,7 +3094,7 @@
 
   function fxParticleRenderBudget() {
     const compact = Math.min(window.innerWidth, window.innerHeight) < 560;
-    if (state.enemies.length >= SWARM_RENDER_LIMIT) return compact ? 110 : 170;
+    if (state.enemies.length >= SWARM_RENDER_LIMIT) return compact ? 110 : 135;
     if (state.enemies.length > DETAIL_ENEMY_LIMIT) return compact ? 140 : 220;
     if (state.enemies.length > 180) return compact ? 170 : 260;
     return compact ? 240 : 420;
@@ -3102,7 +3102,7 @@
 
   function hordeSpriteRenderBudget() {
     const compact = Math.min(window.innerWidth, window.innerHeight) < 560;
-    if (state.enemies.length >= SWARM_RENDER_LIMIT) return compact ? 210 : 430;
+    if (state.enemies.length >= SWARM_RENDER_LIMIT) return compact ? 210 : 350;
     if (state.enemies.length > DETAIL_ENEMY_LIMIT) return compact ? 300 : 460;
     return Infinity;
   }
@@ -4336,7 +4336,9 @@
     let swarmImpostorDraws = 0;
     let hordeSpritesSkipped = 0;
     const hordeBudget = hordeSpriteRenderBudget();
+    const hordeNearExtraBudget = 40;
     let hordeBudgetUsed = 0;
+    let hordeNearExtraUsed = 0;
     for (const e of state.enemies) {
       const sx = e.x - camX + halfW;
       const sy = e.y - camY + halfH;
@@ -4347,9 +4349,13 @@
       const premiumMinionId = premiumMinionSprite(e);
       if (!e.boss && !e.elite && (swarmMode || !detailed)) {
         const nearPlayer = Math.abs(sx - halfW) < 72 && Math.abs(sy - halfH) < 108;
-        if (hordeBudgetUsed >= hordeBudget && !nearPlayer && e.flash <= 0) {
-          hordeSpritesSkipped += 1;
-          continue;
+        if (hordeBudgetUsed >= hordeBudget) {
+          if (nearPlayer && hordeNearExtraUsed < hordeNearExtraBudget) {
+            hordeNearExtraUsed += 1;
+          } else {
+            hordeSpritesSkipped += 1;
+            continue;
+          }
         }
         hordeBudgetUsed += 1;
         if (premiumHordeId) {
