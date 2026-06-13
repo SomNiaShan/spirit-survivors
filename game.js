@@ -758,7 +758,7 @@
     hudSignature: "",
     forceNextChestEvolution: false,
     lastResult: null,
-    qa: { mode: null, autoChoices: false, autoMove: false, timeScale: 1, maxSteps: 1, syncRunning: false, syncSteps: 0, syncMs: 0, visualDone: false, groundDecalDraws: 0, environmentPropDraws: 0, atmosphereDraws: 0, hitAtlasDraws: 0, threatDraws: 0, hordeSpriteDraws: 0, hordeSpritesSkipped: 0, particlesRendered: 0, particlesCulled: 0, swarmImpostorDraws: 0, legacyVectorOverlays: 0, premiumAtlasFxDraws: 0 },
+    qa: { mode: null, autoChoices: false, autoMove: false, timeScale: 1, maxSteps: 1, syncRunning: false, syncSteps: 0, syncMs: 0, visualDone: false, groundDecalDraws: 0, environmentPropDraws: 0, atmosphereDraws: 0, hitAtlasDraws: 0, threatDraws: 0, hordeSpriteDraws: 0, hordeSpritesSkipped: 0, hordeRenderBudget: 0, hordeBudgetUsed: 0, particlesRendered: 0, particlesCulled: 0, swarmImpostorDraws: 0, legacyVectorOverlays: 0, premiumAtlasFxDraws: 0 },
     wave: 1,
     spawnTimer: 0,
     eliteSchedule: [90, 180, 300, 450, 600, 760],
@@ -1217,6 +1217,8 @@
     state.qa.threatDraws = 0;
     state.qa.hordeSpriteDraws = 0;
     state.qa.hordeSpritesSkipped = 0;
+    state.qa.hordeRenderBudget = 0;
+    state.qa.hordeBudgetUsed = 0;
     state.qa.particlesRendered = 0;
     state.qa.particlesCulled = 0;
     state.qa.swarmImpostorDraws = 0;
@@ -2718,6 +2720,8 @@
     document.body.dataset.qaThreatDraws = String(state.qa.threatDraws || 0);
     document.body.dataset.qaHordeSpriteDraws = String(state.qa.hordeSpriteDraws || 0);
     document.body.dataset.qaHordeSpritesSkipped = String(state.qa.hordeSpritesSkipped || 0);
+    document.body.dataset.qaHordeRenderBudget = String(state.qa.hordeRenderBudget || 0);
+    document.body.dataset.qaHordeBudgetUsed = String(state.qa.hordeBudgetUsed || 0);
     document.body.dataset.qaParticlesRendered = String(state.qa.particlesRendered || 0);
     document.body.dataset.qaParticlesCulled = String(state.qa.particlesCulled || 0);
     document.body.dataset.qaParticleLimit = String(fxParticleLimit());
@@ -2955,6 +2959,8 @@
     state.qa.threatDraws = 0;
     state.qa.hordeSpriteDraws = 0;
     state.qa.hordeSpritesSkipped = 0;
+    state.qa.hordeRenderBudget = 0;
+    state.qa.hordeBudgetUsed = 0;
     state.qa.particlesRendered = 0;
     state.qa.particlesCulled = 0;
     ctx.save();
@@ -4502,7 +4508,11 @@
       ctx.restore();
     }
     if (QA_MODE) state.qa.swarmImpostorDraws = swarmImpostorDraws;
-    if (QA_MODE) state.qa.hordeSpritesSkipped = hordeSpritesSkipped;
+    if (QA_MODE) {
+      state.qa.hordeSpritesSkipped = hordeSpritesSkipped;
+      state.qa.hordeRenderBudget = Number.isFinite(hordeBudget) ? hordeBudget : 0;
+      state.qa.hordeBudgetUsed = hordeBudgetUsed;
+    }
   }
 
   function drawSwarmEnemyAt(e, x, y, t) {
@@ -5374,7 +5384,8 @@
         continue;
       }
       const lowPriority = p.kind === "spark" || p.kind === "streak" || p.kind === "impact" || !p.kind;
-      if (lowPriority && renderedParticles >= renderBudget) {
+      const budgetedPremiumFx = state.enemies.length >= SWARM_RENDER_LIMIT && (p.kind === "premiumHit" || p.kind === "premiumDeath");
+      if ((lowPriority || budgetedPremiumFx) && renderedParticles >= renderBudget) {
         culledParticles += 1;
         continue;
       }
@@ -6026,6 +6037,8 @@
             hordeReady: premiumHordeAtlasReady(),
             hordeSpriteDraws: state.qa.hordeSpriteDraws || 0,
             hordeSpritesSkipped: state.qa.hordeSpritesSkipped || 0,
+            hordeRenderBudget: state.qa.hordeRenderBudget || 0,
+            hordeBudgetUsed: state.qa.hordeBudgetUsed || 0,
             particlesRendered: state.qa.particlesRendered || 0,
             particlesCulled: state.qa.particlesCulled || 0,
             particleLimit: fxParticleLimit(),
@@ -6057,6 +6070,8 @@
         state.qa.threatDraws = 0;
         state.qa.hordeSpriteDraws = 0;
         state.qa.hordeSpritesSkipped = 0;
+        state.qa.hordeRenderBudget = 0;
+        state.qa.hordeBudgetUsed = 0;
         state.qa.particlesRendered = 0;
         state.qa.particlesCulled = 0;
         state.qa.swarmImpostorDraws = 0;
