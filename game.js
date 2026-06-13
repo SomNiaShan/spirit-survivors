@@ -82,6 +82,18 @@
     visualAtlas.src = "assets/combat-asset-reference-v1.png";
   }
 
+  const creatureAtlas = typeof Image !== "undefined" ? new Image() : null;
+  if (creatureAtlas) {
+    creatureAtlas.decoding = "async";
+    creatureAtlas.onload = () => {
+      if (!QA_MODE) return;
+      state.qa.visualDone = false;
+      updateQaDataset();
+      render();
+    };
+    creatureAtlas.src = "assets/creature-atlas-v1.png";
+  }
+
   const atlasFrames = {
     swordFan: { x: 0, y: 620, w: 335, h: 300 },
     talismanWheel: { x: 320, y: 625, w: 270, h: 292 },
@@ -89,6 +101,17 @@
     voidSeal: { x: 800, y: 610, w: 265, h: 315 },
     frostBurst: { x: 1048, y: 600, w: 265, h: 325 },
     plaguePool: { x: 1286, y: 602, w: 386, h: 326 }
+  };
+
+  const creatureFrames = {
+    heroSword: { x: 0, y: 0, w: 443, h: 443 },
+    heroTalisman: { x: 443, y: 0, w: 444, h: 443 },
+    imp: { x: 887, y: 0, w: 443, h: 443 },
+    wolf: { x: 1330, y: 0, w: 444, h: 443 },
+    wisp: { x: 0, y: 443, w: 443, h: 444 },
+    stone: { x: 443, y: 443, w: 444, h: 444 },
+    summoner: { x: 887, y: 443, w: 443, h: 444 },
+    boss: { x: 1330, y: 443, w: 444, h: 444 }
   };
 
   const characters = [
@@ -2301,6 +2324,7 @@
     document.body.dataset.qaChests = String(state.chests.length);
     document.body.dataset.qaPowerups = String(state.powerups.length);
     document.body.dataset.qaAtlasReady = atlasReady() ? "1" : "0";
+    document.body.dataset.qaCreatureAtlasReady = creatureAtlasReady() ? "1" : "0";
     const boss = state.enemies.find((e) => e.boss && e.hp > 0);
     document.body.dataset.qaBossHp = boss ? String(Math.ceil(boss.hp)) : "0";
     document.body.dataset.qaKills = String(state.kills);
@@ -2622,8 +2646,16 @@
     return Boolean(visualAtlas && visualAtlas.complete && visualAtlas.naturalWidth > 0);
   }
 
+  function creatureAtlasReady() {
+    return Boolean(creatureAtlas && creatureAtlas.complete && creatureAtlas.naturalWidth > 0);
+  }
+
   function allowAtlasFx() {
     return atlasReady() && allowHighFx() && state.projectiles.length < 180 && state.areas.length < 100;
+  }
+
+  function allowCreatureAtlas(unitCount = state.enemies.length) {
+    return creatureAtlasReady() && unitCount <= 150;
   }
 
   function drawAtlasFrame(id, x, y, w, h, alpha = 1, rotation = 0, blend = "lighter") {
@@ -2637,6 +2669,53 @@
     ctx.drawImage(visualAtlas, frame.x, frame.y, frame.w, frame.h, -w / 2, -h / 2, w, h);
     ctx.restore();
     return true;
+  }
+
+  function drawCreatureSprite(id, x, y, w, h, alpha = 0.9, rotation = 0, flip = 1) {
+    const frame = creatureFrames[id];
+    if (!frame || !creatureAtlasReady()) return false;
+    ctx.save();
+    ctx.globalAlpha *= alpha;
+    ctx.translate(x, y);
+    ctx.rotate(rotation);
+    ctx.scale(flip, 1);
+    ctx.drawImage(creatureAtlas, frame.x, frame.y, frame.w, frame.h, -w / 2, -h / 2, w, h);
+    ctx.restore();
+    return true;
+  }
+
+  function playerCreatureSprite(characterId) {
+    if (characterId === "sword") return "heroSword";
+    if (characterId === "talisman") return "heroTalisman";
+    return null;
+  }
+
+  function enemyCreatureSprite(e) {
+    if (e.boss) return "boss";
+    if (e.elite) {
+      if (e.type.id === "eliteWisp") return "wisp";
+      if (e.type.id === "eliteSummoner") return "summoner";
+      return "boss";
+    }
+    switch (e.type.id) {
+      case "imp":
+      case "runner":
+      case "spitter":
+      case "bug":
+        return "imp";
+      case "wolf":
+        return "wolf";
+      case "wisp":
+        return "wisp";
+      case "brute":
+      case "stone":
+        return "stone";
+      case "summoner":
+      case "shadow":
+        return "summoner";
+      default:
+        return null;
+    }
   }
 
   function drawBladeGlyph(length, width, color, alpha = 1) {
@@ -3010,6 +3089,14 @@
     }
     ctx.restore();
 
+    const playerSprite = playerCreatureSprite(p.character.id);
+    if (playerSprite && allowCreatureAtlas()) {
+      ctx.save();
+      ctx.globalCompositeOperation = "source-over";
+      drawCreatureSprite(playerSprite, 0, -3, p.r * 4.9, p.r * 4.9, p.hitFlash > 0 ? 0.55 : 0.92, -face * 0.05, p.lastDir.x < -0.08 ? -1 : 1);
+      ctx.restore();
+    }
+
     ctx.shadowColor = p.character.color;
     ctx.shadowBlur = 18;
     const robe = ctx.createLinearGradient(0, -p.r, 0, p.r + 12);
@@ -3215,6 +3302,17 @@
         body.addColorStop(1, colorAlpha("#05060a", 0.92));
         ctx.fillStyle = body;
         drawEnemySilhouette(e, detailed);
+      }
+      const creatureId = enemyCreatureSprite(e);
+      const drawCreature = creatureId && (e.boss || e.elite || allowCreatureAtlas());
+      if (drawCreature) {
+        const scale = creatureId === "wolf" ? [7.2, 4.7] : creatureId === "stone" ? [5.9, 5.2] : creatureId === "wisp" ? [5.6, 5.6] : creatureId === "summoner" ? [5.1, 5.7] : creatureId === "boss" ? [4.7, 4.5] : [4.9, 4.9];
+        const alpha = e.flash > 0 ? 0.46 : e.boss ? 0.86 : e.elite ? 0.82 : 0.72;
+        const flip = creatureId === "wolf" && state.player && e.x < state.player.x ? -1 : 1;
+        ctx.save();
+        ctx.globalCompositeOperation = "source-over";
+        drawCreatureSprite(creatureId, 0, creatureId === "wolf" ? -e.r * 0.12 : 0, e.r * scale[0], e.r * scale[1], alpha, 0, flip);
+        ctx.restore();
       }
       ctx.shadowBlur = 0;
       if (!e.boss) {

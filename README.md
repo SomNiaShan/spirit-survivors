@@ -31,6 +31,7 @@ python -m http.server 4173
 - 原创菜单背景图和程序化战斗视觉
 - 高品质视觉方向稿 `assets/concept-visual-target.png`
 - 战斗资源方向图 `assets/combat-asset-reference-v1.png`
+- 角色/怪物透明图集 `assets/creature-atlas-v1.png`
 - 程序化音效、氛围音和静音开关
 - 成就系统和角色解锁
 - 回血、吸附、清屏三类场上道具
@@ -41,7 +42,7 @@ python -m http.server 4173
 
 ## 美术方向
 
-当前目标是暗黑修仙题材的高可读 2.5D 幸存者画面：深色战场、强轮廓怪潮、中心法阵、粗亮弹道、清晰颜色分区和大面积技能领域。`assets/concept-visual-target.png` 是整体氛围方向稿，`assets/combat-asset-reference-v1.png` 是战斗资源方向图，并已作为运行时特效图集叠加到飞剑、符箓、火焰、虚空、冰霜和毒域效果中。
+当前目标是暗黑修仙题材的高可读 2.5D 幸存者画面：深色战场、强轮廓怪潮、中心法阵、粗亮弹道、清晰颜色分区和大面积技能领域。`assets/concept-visual-target.png` 是整体氛围方向稿，`assets/combat-asset-reference-v1.png` 是战斗资源方向图，并已作为运行时特效图集叠加到飞剑、符箓、火焰、虚空、冰霜和毒域效果中。`assets/creature-atlas-v1.png` 是角色/怪物透明图集，已用于主角、普通怪、精英和 Boss 的实战绘制。
 
 ## 成就与解锁
 
