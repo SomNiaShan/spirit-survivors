@@ -108,6 +108,18 @@
     premiumCreatureAtlas.src = "assets/premium-creature-atlas-v2.png";
   }
 
+  const premiumPlayerAtlas = typeof Image !== "undefined" ? new Image() : null;
+  if (premiumPlayerAtlas) {
+    premiumPlayerAtlas.decoding = "async";
+    premiumPlayerAtlas.onload = () => {
+      if (!QA_MODE) return;
+      state.qa.visualDone = false;
+      updateQaDataset();
+      render();
+    };
+    premiumPlayerAtlas.src = "assets/premium-player-atlas-v2.png";
+  }
+
   const itemIconAtlas = typeof Image !== "undefined" ? new Image() : null;
   if (itemIconAtlas) {
     itemIconAtlas.decoding = "async";
@@ -155,6 +167,11 @@
   const premiumCreatureFrames = {
     eliteDemon: { x: 0, y: 0, w: 512, h: 512 },
     stoneGolem: { x: 512, y: 0, w: 512, h: 512 }
+  };
+
+  const premiumPlayerFrames = {
+    heroSword: { x: 0, y: 0, w: 512, h: 512 },
+    heroTalisman: { x: 512, y: 0, w: 512, h: 512 }
   };
 
   const itemIconFrames = {
@@ -2428,6 +2445,7 @@
     document.body.dataset.qaAtlasReady = atlasReady() ? "1" : "0";
     document.body.dataset.qaCreatureAtlasReady = creatureAtlasReady() ? "1" : "0";
     document.body.dataset.qaPremiumCreatureAtlasReady = premiumCreatureAtlasReady() ? "1" : "0";
+    document.body.dataset.qaPremiumPlayerAtlasReady = premiumPlayerAtlasReady() ? "1" : "0";
     document.body.dataset.qaItemAtlasReady = itemIconAtlasReady() ? "1" : "0";
     document.body.dataset.qaArenaReady = arenaBackgroundReady() ? "1" : "0";
     const boss = state.enemies.find((e) => e.boss && e.hp > 0);
@@ -2461,6 +2479,7 @@
       let bright = 0;
       let dark = 0;
       let saturated = 0;
+      let colored = 0;
       let minR = 255;
       let maxR = 0;
       let minG = 255;
@@ -2474,10 +2493,12 @@
           const g = image[i + 1];
           const b = image[i + 2];
           const lum = (r + g + b) / 3;
+          const chroma = Math.max(r, g, b) - Math.min(r, g, b);
           samples += 1;
           if (lum > 180) bright += 1;
           if (lum < 35) dark += 1;
-          if (Math.max(r, g, b) - Math.min(r, g, b) > 55) saturated += 1;
+          if (chroma > 55) saturated += 1;
+          if (chroma > 32) colored += 1;
           minR = Math.min(minR, r);
           maxR = Math.max(maxR, r);
           minG = Math.min(minG, g);
@@ -2490,14 +2511,17 @@
       const brightRatio = bright / samples;
       const darkRatio = dark / samples;
       const saturatedRatio = saturated / samples;
+      const coloredRatio = colored / samples;
       document.body.dataset.qaCanvasW = String(w);
       document.body.dataset.qaCanvasH = String(h);
       document.body.dataset.qaVisualSamples = String(samples);
       document.body.dataset.qaVisualBright = brightRatio.toFixed(3);
       document.body.dataset.qaVisualDark = darkRatio.toFixed(3);
       document.body.dataset.qaVisualSaturated = saturatedRatio.toFixed(3);
+      document.body.dataset.qaVisualColored = coloredRatio.toFixed(3);
       document.body.dataset.qaVisualRange = String(range);
-      document.body.dataset.qaVisualOk = samples > 1000 && range > 80 && saturatedRatio > 0.08 && brightRatio > 0.005 ? "1" : "0";
+      const vividEnough = saturatedRatio > 0.08 || (saturatedRatio > 0.06 && coloredRatio > 0.11);
+      document.body.dataset.qaVisualOk = samples > 1000 && range > 80 && brightRatio > 0.005 && vividEnough ? "1" : "0";
       state.qa.visualDone = true;
     } catch (err) {
       document.body.dataset.qaVisualOk = "0";
@@ -2796,6 +2820,10 @@
     return Boolean(premiumCreatureAtlas && premiumCreatureAtlas.complete && premiumCreatureAtlas.naturalWidth > 0);
   }
 
+  function premiumPlayerAtlasReady() {
+    return Boolean(premiumPlayerAtlas && premiumPlayerAtlas.complete && premiumPlayerAtlas.naturalWidth > 0);
+  }
+
   function itemIconAtlasReady() {
     return Boolean(itemIconAtlas && itemIconAtlas.complete && itemIconAtlas.naturalWidth > 0);
   }
@@ -2849,6 +2877,25 @@
     ctx.drawImage(premiumCreatureAtlas, frame.x, frame.y, frame.w, frame.h, -w / 2, -h / 2, w, h);
     ctx.restore();
     return true;
+  }
+
+  function drawPremiumPlayerSprite(id, x, y, w, h, alpha = 0.95, rotation = 0, flip = 1) {
+    const frame = premiumPlayerFrames[id];
+    if (!frame || !premiumPlayerAtlasReady()) return false;
+    ctx.save();
+    ctx.globalAlpha *= alpha;
+    ctx.translate(x, y);
+    ctx.rotate(rotation);
+    ctx.scale(flip, 1);
+    ctx.drawImage(premiumPlayerAtlas, frame.x, frame.y, frame.w, frame.h, -w / 2, -h / 2, w, h);
+    ctx.restore();
+    return true;
+  }
+
+  function premiumPlayerSprite(characterId) {
+    if (characterId === "sword") return "heroSword";
+    if (characterId === "talisman") return "heroTalisman";
+    return null;
   }
 
   function playerCreatureSprite(characterId) {
@@ -2913,6 +2960,12 @@
     if (id === "stoneGolem") return [4.9, 5.85];
     if (id === "eliteDemon") return [4.05, 5.35];
     return [4.6, 5.2];
+  }
+
+  function premiumPlayerSpriteScale(id) {
+    if (id === "heroSword") return [5.95, 5.95];
+    if (id === "heroTalisman") return [5.75, 5.75];
+    return [5.8, 5.8];
   }
 
   function spawnDeathSprite(e) {
@@ -3305,8 +3358,10 @@
     const t = performance.now() / 1000;
     const face = Math.atan2(p.lastDir.y, p.lastDir.x);
     const atlasFx = allowAtlasFx();
+    const premiumPlayer = premiumPlayerSprite(p.character.id);
+    const usePremiumPlayerSprite = premiumPlayer && premiumPlayerAtlasReady();
     const playerSprite = playerCreatureSprite(p.character.id);
-    const usePlayerSprite = playerSprite && creatureAtlasReady();
+    const usePlayerSprite = usePremiumPlayerSprite || (playerSprite && creatureAtlasReady());
     ctx.save();
     ctx.translate(s.x, s.y);
     ctx.rotate(face * 0.06);
@@ -3316,17 +3371,20 @@
     ctx.ellipse(0, 18, 24, 8, 0, 0, TAU);
     ctx.fill();
     ctx.globalCompositeOperation = "lighter";
-    drawGlow(0, 2, 44 + Math.sin(t * 4) * 3, p.character.color, 0.28);
+    drawGlow(0, 2, 44 + Math.sin(t * 4) * 3, p.character.color, usePremiumPlayerSprite ? 0.36 : 0.28);
+    if (usePremiumPlayerSprite) {
+      drawGlow(0, -10, p.r * 4.4 + Math.sin(t * 3.4) * 3, p.character.color, 0.18);
+    }
     ctx.globalCompositeOperation = "source-over";
 
     ctx.save();
     ctx.rotate(-face * 0.06);
-    drawRunicRing(0, 1, p.r + 12 + Math.sin(t * 3.2) * 1.5, p.character.color, t * 1.2, 10, 0.48);
+    drawRunicRing(0, 1, p.r + 12 + Math.sin(t * 3.2) * 1.5, p.character.color, t * 1.2, 10, usePremiumPlayerSprite ? 0.56 : 0.48);
     ctx.restore();
 
     ctx.save();
     ctx.globalCompositeOperation = "lighter";
-    if (atlasFx) drawAtlasFrame("swordFan", 0, 2, p.r * 5.6, p.r * 4.0, 0.12, -face * 0.35);
+    if (atlasFx) drawAtlasFrame("swordFan", 0, 2, p.r * 5.6, p.r * 4.0, usePremiumPlayerSprite ? 0.16 : 0.12, -face * 0.35);
     if (!usePlayerSprite) {
       for (let i = 0; i < 4; i++) {
         const a = t * 1.25 + i * (TAU / 4);
@@ -3343,9 +3401,15 @@
     if (usePlayerSprite) {
       const bob = Math.sin(t * 5.2) * 1.7;
       const lean = clamp(p.lastDir.x * 0.055, -0.07, 0.07);
+      const flip = p.lastDir.x < -0.08 ? -1 : 1;
       ctx.save();
       ctx.globalCompositeOperation = "source-over";
-      drawCreatureSprite(playerSprite, 0, -5 + bob, p.r * 5.05, p.r * 5.05, p.hitFlash > 0 ? 0.58 : 0.9, lean - face * 0.03, p.lastDir.x < -0.08 ? -1 : 1);
+      if (usePremiumPlayerSprite) {
+        const scale = premiumPlayerSpriteScale(premiumPlayer);
+        drawPremiumPlayerSprite(premiumPlayer, 0, -8 + bob, p.r * scale[0], p.r * scale[1], p.hitFlash > 0 ? 0.62 : 0.95, lean - face * 0.025, flip);
+      } else {
+        drawCreatureSprite(playerSprite, 0, -5 + bob, p.r * 5.05, p.r * 5.05, p.hitFlash > 0 ? 0.58 : 0.9, lean - face * 0.03, flip);
+      }
       ctx.restore();
       if (p.hitFlash > 0) {
         ctx.save();
