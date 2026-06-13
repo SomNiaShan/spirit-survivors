@@ -134,7 +134,7 @@
       updateQaDataset();
       render();
     };
-    premiumPlayerAtlas.src = "assets/premium-player-atlas-v2.png";
+    premiumPlayerAtlas.src = "assets/premium-player-atlas-v3.png";
   }
 
   const premiumPickupAtlas = typeof Image !== "undefined" ? new Image() : null;
@@ -233,7 +233,9 @@
 
   const premiumPlayerFrames = {
     heroSword: { x: 0, y: 0, w: 512, h: 512 },
-    heroTalisman: { x: 512, y: 0, w: 512, h: 512 }
+    heroTalisman: { x: 512, y: 0, w: 512, h: 512 },
+    heroFox: { x: 0, y: 512, w: 512, h: 512 },
+    heroMechanist: { x: 512, y: 512, w: 512, h: 512 }
   };
 
   const premiumPickupFrames = {
@@ -3090,6 +3092,8 @@
   function premiumPlayerSprite(characterId) {
     if (characterId === "sword") return "heroSword";
     if (characterId === "talisman") return "heroTalisman";
+    if (characterId === "fox") return "heroFox";
+    if (characterId === "mechanist") return "heroMechanist";
     return null;
   }
 
@@ -3263,6 +3267,8 @@
   function premiumPlayerSpriteScale(id) {
     if (id === "heroSword") return [5.95, 5.95];
     if (id === "heroTalisman") return [5.75, 5.75];
+    if (id === "heroFox") return [6.15, 6.15];
+    if (id === "heroMechanist") return [6.05, 6.05];
     return [5.8, 5.8];
   }
 
