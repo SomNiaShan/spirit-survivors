@@ -4751,9 +4751,9 @@
           if (drawSwarmImpostorEnemyAt(e, sx, sy, t, premiumMinionId)) swarmImpostorDraws += 1;
           else drawSwarmSpriteEnemyAt(e, sx, sy, t, premiumMinionId);
         }
-        else {
+        else if (!hasPremiumArt) {
           recordLegacyEnemyFallback(e);
-          if (!hasPremiumArt) drawSwarmEnemyAt(e, sx, sy, t);
+          drawSwarmEnemyAt(e, sx, sy, t);
         }
         continue;
       }
@@ -4770,7 +4770,6 @@
         continue;
       }
       if (hasPremiumArt) {
-        recordLegacyEnemyFallback(e);
         ctx.restore();
         continue;
       }
