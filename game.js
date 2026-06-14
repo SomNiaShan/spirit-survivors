@@ -3273,6 +3273,25 @@
     return Boolean(arenaBackground && arenaBackground.complete && arenaBackground.naturalWidth > 0);
   }
 
+  function imageStillLoading(image) {
+    return Boolean(image && !image.complete);
+  }
+
+  function premiumFxAssetsLoading() {
+    return [
+      visualAtlas,
+      premiumProjectileAtlas,
+      hostileProjectileAtlas,
+      groundDecalAtlas,
+      hitAtlas,
+      threatAtlas
+    ].some(imageStillLoading);
+  }
+
+  function allowLegacyFallbackFx() {
+    return !premiumFxAssetsLoading();
+  }
+
   function allowAtlasFx() {
     return atlasReady();
   }
@@ -3472,6 +3491,7 @@
   }
 
   function drawSoftProjectileFallback(pr, alpha = 0.16) {
+    if (!allowLegacyFallbackFx()) return false;
     recordLegacyFallbackFx();
     const length = Math.max(8, pr.r * 3.2);
     const width = Math.max(4, pr.r * 1.05);
@@ -3487,9 +3507,11 @@
     ctx.ellipse(pr.r * 0.35, 0, width * 0.36, width * 0.22, 0, 0, TAU);
     ctx.fill();
     ctx.restore();
+    return true;
   }
 
   function drawSoftParticleFallback(x, y, r, color, alpha = 0.14, rotation = 0, stretch = 1) {
+    if (!allowLegacyFallbackFx()) return false;
     recordLegacyFallbackFx();
     const radius = Math.max(3, r);
     ctx.save();
@@ -3506,9 +3528,11 @@
     ctx.arc(0, 0, radius * 0.24, 0, TAU);
     ctx.fill();
     ctx.restore();
+    return true;
   }
 
   function drawSoftAreaFallback(area, x, y, alpha, now, compact = false) {
+    if (!allowLegacyFallbackFx()) return false;
     recordLegacyFallbackFx();
     const stretch = area.kind === "plagueDomain" || area.kind === "poison" || area.kind === "fireSea" ? 1.18 : 1;
     const radius = area.r * (compact ? 0.82 : 1);
@@ -3527,6 +3551,7 @@
     ctx.ellipse(-radius * 0.16, -radius * 0.1, radius * 0.36, radius * 0.18, 0.18, 0, TAU);
     ctx.fill();
     ctx.restore();
+    return true;
   }
 
   function premiumPlayerSprite(characterId) {
@@ -4040,6 +4065,7 @@
   }
 
   function drawProjectileTrail(pr) {
+    if (!allowLegacyFallbackFx()) return false;
     recordLegacyFallbackFx();
     const fast = len(pr.vx, pr.vy);
     const longKinds = ["thousandSword", "dragonBolt", "glacierNeedle", "fireSea", "fire"];
@@ -4066,6 +4092,7 @@
       ctx.stroke();
     }
     ctx.restore();
+    return true;
   }
 
   function environmentPropSpec(id, r) {
@@ -5316,7 +5343,7 @@
         drawGlow(pr.r * 0.4, 0, pr.r * 3.2, pr.color, 0.14);
         ctx.globalCompositeOperation = "source-over";
         drawHostileProjectileFrame(hostileSpec.id, 0, 0, hostileSpec.w, hostileSpec.h, hostileSpec.alpha, 0, "source-over");
-      } else {
+      } else if (allowLegacyFallbackFx()) {
         recordLegacyFallbackFx();
         ctx.globalCompositeOperation = "lighter";
         drawGlow(0, 0, pr.r * 4, pr.color, 0.18);
