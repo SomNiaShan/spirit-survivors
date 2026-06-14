@@ -234,6 +234,18 @@
     premiumHeroFxAtlas.src = "assets/premium-hero-fx-atlas-v1.png";
   }
 
+  const premiumScreenStrikeAtlas = typeof Image !== "undefined" ? new Image() : null;
+  if (premiumScreenStrikeAtlas) {
+    premiumScreenStrikeAtlas.decoding = "async";
+    premiumScreenStrikeAtlas.onload = () => {
+      if (!QA_MODE) return;
+      state.qa.visualDone = false;
+      updateQaDataset();
+      render();
+    };
+    premiumScreenStrikeAtlas.src = "assets/premium-screen-strike-atlas-v1.png";
+  }
+
   const hitAtlas = typeof Image !== "undefined" ? new Image() : null;
   if (hitAtlas) {
     hitAtlas.decoding = "async";
@@ -407,6 +419,17 @@
     frostLotus: { x: 512, y: 512, w: 512, h: 512 },
     soulShield: { x: 1024, y: 512, w: 512, h: 512 },
     emberImpact: { x: 1536, y: 512, w: 512, h: 512 }
+  };
+
+  const screenStrikeFrames = {
+    jadeCrescent: { x: 0, y: 0, w: 443, h: 443 },
+    talismanBurst: { x: 443, y: 0, w: 444, h: 443 },
+    flameRing: { x: 887, y: 0, w: 443, h: 443 },
+    lightningBurst: { x: 1330, y: 0, w: 444, h: 443 },
+    voidRupture: { x: 0, y: 443, w: 443, h: 444 },
+    frostNova: { x: 443, y: 443, w: 444, h: 444 },
+    plagueSplash: { x: 887, y: 443, w: 443, h: 444 },
+    bloodMoonShock: { x: 1330, y: 443, w: 444, h: 444 }
   };
 
   const hitFrames = {
@@ -826,7 +849,7 @@
     nextHudUpdate: 0,
     forceNextChestEvolution: false,
     lastResult: null,
-    qa: { mode: null, autoChoices: false, autoMove: false, timeScale: 1, maxSteps: 1, syncRunning: false, syncSteps: 0, syncMs: 0, visualDone: false, groundDecalDraws: 0, areaFxDraws: 0, environmentPropDraws: 0, atmosphereDraws: 0, heroFxDraws: 0, hitAtlasDraws: 0, threatDraws: 0, hordeSpriteDraws: 0, hordeSpritesSkipped: 0, hordeRenderBudget: 0, hordeBudgetUsed: 0, projectileSpriteDraws: 0, projectilesSkipped: 0, projectileRenderBudget: 0, hostileProjectileDraws: 0, hostileProjectilesSkipped: 0, hostileProjectileRenderBudget: 0, particlesRendered: 0, particlesCulled: 0, swarmImpostorDraws: 0, legacyWorldOverlays: 0, legacyVectorOverlays: 0, legacyFallbackFx: 0, premiumAtlasFxDraws: 0 },
+    qa: { mode: null, autoChoices: false, autoMove: false, timeScale: 1, maxSteps: 1, syncRunning: false, syncSteps: 0, syncMs: 0, visualDone: false, groundDecalDraws: 0, areaFxDraws: 0, environmentPropDraws: 0, atmosphereDraws: 0, heroFxDraws: 0, screenStrikeDraws: 0, hitAtlasDraws: 0, threatDraws: 0, hordeSpriteDraws: 0, hordeSpritesSkipped: 0, hordeRenderBudget: 0, hordeBudgetUsed: 0, projectileSpriteDraws: 0, projectilesSkipped: 0, projectileRenderBudget: 0, hostileProjectileDraws: 0, hostileProjectilesSkipped: 0, hostileProjectileRenderBudget: 0, particlesRendered: 0, particlesCulled: 0, swarmImpostorDraws: 0, legacyWorldOverlays: 0, legacyVectorOverlays: 0, legacyFallbackFx: 0, premiumAtlasFxDraws: 0, renderDpr: 1 },
     wave: 1,
     spawnTimer: 0,
     eliteSchedule: [90, 180, 300, 450, 600, 760],
@@ -1096,8 +1119,17 @@
     return `${m}:${String(s).padStart(2, "0")}`;
   }
 
+  function targetRenderDpr() {
+    const nativeDpr = Math.max(1, window.devicePixelRatio || 1);
+    const compact = Math.min(window.innerWidth, window.innerHeight) < 560;
+    const enemies = state?.enemies?.length || 0;
+    if (enemies >= SWARM_RENDER_LIMIT) return Math.min(nativeDpr, compact ? 1.2 : 1.45);
+    if (enemies > DETAIL_ENEMY_LIMIT) return Math.min(nativeDpr, compact ? 1.35 : 1.65);
+    return Math.min(nativeDpr, compact ? 1.6 : 2);
+  }
+
   function resize() {
-    const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+    const dpr = Math.max(1, targetRenderDpr());
     const w = Math.floor(window.innerWidth * dpr);
     const h = Math.floor(window.innerHeight * dpr);
     if (canvas.width !== w || canvas.height !== h) {
@@ -1106,6 +1138,7 @@
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.imageSmoothingEnabled = true;
     }
+    if (QA_MODE) state.qa.renderDpr = dpr;
   }
 
   function showScreen(name) {
@@ -1281,6 +1314,8 @@
     state.qa.groundDecalDraws = 0;
     state.qa.environmentPropDraws = 0;
     state.qa.atmosphereDraws = 0;
+    state.qa.heroFxDraws = 0;
+    state.qa.screenStrikeDraws = 0;
     state.qa.hitAtlasDraws = 0;
     state.qa.threatDraws = 0;
     state.qa.hordeSpriteDraws = 0;
@@ -2846,6 +2881,8 @@
     document.body.dataset.qaAtmosphereDraws = String(state.qa.atmosphereDraws || 0);
     document.body.dataset.qaPremiumHeroFxAtlasReady = premiumHeroFxAtlasReady() ? "1" : "0";
     document.body.dataset.qaHeroFxDraws = String(state.qa.heroFxDraws || 0);
+    document.body.dataset.qaPremiumScreenStrikeAtlasReady = premiumScreenStrikeAtlasReady() ? "1" : "0";
+    document.body.dataset.qaScreenStrikeDraws = String(state.qa.screenStrikeDraws || 0);
     document.body.dataset.qaHitAtlasReady = hitAtlasReady() ? "1" : "0";
     document.body.dataset.qaHitAtlasDraws = String(state.qa.hitAtlasDraws || 0);
     document.body.dataset.qaThreatAtlasReady = threatAtlasReady() ? "1" : "0";
@@ -2894,6 +2931,7 @@
     document.body.dataset.qaWorkFrames = String(state.perf.workFrames || 0);
     document.body.dataset.qaAvgWorkMs = state.perf.workFrames ? (state.perf.totalWorkMs / state.perf.workFrames).toFixed(2) : "0";
     document.body.dataset.qaMaxWorkMs = state.perf.maxWorkMs.toFixed(2);
+    document.body.dataset.qaRenderDpr = String(state.qa.renderDpr || 1);
   }
 
   function updateQaVisualDataset() {
@@ -3100,6 +3138,7 @@
     state.qa.premiumAtlasFxDraws = 0;
     state.qa.atmosphereDraws = 0;
     state.qa.heroFxDraws = 0;
+    state.qa.screenStrikeDraws = 0;
     state.qa.areaFxDraws = 0;
     state.qa.hitAtlasDraws = 0;
     state.qa.threatDraws = 0;
@@ -3306,8 +3345,8 @@
 
   function fxParticleRenderBudget() {
     const compact = Math.min(window.innerWidth, window.innerHeight) < 560;
-    if (state.enemies.length >= SWARM_RENDER_LIMIT) return compact ? 58 : 80;
-    if (state.enemies.length > DETAIL_ENEMY_LIMIT) return compact ? 72 : 108;
+    if (state.enemies.length >= SWARM_RENDER_LIMIT) return compact ? 48 : 70;
+    if (state.enemies.length > DETAIL_ENEMY_LIMIT) return compact ? 62 : 108;
     if (state.enemies.length > 180) return compact ? 140 : 220;
     return compact ? 240 : 420;
   }
@@ -3330,8 +3369,8 @@
 
   function hordeSpriteRenderBudget() {
     const compact = Math.min(window.innerWidth, window.innerHeight) < 560;
-    if (state.enemies.length >= SWARM_RENDER_LIMIT) return compact ? 130 : 220;
-    if (state.enemies.length > DETAIL_ENEMY_LIMIT) return compact ? 160 : 280;
+    if (state.enemies.length >= SWARM_RENDER_LIMIT) return compact ? 112 : 200;
+    if (state.enemies.length > DETAIL_ENEMY_LIMIT) return compact ? 138 : 280;
     return Infinity;
   }
 
@@ -3387,6 +3426,10 @@
     return Boolean(premiumHeroFxAtlas && premiumHeroFxAtlas.complete && premiumHeroFxAtlas.naturalWidth > 0);
   }
 
+  function premiumScreenStrikeAtlasReady() {
+    return Boolean(premiumScreenStrikeAtlas && premiumScreenStrikeAtlas.complete && premiumScreenStrikeAtlas.naturalWidth > 0);
+  }
+
   function hitAtlasReady() {
     return Boolean(hitAtlas && hitAtlas.complete && hitAtlas.naturalWidth > 0);
   }
@@ -3419,7 +3462,8 @@
       groundDecalAtlas,
       hitAtlas,
       threatAtlas,
-      premiumHeroFxAtlas
+      premiumHeroFxAtlas,
+      premiumScreenStrikeAtlas
     ].some(imageStillLoading);
   }
 
@@ -3431,7 +3475,8 @@
       groundDecalAtlas,
       hitAtlas,
       threatAtlas,
-      premiumHeroFxAtlas
+      premiumHeroFxAtlas,
+      premiumScreenStrikeAtlas
     ].some(imageReady);
   }
 
@@ -3623,6 +3668,21 @@
     ctx.drawImage(premiumHeroFxAtlas, frame.x, frame.y, frame.w, frame.h, -w / 2, -h / 2, w, h);
     ctx.restore();
     if (QA_MODE) state.qa.heroFxDraws += 1;
+    return true;
+  }
+
+  function drawScreenStrikeFrame(id, x, y, w, h, alpha = 1, rotation = 0, blend = "lighter", flip = 1) {
+    const frame = screenStrikeFrames[id];
+    if (!frame || !premiumScreenStrikeAtlasReady()) return false;
+    ctx.save();
+    ctx.globalAlpha *= alpha;
+    ctx.globalCompositeOperation = blend;
+    ctx.translate(x, y);
+    ctx.rotate(rotation);
+    ctx.scale(flip, 1);
+    ctx.drawImage(premiumScreenStrikeAtlas, frame.x, frame.y, frame.w, frame.h, -w / 2, -h / 2, w, h);
+    ctx.restore();
+    if (QA_MODE) state.qa.screenStrikeDraws += 1;
     return true;
   }
 
@@ -4597,6 +4657,7 @@
       const hpRatio = clamp(e.hp / e.maxHp, 0, 1);
       const pulse = 1 + Math.sin(t * (e.boss ? 1.8 : 2.4) + e.x * 0.003) * 0.045;
       if (e.boss) {
+        drawScreenStrikeFrame("bloodMoonShock", s.x, s.y + e.r * 0.2, e.r * 7.6 * pulse, e.r * 6.15 * pulse, 0.18, t * 0.04, "lighter");
         drawThreatFrame("bossSigil", s.x, s.y + e.r * 0.2, e.r * 8.0 * pulse, e.r * 6.25 * pulse, 0.38, -t * 0.08, "source-over");
         budget -= 1;
         if (budget <= 0) continue;
@@ -5636,6 +5697,36 @@
     return kind === "spark" ? "hitSpark" : "criticalBurst";
   }
 
+  function screenStrikeFrameId(color, kind = "impact") {
+    if (kind === "slash" || color === weapons.flyingSword.color || color === weapons.thousandSword.color) return "jadeCrescent";
+    if (color === weapons.thunderArray.color || color === weapons.thunderPearl.color || color === colors.blue) return "lightningBurst";
+    if (color === weapons.frostNeedle.color || color === weapons.glacierRain.color || color === colors.frost) return "frostNova";
+    if (color === weapons.poisonMist.color || color === weapons.plagueDomain.color || color === colors.poison) return "plagueSplash";
+    if (color === weapons.spiritFire.color || color === weapons.fireSea.color || color === colors.danger) return kind === "boss" ? "bloodMoonShock" : "flameRing";
+    if (color === weapons.talisman.color || color === weapons.voidSeal.color || color === colors.gold) return "talismanBurst";
+    if (color === colors.violet) return "voidRupture";
+    return "jadeCrescent";
+  }
+
+  function areaScreenStrikeSpec(area, now) {
+    if (!premiumScreenStrikeAtlasReady()) return null;
+    let id = null;
+    if (area.kind === "voidSeal") id = "voidRupture";
+    else if (area.kind === "plagueDomain" || area.kind === "poison") id = "plagueSplash";
+    else if (area.kind === "fireSea") id = "flameRing";
+    else if (area.kind === "burst") id = screenStrikeFrameId(area.color, area.slow ? "frost" : "impact");
+    if (!id) return null;
+    const pulse = 1 + Math.sin(now / 260 + area.x * 0.01) * 0.025;
+    const base = area.kind === "fireSea" ? 2.55 : area.kind === "voidSeal" ? 2.35 : area.kind === "plagueDomain" ? 2.42 : 2.12;
+    return {
+      id,
+      w: area.r * base * pulse,
+      h: area.r * (id === "jadeCrescent" ? 1.45 : base) * pulse,
+      alpha: area.kind === "burst" ? 0.36 : 0.28,
+      rotation: id === "jadeCrescent" ? area.x * 0.002 + now / 900 : area.x * 0.0017 + area.y * 0.0013 + now / 2600
+    };
+  }
+
   function areaGroundDecalSpec(area, now) {
     let id = null;
     if (area.kind === "voidSeal") id = "voidRift";
@@ -5667,9 +5758,11 @@
     const compactViewport = Math.min(viewW, viewH) < 560;
     const groundDecalBudget = compactViewport ? 8 : denseAreas ? GROUND_DECAL_DENSE_LIMIT : 160;
     const heroFxAreaBudget = premiumHeroFxAtlasReady() ? (compactViewport ? 1 : denseAreas ? 2 : 8) : 0;
-    const areaFxBudget = compactViewport ? 12 : denseAreas ? 20 : Infinity;
+    const screenStrikeAreaBudget = premiumScreenStrikeAtlasReady() ? (compactViewport ? 1 : denseAreas ? 2 : 10) : 0;
+    const areaFxBudget = compactViewport ? 10 : denseAreas ? 18 : Infinity;
     let groundDecalDraws = 0;
     let heroFxAreaDraws = 0;
+    let screenStrikeAreaDraws = 0;
     let areaFxDraws = 0;
     for (let i = state.areas.length - 1; i >= 0; i--) {
       const area = state.areas[i];
@@ -5685,6 +5778,15 @@
       const groundSpec = groundDecalDraws < groundDecalBudget ? areaGroundDecalSpec(area, now) : null;
       if (groundSpec && drawGroundDecalFrame(groundSpec.id, s.x, s.y, groundSpec.w, groundSpec.h, groundSpec.alpha * alpha, groundSpec.rotation, "source-over")) {
         groundDecalDraws += 1;
+      }
+      const strikeSpec = screenStrikeAreaDraws < screenStrikeAreaBudget ? areaScreenStrikeSpec(area, now) : null;
+      if (strikeSpec && drawScreenStrikeFrame(strikeSpec.id, s.x, s.y, strikeSpec.w, strikeSpec.h, strikeSpec.alpha * alpha, strikeSpec.rotation, "lighter")) {
+        areaFxDraws += 1;
+        screenStrikeAreaDraws += 1;
+        if (denseAreas) {
+          ctx.restore();
+          continue;
+        }
       }
       const heroSpec = heroFxAreaDraws < heroFxAreaBudget ? areaHeroFxSpec(area, now) : null;
       if (heroSpec && drawHeroFxFrame(heroSpec.id, s.x, s.y, heroSpec.w, heroSpec.h, heroSpec.alpha * alpha, heroSpec.rotation, "lighter")) {
@@ -5867,9 +5969,20 @@
     const atlasFx = allowAtlasFx();
     const viewW = window.innerWidth;
     const viewH = window.innerHeight;
+    const compact = Math.min(viewW, viewH) < 560;
+    const dense = state.enemies.length >= SWARM_RENDER_LIMIT;
     const renderBudget = fxParticleRenderBudget();
+    const screenStrikeParticleBudget = premiumScreenStrikeAtlasReady() ? (compact ? 2 : dense ? 2 : 14) : 0;
     let renderedParticles = 0;
     let culledParticles = 0;
+    let screenStrikeParticleDraws = 0;
+    const nowMs = performance.now();
+    const tryDrawParticleStrike = (id, x, y, width, height, alpha, rotation = 0, flip = 1) => {
+      if (screenStrikeParticleDraws >= screenStrikeParticleBudget) return false;
+      const drew = drawScreenStrikeFrame(id, x, y, width, height, alpha, rotation, "lighter", flip);
+      if (drew) screenStrikeParticleDraws += 1;
+      return drew;
+    };
     for (const p of state.particles) {
       const s = worldToScreen(p.x, p.y);
       const cull = p.kind === "deathSprite" ? Math.max(p.w || 0, p.h || 0, p.r * 5) * 0.55 : Math.max(86, p.r * 5.8);
@@ -5895,6 +6008,8 @@
         ctx.shadowBlur = 18;
         const frame = p.hitFrame || hitFrameId(p.color, "impact");
         const size = p.hitFrame === "spectralSlash" ? [p.r * 3.8, p.r * 2.0] : [p.r * 3.15, p.r * 2.65];
+        const strikeId = p.hitFrame === "spectralSlash" ? "jadeCrescent" : screenStrikeFrameId(p.color, "impact");
+        tryDrawParticleStrike(strikeId, s.x, s.y, p.r * (p.hitFrame === "spectralSlash" ? 4.8 : 4.05), p.r * (p.hitFrame === "spectralSlash" ? 2.75 : 3.55), 0.22 * alpha, p.angle || 0);
         const drewHit = drawHitFrame(frame, s.x, s.y, size[0], size[1], 0.68, p.angle || 0, "source-over");
         if (drewHit) drawGlow(s.x, s.y, p.r * 1.65, p.color, 0.12 * alpha);
       } else if (p.kind === "premiumDeath") {
@@ -5902,6 +6017,7 @@
         ctx.shadowBlur = 22;
         const frame = p.hitFrame || hitFrameId(p.color, "death");
         const size = p.hitFrame === "lootPop" ? [p.r * 3.4, p.r * 3.1] : [p.r * 3.0, p.r * 3.45];
+        tryDrawParticleStrike(screenStrikeFrameId(p.color, "death"), s.x, s.y, p.r * 3.85, p.r * 3.55, 0.18 * alpha, (p.angle || 0) + (1 - alpha) * 0.16);
         const drewHit = drawHitFrame(frame, s.x, s.y, size[0], size[1], 0.58, (p.angle || 0) + (1 - alpha) * 0.12, "source-over");
         if (drewHit) drawGlow(s.x, s.y, p.r * 1.95, p.color, 0.14 * alpha);
       } else if (p.kind === "blade" || p.kind === "moonBlade") {
@@ -5909,20 +6025,21 @@
         ctx.shadowBlur = p.kind === "moonBlade" ? 16 : 8;
         if (atlasFx || premiumProjectileAtlasReady()) {
           const scale = p.kind === "moonBlade" ? 1.22 : 1;
-          const rotation = (p.x + p.y) * 0.013 + performance.now() / 240;
+          const rotation = (p.x + p.y) * 0.013 + nowMs / 240;
           const drewAtlas = (
             premiumProjectileAtlasReady() &&
             drawPremiumProjectileFrame("moonWheelArc", s.x, s.y, p.r * 5.5 * scale, p.r * 3.25 * scale, p.kind === "moonBlade" ? 0.58 : 0.46, rotation, "source-over")
           ) || drawAtlasFrame("swordFan", s.x, s.y, p.r * 4.8 * scale, p.r * 2.65 * scale, p.kind === "moonBlade" ? 0.5 : 0.42, rotation, "source-over");
           if (drewAtlas) state.qa.premiumAtlasFxDraws += 1;
-          else drawSoftParticleFallback(s.x, s.y, p.r * (p.kind === "moonBlade" ? 1.35 : 1.08), p.color, 0.1 * alpha, performance.now() / 140, p.kind === "moonBlade" ? 1.45 : 1.18);
+          else drawSoftParticleFallback(s.x, s.y, p.r * (p.kind === "moonBlade" ? 1.35 : 1.08), p.color, 0.1 * alpha, nowMs / 140, p.kind === "moonBlade" ? 1.45 : 1.18);
         } else {
-          drawSoftParticleFallback(s.x, s.y, p.r * (p.kind === "moonBlade" ? 1.35 : 1.08), p.color, 0.1 * alpha, performance.now() / 140, p.kind === "moonBlade" ? 1.45 : 1.18);
+          drawSoftParticleFallback(s.x, s.y, p.r * (p.kind === "moonBlade" ? 1.35 : 1.08), p.color, 0.1 * alpha, nowMs / 140, p.kind === "moonBlade" ? 1.45 : 1.18);
         }
       } else if (p.kind === "lightning") {
         ctx.globalCompositeOperation = "lighter";
         ctx.shadowBlur = 24;
-        const rotation = (p.x + p.y) * 0.0018 + performance.now() / 980;
+        const rotation = (p.x + p.y) * 0.0018 + nowMs / 980;
+        tryDrawParticleStrike("lightningBurst", s.x, s.y, p.r * 4.2, p.r * 3.7, 0.2 * alpha, rotation);
         const drewAtlas = (
           premiumProjectileAtlasReady() &&
           drawPremiumProjectileFrame("thunderPearl", s.x, s.y, p.r * 3.45, p.r * 2.8, 0.62, rotation, "source-over")
@@ -5953,8 +6070,9 @@
       } else if (p.kind === "impact") {
         ctx.globalCompositeOperation = "lighter";
         ctx.shadowBlur = 14;
-        const rotation = (p.x + p.y) * 0.002 + performance.now() / 1500;
+        const rotation = (p.x + p.y) * 0.002 + nowMs / 1500;
         const hitFrame = hitFrameId(p.color, "impact");
+        if (!dense || p.r >= 6) tryDrawParticleStrike(screenStrikeFrameId(p.color, "impact"), s.x, s.y, p.r * 3.25, p.r * 2.9, 0.15 * alpha, rotation);
         const drewHit = drawHitFrame(hitFrame, s.x, s.y, p.r * 2.72, p.r * 2.46, 0.34, rotation, "source-over");
         if (drewHit) {
           drawGlow(s.x, s.y, p.r * 1.7, p.color, 0.11 * alpha);
@@ -5971,6 +6089,7 @@
       } else if (p.kind === "slash") {
         ctx.globalCompositeOperation = "lighter";
         ctx.shadowBlur = 18;
+        tryDrawParticleStrike("jadeCrescent", s.x, s.y, p.r * 4.6, p.r * 2.55, 0.26 * alpha, p.angle || 0);
         const drewHit = drawHitFrame("spectralSlash", s.x, s.y, p.r * 3.75, p.r * 1.95, 0.42, p.angle || 0, "source-over");
         if (drewHit) {
           drawGlow(s.x, s.y, p.r * 1.45, p.color, 0.08 * alpha);
@@ -6016,7 +6135,7 @@
       } else {
         ctx.globalCompositeOperation = "lighter";
         ctx.shadowBlur = 10;
-        const rotation = (p.x + p.y) * 0.001 + performance.now() / 1300;
+        const rotation = (p.x + p.y) * 0.001 + nowMs / 1300;
         const drewHit = drawHitFrame(hitFrameId(p.color, "impact"), s.x, s.y, p.r * 2.2, p.r * 1.95, 0.14, rotation, "source-over");
         if (drewHit) {
           drawGlow(s.x, s.y, p.r * 1.0, p.color, 0.06 * alpha);
@@ -6561,6 +6680,8 @@
             atmosphereDraws: state.qa.atmosphereDraws || 0,
             heroFxReady: premiumHeroFxAtlasReady(),
             heroFxDraws: state.qa.heroFxDraws || 0,
+            screenStrikeReady: premiumScreenStrikeAtlasReady(),
+            screenStrikeDraws: state.qa.screenStrikeDraws || 0,
             areaFxDraws: state.qa.areaFxDraws || 0,
             hitReady: hitAtlasReady(),
             hitDraws: state.qa.hitAtlasDraws || 0,
@@ -6586,7 +6707,8 @@
             legacyWorldOverlays: state.qa.legacyWorldOverlays || 0,
             legacyVectorOverlays: state.qa.legacyVectorOverlays || 0,
             legacyFallbackFx: state.qa.legacyFallbackFx || 0,
-            premiumAtlasFxDraws: state.qa.premiumAtlasFxDraws || 0
+            premiumAtlasFxDraws: state.qa.premiumAtlasFxDraws || 0,
+            renderDpr: state.qa.renderDpr || 1
           },
           perf: {
             frames: state.perf.frames,
@@ -6610,6 +6732,7 @@
         state.qa.environmentPropDraws = 0;
         state.qa.atmosphereDraws = 0;
         state.qa.heroFxDraws = 0;
+        state.qa.screenStrikeDraws = 0;
         state.qa.hitAtlasDraws = 0;
         state.qa.threatDraws = 0;
         state.qa.hordeSpriteDraws = 0;

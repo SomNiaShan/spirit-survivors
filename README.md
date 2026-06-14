@@ -34,6 +34,7 @@ python -m http.server 4173
 - 角色/怪物透明图集 `assets/creature-atlas-v1.png`
 - 法宝/心法 UI 图标图集 `assets/item-icon-atlas-v1.png`
 - 实战战场底图 `assets/arena-bg-v1.png`
+- 高级屏幕冲击/斩击特效图集 `assets/premium-screen-strike-atlas-v1.png`
 - 程序化音效、氛围音和静音开关
 - 成就系统和角色解锁
 - 回血、吸附、清屏三类场上道具
