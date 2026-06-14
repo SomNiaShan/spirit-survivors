@@ -174,6 +174,18 @@
     premiumPlayerAtlas.src = "assets/premium-player-atlas-v3.png";
   }
 
+  const premiumUnitAuraAtlas = typeof Image !== "undefined" ? new Image() : null;
+  if (premiumUnitAuraAtlas) {
+    premiumUnitAuraAtlas.decoding = "async";
+    premiumUnitAuraAtlas.onload = () => {
+      if (!QA_MODE) return;
+      state.qa.visualDone = false;
+      updateQaDataset();
+      render();
+    };
+    premiumUnitAuraAtlas.src = "assets/premium-unit-aura-atlas-v1.png";
+  }
+
   const premiumPickupAtlas = typeof Image !== "undefined" ? new Image() : null;
   if (premiumPickupAtlas) {
     premiumPickupAtlas.decoding = "async";
@@ -364,6 +376,17 @@
     heroTalisman: { x: 512, y: 0, w: 512, h: 512 },
     heroFox: { x: 0, y: 512, w: 512, h: 512 },
     heroMechanist: { x: 512, y: 512, w: 512, h: 512 }
+  };
+
+  const unitAuraFrames = {
+    swordFootSigil: { x: 0, y: 0, w: 443, h: 443 },
+    talismanOrbitBase: { x: 443, y: 0, w: 444, h: 443 },
+    foxFireCrescent: { x: 887, y: 0, w: 443, h: 443 },
+    mechanistGearRing: { x: 1330, y: 0, w: 444, h: 443 },
+    demonClawShadow: { x: 0, y: 443, w: 443, h: 444 },
+    emberFootprints: { x: 443, y: 443, w: 444, h: 444 },
+    spectralMistBase: { x: 887, y: 443, w: 443, h: 444 },
+    bloodMoonPressure: { x: 1330, y: 443, w: 444, h: 444 }
   };
 
   const premiumPickupFrames = {
@@ -849,7 +872,7 @@
     nextHudUpdate: 0,
     forceNextChestEvolution: false,
     lastResult: null,
-    qa: { mode: null, autoChoices: false, autoMove: false, timeScale: 1, maxSteps: 1, syncRunning: false, syncSteps: 0, syncMs: 0, visualDone: false, groundDecalDraws: 0, areaFxDraws: 0, environmentPropDraws: 0, atmosphereDraws: 0, heroFxDraws: 0, screenStrikeDraws: 0, hitAtlasDraws: 0, threatDraws: 0, hordeSpriteDraws: 0, hordeSpritesSkipped: 0, hordeRenderBudget: 0, hordeBudgetUsed: 0, projectileSpriteDraws: 0, projectilesSkipped: 0, projectileRenderBudget: 0, hostileProjectileDraws: 0, hostileProjectilesSkipped: 0, hostileProjectileRenderBudget: 0, particlesRendered: 0, particlesCulled: 0, swarmImpostorDraws: 0, legacyWorldOverlays: 0, legacyVectorOverlays: 0, legacyFallbackFx: 0, premiumAtlasFxDraws: 0, renderDpr: 1 },
+    qa: { mode: null, autoChoices: false, autoMove: false, timeScale: 1, maxSteps: 1, syncRunning: false, syncSteps: 0, syncMs: 0, visualDone: false, groundDecalDraws: 0, areaFxDraws: 0, environmentPropDraws: 0, atmosphereDraws: 0, heroFxDraws: 0, screenStrikeDraws: 0, unitAuraDraws: 0, hitAtlasDraws: 0, threatDraws: 0, hordeSpriteDraws: 0, hordeSpritesSkipped: 0, hordeRenderBudget: 0, hordeBudgetUsed: 0, projectileSpriteDraws: 0, projectilesSkipped: 0, projectileRenderBudget: 0, hostileProjectileDraws: 0, hostileProjectilesSkipped: 0, hostileProjectileRenderBudget: 0, particlesRendered: 0, particlesCulled: 0, swarmImpostorDraws: 0, legacyWorldOverlays: 0, legacyVectorOverlays: 0, legacyFallbackFx: 0, premiumAtlasFxDraws: 0, renderDpr: 1 },
     wave: 1,
     spawnTimer: 0,
     eliteSchedule: [90, 180, 300, 450, 600, 760],
@@ -1316,6 +1339,7 @@
     state.qa.atmosphereDraws = 0;
     state.qa.heroFxDraws = 0;
     state.qa.screenStrikeDraws = 0;
+    state.qa.unitAuraDraws = 0;
     state.qa.hitAtlasDraws = 0;
     state.qa.threatDraws = 0;
     state.qa.hordeSpriteDraws = 0;
@@ -2883,6 +2907,8 @@
     document.body.dataset.qaHeroFxDraws = String(state.qa.heroFxDraws || 0);
     document.body.dataset.qaPremiumScreenStrikeAtlasReady = premiumScreenStrikeAtlasReady() ? "1" : "0";
     document.body.dataset.qaScreenStrikeDraws = String(state.qa.screenStrikeDraws || 0);
+    document.body.dataset.qaPremiumUnitAuraAtlasReady = premiumUnitAuraAtlasReady() ? "1" : "0";
+    document.body.dataset.qaUnitAuraDraws = String(state.qa.unitAuraDraws || 0);
     document.body.dataset.qaHitAtlasReady = hitAtlasReady() ? "1" : "0";
     document.body.dataset.qaHitAtlasDraws = String(state.qa.hitAtlasDraws || 0);
     document.body.dataset.qaThreatAtlasReady = threatAtlasReady() ? "1" : "0";
@@ -3139,6 +3165,7 @@
     state.qa.atmosphereDraws = 0;
     state.qa.heroFxDraws = 0;
     state.qa.screenStrikeDraws = 0;
+    state.qa.unitAuraDraws = 0;
     state.qa.areaFxDraws = 0;
     state.qa.hitAtlasDraws = 0;
     state.qa.threatDraws = 0;
@@ -3406,6 +3433,10 @@
     return Boolean(premiumPlayerAtlas && premiumPlayerAtlas.complete && premiumPlayerAtlas.naturalWidth > 0);
   }
 
+  function premiumUnitAuraAtlasReady() {
+    return Boolean(premiumUnitAuraAtlas && premiumUnitAuraAtlas.complete && premiumUnitAuraAtlas.naturalWidth > 0);
+  }
+
   function premiumPickupAtlasReady() {
     return Boolean(premiumPickupAtlas && premiumPickupAtlas.complete && premiumPickupAtlas.naturalWidth > 0);
   }
@@ -3463,7 +3494,8 @@
       hitAtlas,
       threatAtlas,
       premiumHeroFxAtlas,
-      premiumScreenStrikeAtlas
+      premiumScreenStrikeAtlas,
+      premiumUnitAuraAtlas
     ].some(imageStillLoading);
   }
 
@@ -3476,7 +3508,8 @@
       hitAtlas,
       threatAtlas,
       premiumHeroFxAtlas,
-      premiumScreenStrikeAtlas
+      premiumScreenStrikeAtlas,
+      premiumUnitAuraAtlas
     ].some(imageReady);
   }
 
@@ -3600,6 +3633,21 @@
     ctx.scale(flip, 1);
     ctx.drawImage(premiumPlayerAtlas, frame.x, frame.y, frame.w, frame.h, -w / 2, -h / 2, w, h);
     ctx.restore();
+    return true;
+  }
+
+  function drawUnitAuraFrame(id, x, y, w, h, alpha = 0.8, rotation = 0, blend = "lighter", flip = 1) {
+    const frame = unitAuraFrames[id];
+    if (!frame || !premiumUnitAuraAtlasReady()) return false;
+    ctx.save();
+    ctx.globalAlpha *= alpha;
+    ctx.globalCompositeOperation = blend;
+    ctx.translate(x, y);
+    ctx.rotate(rotation);
+    ctx.scale(flip, 1);
+    ctx.drawImage(premiumUnitAuraAtlas, frame.x, frame.y, frame.w, frame.h, -w / 2, -h / 2, w, h);
+    ctx.restore();
+    if (QA_MODE) state.qa.unitAuraDraws += 1;
     return true;
   }
 
@@ -3788,6 +3836,14 @@
     return null;
   }
 
+  function playerUnitAuraFrame(characterId) {
+    if (characterId === "sword") return "swordFootSigil";
+    if (characterId === "talisman") return "talismanOrbitBase";
+    if (characterId === "fox") return "foxFireCrescent";
+    if (characterId === "mechanist") return "mechanistGearRing";
+    return "swordFootSigil";
+  }
+
   function playerCreatureSprite(characterId) {
     if (characterId === "sword") return "heroSword";
     if (characterId === "talisman") return "heroTalisman";
@@ -3882,6 +3938,16 @@
       default:
         return null;
     }
+  }
+
+  function enemyUnitAuraFrame(e, premiumHordeId = null, premiumMinionId = null) {
+    if (e.boss || e.elite) return "bloodMoonPressure";
+    const id = premiumHordeId || premiumMinionId;
+    if (id === "armoredWolf" || id === "lavaWolf" || id === "clawRunner" || e.type.id === "wolf" || e.type.id === "runner") return "emberFootprints";
+    if (id === "spectralWisp" || id === "frostWisp" || e.type.id === "wisp") return "spectralMistBase";
+    if (id === "emberSpitter" || e.type.id === "spitter") return "foxFireCrescent";
+    if (id === "shadowCultist" || id === "voidSummoner" || e.type.id === "summoner" || e.type.id === "shadow") return "talismanOrbitBase";
+    return "demonClawShadow";
   }
 
   function suppressLegacyEnemyFx(e) {
@@ -4697,6 +4763,9 @@
     ctx.ellipse(0, 18, 24, 8, 0, 0, TAU);
     ctx.fill();
     ctx.globalCompositeOperation = "lighter";
+    const unitAuraId = playerUnitAuraFrame(p.character.id);
+    const auraPulse = 1 + Math.sin(t * 2.2) * 0.035;
+    drawUnitAuraFrame(unitAuraId, 0, 14, p.r * 5.35 * auraPulse, p.r * 3.6 * auraPulse, usePremiumPlayerSprite ? 0.26 : 0.18, t * 0.05, "lighter", p.lastDir.x < -0.08 ? -1 : 1);
     drawGlow(0, 2, 44 + Math.sin(t * 4) * 3, p.character.color, usePremiumPlayerSprite ? 0.36 : 0.28);
     if (usePremiumPlayerSprite) {
       drawGlow(0, -10, p.r * 4.4 + Math.sin(t * 3.4) * 3, p.character.color, 0.18);
@@ -4864,8 +4933,11 @@
     let hordeSpritesSkipped = 0;
     const hordeBudget = hordeSpriteRenderBudget();
     const hordeNearExtraBudget = Math.min(28, Math.max(14, Math.floor(hordeBudget * 0.1)));
+    const compactViewport = Math.min(viewW, viewH) < 560;
+    const unitAuraBudget = premiumUnitAuraAtlasReady() ? (compactViewport ? 8 : swarmMode ? 16 : 36) : 0;
     let hordeBudgetUsed = 0;
     let hordeNearExtraUsed = 0;
+    let unitAuraBudgetUsed = 0;
     for (const e of state.enemies) {
       const sx = e.x - camX + halfW;
       const sy = e.y - camY + halfH;
@@ -4886,6 +4958,9 @@
           }
         }
         hordeBudgetUsed += 1;
+        if (nearPlayer && unitAuraBudgetUsed < unitAuraBudget && (hordeBudgetUsed % 3 === 0 || e.flash > 0)) {
+          if (drawEnemyUnitAuraAt(e, sx, sy, t, premiumHordeId, premiumMinionId, compactViewport ? 0.72 : 0.82)) unitAuraBudgetUsed += 1;
+        }
         if (premiumHordeId) {
           if (drawSwarmHordeImpostorEnemyAt(e, sx, sy, t, premiumHordeId)) swarmImpostorDraws += 1;
           else drawHordeSpriteEnemyAt(e, sx, sy, t, premiumHordeId);
@@ -5055,6 +5130,18 @@
     }
   }
 
+  function drawEnemyUnitAuraAt(e, x, y, t, premiumHordeId = null, premiumMinionId = null, alphaScale = 1) {
+    if (!premiumUnitAuraAtlasReady()) return false;
+    const id = enemyUnitAuraFrame(e, premiumHordeId, premiumMinionId);
+    const lowProfile = premiumHordeLowProfile(premiumHordeId) || premiumMinionId === "lavaWolf" || premiumMinionId === "plagueCrawler" || e.type.id === "wolf" || e.type.id === "runner" || e.type.id === "bug";
+    const pulse = 1 + Math.sin(t * (e.boss ? 1.5 : e.elite ? 2.1 : 3.2) + e.x * 0.006 + e.y * 0.004) * 0.035;
+    const width = e.r * (e.boss ? 8.4 : e.elite ? 6.0 : lowProfile ? 4.35 : 3.75) * pulse;
+    const height = e.r * (e.boss ? 5.8 : e.elite ? 4.2 : lowProfile ? 2.45 : 2.85) * pulse;
+    const alpha = (e.boss ? 0.22 : e.elite ? 0.18 : e.flash > 0 ? 0.16 : 0.09) * alphaScale;
+    const flip = lowProfile && state.player && e.x < state.player.x ? -1 : 1;
+    return drawUnitAuraFrame(id, x, y + e.r * 0.72, width, height, alpha, e.x * 0.0013 + t * (e.boss ? 0.04 : 0.08), "lighter", flip);
+  }
+
   function drawSwarmEnemyAt(e, x, y, t) {
     const r = e.r;
     const flash = e.flash > 0;
@@ -5212,6 +5299,8 @@
     ctx.beginPath();
     ctx.ellipse(0, e.r * 0.88, e.r * 1.08, e.r * 0.36, 0, 0, TAU);
     ctx.fill();
+
+    drawEnemyUnitAuraAt(e, 0, 0, t, premiumHordeId, premiumMinionId, e.boss || e.elite ? 1 : 0.74);
 
     ctx.save();
     ctx.globalCompositeOperation = "lighter";
@@ -6682,6 +6771,8 @@
             heroFxDraws: state.qa.heroFxDraws || 0,
             screenStrikeReady: premiumScreenStrikeAtlasReady(),
             screenStrikeDraws: state.qa.screenStrikeDraws || 0,
+            unitAuraReady: premiumUnitAuraAtlasReady(),
+            unitAuraDraws: state.qa.unitAuraDraws || 0,
             areaFxDraws: state.qa.areaFxDraws || 0,
             hitReady: hitAtlasReady(),
             hitDraws: state.qa.hitAtlasDraws || 0,
@@ -6733,6 +6824,7 @@
         state.qa.atmosphereDraws = 0;
         state.qa.heroFxDraws = 0;
         state.qa.screenStrikeDraws = 0;
+        state.qa.unitAuraDraws = 0;
         state.qa.hitAtlasDraws = 0;
         state.qa.threatDraws = 0;
         state.qa.hordeSpriteDraws = 0;
