@@ -802,7 +802,7 @@
     hudSignature: "",
     forceNextChestEvolution: false,
     lastResult: null,
-    qa: { mode: null, autoChoices: false, autoMove: false, timeScale: 1, maxSteps: 1, syncRunning: false, syncSteps: 0, syncMs: 0, visualDone: false, groundDecalDraws: 0, environmentPropDraws: 0, atmosphereDraws: 0, hitAtlasDraws: 0, threatDraws: 0, hordeSpriteDraws: 0, hordeSpritesSkipped: 0, hordeRenderBudget: 0, hordeBudgetUsed: 0, projectileSpriteDraws: 0, projectilesSkipped: 0, projectileRenderBudget: 0, hostileProjectileDraws: 0, hostileProjectilesSkipped: 0, hostileProjectileRenderBudget: 0, particlesRendered: 0, particlesCulled: 0, swarmImpostorDraws: 0, legacyVectorOverlays: 0, legacyFallbackFx: 0, premiumAtlasFxDraws: 0 },
+    qa: { mode: null, autoChoices: false, autoMove: false, timeScale: 1, maxSteps: 1, syncRunning: false, syncSteps: 0, syncMs: 0, visualDone: false, groundDecalDraws: 0, environmentPropDraws: 0, atmosphereDraws: 0, hitAtlasDraws: 0, threatDraws: 0, hordeSpriteDraws: 0, hordeSpritesSkipped: 0, hordeRenderBudget: 0, hordeBudgetUsed: 0, projectileSpriteDraws: 0, projectilesSkipped: 0, projectileRenderBudget: 0, hostileProjectileDraws: 0, hostileProjectilesSkipped: 0, hostileProjectileRenderBudget: 0, particlesRendered: 0, particlesCulled: 0, swarmImpostorDraws: 0, legacyWorldOverlays: 0, legacyVectorOverlays: 0, legacyFallbackFx: 0, premiumAtlasFxDraws: 0 },
     wave: 1,
     spawnTimer: 0,
     eliteSchedule: [90, 180, 300, 450, 600, 760],
@@ -1271,6 +1271,7 @@
     state.qa.hostileProjectileRenderBudget = 0;
     state.qa.particlesRendered = 0;
     state.qa.particlesCulled = 0;
+    state.qa.legacyWorldOverlays = 0;
     state.qa.swarmImpostorDraws = 0;
     state.wave = 1;
     state.spawnTimer = 0;
@@ -2802,6 +2803,7 @@
     document.body.dataset.qaParticleLimit = String(fxParticleLimit());
     document.body.dataset.qaParticleRenderBudget = String(fxParticleRenderBudget());
     document.body.dataset.qaSwarmImpostorDraws = String(state.qa.swarmImpostorDraws || 0);
+    document.body.dataset.qaLegacyWorldOverlays = String(state.qa.legacyWorldOverlays || 0);
     document.body.dataset.qaLegacyVectorOverlays = String(state.qa.legacyVectorOverlays || 0);
     document.body.dataset.qaLegacyFallbackFx = String(state.qa.legacyFallbackFx || 0);
     document.body.dataset.qaPremiumAtlasFxDraws = String(state.qa.premiumAtlasFxDraws || 0);
@@ -3028,6 +3030,7 @@
 
   function render() {
     resize();
+    state.qa.legacyWorldOverlays = 0;
     state.qa.legacyVectorOverlays = 0;
     state.qa.legacyFallbackFx = 0;
     state.qa.premiumAtlasFxDraws = 0;
@@ -4116,6 +4119,7 @@
     const now = performance.now();
     const t = now / 1000;
     const texturedArena = arenaBackgroundReady();
+    const useLegacyWorldFallback = !texturedArena && (!arenaBackground || arenaBackground.complete);
     const bg = ctx.createLinearGradient(0, 0, w, h);
     bg.addColorStop(0, "#101722");
     bg.addColorStop(0.45, "#161c1c");
@@ -4138,108 +4142,111 @@
     ctx.fillStyle = ember;
     ctx.fillRect(0, 0, w, h);
 
-    const tile = 112;
-    const startX = Math.floor((camX - w / 2) / tile) * tile;
-    const startY = Math.floor((camY - h / 2) / tile) * tile;
+    if (useLegacyWorldFallback) {
+      const tile = 112;
+      const startX = Math.floor((camX - w / 2) / tile) * tile;
+      const startY = Math.floor((camY - h / 2) / tile) * tile;
 
-    ctx.lineWidth = 1;
-    for (let x = startX; x < camX + w / 2 + tile; x += tile) {
-      for (let y = startY; y < camY + h / 2 + tile; y += tile) {
-        const sx = Math.round(x - camX + w / 2);
-        const sy = Math.round(y - camY + h / 2);
-        const hsh = hash2(Math.floor(x / tile), Math.floor(y / tile));
-        ctx.fillStyle = hsh > 0.52 ? `rgba(255, 255, 255, ${texturedArena ? 0.004 : 0.01})` : `rgba(0, 0, 0, ${texturedArena ? 0.007 : 0.018})`;
-        ctx.fillRect(sx + 1, sy + 1, tile - 2, tile - 2);
-        ctx.strokeStyle = hsh > 0.65 ? `rgba(241, 198, 106, ${texturedArena ? 0.01 : 0.028})` : `rgba(242, 234, 215, ${texturedArena ? 0.008 : 0.024})`;
-        ctx.strokeRect(sx + 0.5, sy + 0.5, tile, tile);
-        if (hsh > 0.72) {
-          ctx.strokeStyle = `rgba(242, 234, 215, ${texturedArena ? 0.016 : 0.05})`;
-          ctx.beginPath();
-          ctx.moveTo(sx + tile * 0.18, sy + tile * (0.25 + hsh * 0.2));
-          ctx.lineTo(sx + tile * 0.52, sy + tile * (0.42 + hsh * 0.12));
-          ctx.lineTo(sx + tile * 0.78, sy + tile * (0.36 + hsh * 0.18));
-          ctx.stroke();
-        }
-        if (hsh > 0.88) {
-          ctx.save();
-          ctx.globalCompositeOperation = "lighter";
-          ctx.strokeStyle = `rgba(124, 215, 175, ${texturedArena ? 0.035 : 0.10})`;
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.arc(sx + tile * 0.5, sy + tile * 0.5, tile * (0.12 + hsh * 0.08), 0, TAU);
-          ctx.stroke();
-          ctx.restore();
+      ctx.lineWidth = 1;
+      for (let x = startX; x < camX + w / 2 + tile; x += tile) {
+        for (let y = startY; y < camY + h / 2 + tile; y += tile) {
+          const sx = Math.round(x - camX + w / 2);
+          const sy = Math.round(y - camY + h / 2);
+          const hsh = hash2(Math.floor(x / tile), Math.floor(y / tile));
+          ctx.fillStyle = hsh > 0.52 ? "rgba(255, 255, 255, 0.01)" : "rgba(0, 0, 0, 0.018)";
+          ctx.fillRect(sx + 1, sy + 1, tile - 2, tile - 2);
+          ctx.strokeStyle = hsh > 0.65 ? "rgba(241, 198, 106, 0.028)" : "rgba(242, 234, 215, 0.024)";
+          ctx.strokeRect(sx + 0.5, sy + 0.5, tile, tile);
+          if (hsh > 0.72) {
+            ctx.strokeStyle = "rgba(242, 234, 215, 0.05)";
+            ctx.beginPath();
+            ctx.moveTo(sx + tile * 0.18, sy + tile * (0.25 + hsh * 0.2));
+            ctx.lineTo(sx + tile * 0.52, sy + tile * (0.42 + hsh * 0.12));
+            ctx.lineTo(sx + tile * 0.78, sy + tile * (0.36 + hsh * 0.18));
+            ctx.stroke();
+          }
+          if (hsh > 0.88) {
+            ctx.save();
+            ctx.globalCompositeOperation = "lighter";
+            ctx.strokeStyle = "rgba(124, 215, 175, 0.10)";
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(sx + tile * 0.5, sy + tile * 0.5, tile * (0.12 + hsh * 0.08), 0, TAU);
+            ctx.stroke();
+            ctx.restore();
+          }
         }
       }
-    }
 
-    const altar = worldToScreen(0, 0);
-    if (altar.x > -420 && altar.x < w + 420 && altar.y > -320 && altar.y < h + 320) {
+      const altar = worldToScreen(0, 0);
+      if (altar.x > -420 && altar.x < w + 420 && altar.y > -320 && altar.y < h + 320) {
+        ctx.save();
+        ctx.translate(altar.x, altar.y);
+        ctx.scale(1, 0.58);
+        ctx.globalCompositeOperation = "lighter";
+        const altarGlow = ctx.createRadialGradient(0, 0, 18, 0, 0, 330);
+        altarGlow.addColorStop(0, "rgba(124,215,175,0.16)");
+        altarGlow.addColorStop(0.46, "rgba(241,198,106,0.05)");
+        altarGlow.addColorStop(1, "rgba(124,215,175,0)");
+        ctx.fillStyle = altarGlow;
+        ctx.beginPath();
+        ctx.arc(0, 0, 330, 0, TAU);
+        ctx.fill();
+        ctx.globalCompositeOperation = "source-over";
+        ctx.strokeStyle = "rgba(174, 160, 119, 0.18)";
+        ctx.lineWidth = 3;
+        for (const rr of [96, 148, 214, 286]) {
+          ctx.beginPath();
+          ctx.arc(0, 0, rr, 0, TAU);
+          ctx.stroke();
+        }
+        ctx.strokeStyle = "rgba(124, 215, 175, 0.12)";
+        ctx.lineWidth = 1.4;
+        for (let i = 0; i < 24; i++) {
+          const a = (TAU / 24) * i + t * 0.02;
+          const r1 = i % 3 === 0 ? 78 : 132;
+          const r2 = i % 2 === 0 ? 278 : 226;
+          ctx.beginPath();
+          ctx.moveTo(Math.cos(a) * r1, Math.sin(a) * r1);
+          ctx.lineTo(Math.cos(a) * r2, Math.sin(a) * r2);
+          ctx.stroke();
+        }
+        ctx.strokeStyle = "rgba(242, 234, 215, 0.12)";
+        ctx.lineWidth = 2;
+        for (let i = 0; i < 18; i++) {
+          const a = i * 1.37;
+          const r1 = 90 + (i % 5) * 28;
+          const r2 = r1 + 44 + (i % 4) * 16;
+          ctx.beginPath();
+          ctx.moveTo(Math.cos(a) * r1, Math.sin(a) * r1);
+          ctx.lineTo(Math.cos(a + 0.14) * r2, Math.sin(a + 0.14) * r2);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
       ctx.save();
-      ctx.translate(altar.x, altar.y);
-      ctx.scale(1, 0.58);
       ctx.globalCompositeOperation = "lighter";
-      const altarGlow = ctx.createRadialGradient(0, 0, 18, 0, 0, 330);
-      altarGlow.addColorStop(0, "rgba(124,215,175,0.16)");
-      altarGlow.addColorStop(0.46, "rgba(241,198,106,0.05)");
-      altarGlow.addColorStop(1, "rgba(124,215,175,0)");
-      ctx.fillStyle = altarGlow;
-      ctx.beginPath();
-      ctx.arc(0, 0, 330, 0, TAU);
-      ctx.fill();
-      ctx.globalCompositeOperation = "source-over";
-      ctx.strokeStyle = "rgba(174, 160, 119, 0.18)";
-      ctx.lineWidth = 3;
-      for (const rr of [96, 148, 214, 286]) {
+      for (let i = 0; i < 7; i++) {
+        const y = (h * (0.12 + i * 0.14) + Math.sin(t * 0.35 + i) * 18) | 0;
+        const grad = ctx.createLinearGradient(0, y - 26, w, y + 26);
+        grad.addColorStop(0, "rgba(124,215,175,0)");
+        grad.addColorStop(0.34, "rgba(124,215,175,0.035)");
+        grad.addColorStop(0.58, "rgba(241,198,106,0.035)");
+        grad.addColorStop(1, "rgba(124,215,175,0)");
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = 1.2;
         ctx.beginPath();
-        ctx.arc(0, 0, rr, 0, TAU);
-        ctx.stroke();
-      }
-      ctx.strokeStyle = "rgba(124, 215, 175, 0.12)";
-      ctx.lineWidth = 1.4;
-      for (let i = 0; i < 24; i++) {
-        const a = (TAU / 24) * i + t * 0.02;
-        const r1 = i % 3 === 0 ? 78 : 132;
-        const r2 = i % 2 === 0 ? 278 : 226;
-        ctx.beginPath();
-        ctx.moveTo(Math.cos(a) * r1, Math.sin(a) * r1);
-        ctx.lineTo(Math.cos(a) * r2, Math.sin(a) * r2);
-        ctx.stroke();
-      }
-      ctx.strokeStyle = "rgba(242, 234, 215, 0.12)";
-      ctx.lineWidth = 2;
-      for (let i = 0; i < 18; i++) {
-        const a = i * 1.37;
-        const r1 = 90 + (i % 5) * 28;
-        const r2 = r1 + 44 + (i % 4) * 16;
-        ctx.beginPath();
-        ctx.moveTo(Math.cos(a) * r1, Math.sin(a) * r1);
-        ctx.lineTo(Math.cos(a + 0.14) * r2, Math.sin(a + 0.14) * r2);
+        for (let x = -40; x <= w + 40; x += 42) {
+          const yy = y + Math.sin((x + camX * 0.08) * 0.012 + i * 1.7 + t * 0.55) * 18;
+          if (x === -40) ctx.moveTo(x, yy);
+          else ctx.lineTo(x, yy);
+        }
         ctx.stroke();
       }
       ctx.restore();
+      if (QA_MODE) state.qa.legacyWorldOverlays += 1;
     }
-
-    ctx.save();
-    ctx.globalCompositeOperation = "lighter";
-    for (let i = 0; i < 7; i++) {
-      const y = (h * (0.12 + i * 0.14) + Math.sin(t * 0.35 + i) * 18) | 0;
-      const grad = ctx.createLinearGradient(0, y - 26, w, y + 26);
-      grad.addColorStop(0, "rgba(124,215,175,0)");
-      grad.addColorStop(0.34, "rgba(124,215,175,0.035)");
-      grad.addColorStop(0.58, "rgba(241,198,106,0.035)");
-      grad.addColorStop(1, "rgba(124,215,175,0)");
-      ctx.strokeStyle = grad;
-      ctx.lineWidth = 1.2;
-      ctx.beginPath();
-      for (let x = -40; x <= w + 40; x += 42) {
-        const yy = y + Math.sin((x + camX * 0.08) * 0.012 + i * 1.7 + t * 0.55) * 18;
-        if (x === -40) ctx.moveTo(x, yy);
-        else ctx.lineTo(x, yy);
-      }
-      ctx.stroke();
-    }
-    ctx.restore();
 
     const compactWorld = Math.min(w, h) < 560;
     const propBudget = compactWorld ? 5 : state.enemies.length >= SWARM_RENDER_LIMIT ? 48 : 86;
@@ -6268,6 +6275,7 @@
             particlesCulled: state.qa.particlesCulled || 0,
             particleLimit: fxParticleLimit(),
             particleRenderBudget: fxParticleRenderBudget(),
+            legacyWorldOverlays: state.qa.legacyWorldOverlays || 0,
             legacyVectorOverlays: state.qa.legacyVectorOverlays || 0,
             legacyFallbackFx: state.qa.legacyFallbackFx || 0,
             premiumAtlasFxDraws: state.qa.premiumAtlasFxDraws || 0
@@ -6307,6 +6315,7 @@
         state.qa.particlesRendered = 0;
         state.qa.particlesCulled = 0;
         state.qa.swarmImpostorDraws = 0;
+        state.qa.legacyWorldOverlays = 0;
         state.qa.legacyVectorOverlays = 0;
         state.qa.legacyFallbackFx = 0;
         state.qa.premiumAtlasFxDraws = 0;
