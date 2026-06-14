@@ -2272,11 +2272,20 @@
     e.flash = 1;
     const premiumTarget = hasPremiumEnemyArt(e);
     const suppressLegacyFx = suppressLegacyEnemyFx(e);
-    const textChance = state.enemies.length >= SWARM_RENDER_LIMIT ? 0.025 : state.enemies.length > DETAIL_ENEMY_LIMIT ? 0.08 : 0.22;
-    if (text && chance(textChance)) {
-      floatingText(e.x, e.y - e.r, Math.ceil(amount).toString(), color, 12);
+    const denseDamageText = state.enemies.length >= SWARM_RENDER_LIMIT;
+    const criticalDamageText = amount > e.maxHp * 0.08;
+    const textChance = e.boss ? 0.62 : e.elite ? 0.34 : denseDamageText ? 0.012 : state.enemies.length > DETAIL_ENEMY_LIMIT ? 0.045 : 0.18;
+    if (text && state.texts.length < damageTextLimit() && chance(criticalDamageText ? Math.min(0.72, textChance * 2.2) : textChance)) {
+      floatingText(
+        e.x + rand(-e.r * 0.18, e.r * 0.18),
+        e.y - e.r * (criticalDamageText ? 1.15 : 0.92),
+        Math.ceil(amount).toString(),
+        color,
+        criticalDamageText ? 14 : denseDamageText ? 10 : 12,
+        { kind: "damage", critical: criticalDamageText }
+      );
     }
-    if (premiumTarget && !suppressLegacyFx && hitAtlasReady() && hasParticleRoom(14)) {
+    if (premiumTarget && hitAtlasReady() && hasParticleRoom(14)) {
       const dense = state.enemies.length >= SWARM_RENDER_LIMIT;
       const hitChance = e.boss ? 0.72 : e.elite ? 0.46 : dense ? 0.035 : state.enemies.length > DETAIL_ENEMY_LIMIT ? 0.08 : 0.18;
       if (chance(text ? hitChance : hitChance * 0.45)) {
@@ -2377,7 +2386,7 @@
     const premiumDeath = hasPremiumEnemyArt(e);
     const suppressLegacyFx = suppressLegacyEnemyFx(e);
     spawnDeathSprite(e);
-    if (!suppressLegacyFx && hitAtlasReady() && hasParticleRoom(6) && (premiumDeath || e.elite || e.boss || state.enemies.length < DETAIL_ENEMY_LIMIT)) {
+    if (premiumDeath && hitAtlasReady() && hasParticleRoom(6) && (e.elite || e.boss || state.enemies.length < DETAIL_ENEMY_LIMIT)) {
       state.particles.push({
         x: e.x,
         y: e.y,
@@ -2568,8 +2577,27 @@
     }
   }
 
-  function floatingText(x, y, text, color, size = 14) {
-    state.texts.push({ x, y, text, color, size, life: 0.85, max: 0.85, vy: -32 });
+  function damageTextLimit() {
+    const compact = Math.min(window.innerWidth, window.innerHeight) < 560;
+    if (state.enemies.length >= SWARM_RENDER_LIMIT) return compact ? 18 : 26;
+    if (state.enemies.length > DETAIL_ENEMY_LIMIT) return compact ? 28 : 44;
+    return compact ? 48 : 72;
+  }
+
+  function floatingText(x, y, text, color, size = 14, options = {}) {
+    const max = options.kind === "damage" ? (options.critical ? 0.58 : 0.48) : 0.85;
+    state.texts.push({
+      x,
+      y,
+      text,
+      color,
+      size,
+      life: max,
+      max,
+      vy: options.kind === "damage" ? (options.critical ? -40 : -30) : -32,
+      kind: options.kind || "info",
+      critical: Boolean(options.critical)
+    });
   }
 
   function burst(x, y, color, count, speed, options = {}) {
@@ -2612,6 +2640,10 @@
       t.life -= dt;
       t.y += t.vy * dt;
       if (t.life <= 0) state.texts.splice(i, 1);
+    }
+    const textLimit = damageTextLimit() + 32;
+    if (state.texts.length > textLimit) {
+      state.texts.splice(0, state.texts.length - textLimit);
     }
     for (let i = state.particles.length - 1; i >= 0; i--) {
       const p = state.particles[i];
@@ -3162,6 +3194,66 @@
     ctx.closePath();
   }
 
+  function capsulePath(x, y, w, h) {
+    const r = h / 2;
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+
+  function shouldDrawEnemyHealthBar(e) {
+    if (!e.elite) return false;
+    const ratio = clamp(e.hp / e.maxHp, 0, 1);
+    return e.boss || ratio < 0.985 || e.flash > 0.05;
+  }
+
+  function drawEnemyHealthBar(e, width, y) {
+    if (!shouldDrawEnemyHealthBar(e)) return;
+    const ratio = clamp(e.hp / e.maxHp, 0, 1);
+    const h = e.boss ? 7 : 5;
+    const x = -width / 2;
+    ctx.save();
+    ctx.globalCompositeOperation = "source-over";
+    ctx.shadowColor = "rgba(0, 0, 0, 0.55)";
+    ctx.shadowBlur = 7;
+    capsulePath(x - 2, y - 1, width + 4, h + 2);
+    ctx.fillStyle = "rgba(5, 7, 10, 0.68)";
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    capsulePath(x, y, width, h);
+    ctx.fillStyle = "rgba(12, 14, 17, 0.82)";
+    ctx.fill();
+    const fillW = Math.max(h, width * ratio);
+    capsulePath(x, y, fillW, h);
+    const fill = ctx.createLinearGradient(x, y, x + width, y + h);
+    if (e.boss) {
+      fill.addColorStop(0, "#f1a46a");
+      fill.addColorStop(0.45, "#e45b55");
+      fill.addColorStop(1, "#a82f44");
+    } else {
+      fill.addColorStop(0, "#fff0a0");
+      fill.addColorStop(0.48, "#f1c66a");
+      fill.addColorStop(1, "#b97636");
+    }
+    ctx.fillStyle = fill;
+    ctx.fill();
+    ctx.strokeStyle = e.boss ? "rgba(255, 203, 160, 0.58)" : "rgba(255, 236, 165, 0.48)";
+    ctx.lineWidth = 1;
+    capsulePath(x - 0.5, y - 0.5, width + 1, h + 1);
+    ctx.stroke();
+    if (ratio < 0.35 || e.boss) {
+      ctx.globalCompositeOperation = "lighter";
+      drawGlow(0, y + h * 0.5, width * 0.52, e.boss ? colors.danger : colors.gold, e.boss ? 0.09 : 0.045);
+    }
+    ctx.restore();
+  }
+
   function allowHighFx() {
     return state.enemies.length < DETAIL_ENEMY_LIMIT && state.particles.length < HIGH_FX_LIMIT;
   }
@@ -3277,6 +3369,10 @@
     return Boolean(image && !image.complete);
   }
 
+  function imageReady(image) {
+    return Boolean(image && image.complete && image.naturalWidth > 0);
+  }
+
   function premiumFxAssetsLoading() {
     return [
       visualAtlas,
@@ -3288,8 +3384,23 @@
     ].some(imageStillLoading);
   }
 
+  function premiumFxAssetsReady() {
+    return [
+      visualAtlas,
+      premiumProjectileAtlas,
+      hostileProjectileAtlas,
+      groundDecalAtlas,
+      hitAtlas,
+      threatAtlas
+    ].some(imageReady);
+  }
+
   function allowLegacyFallbackFx() {
-    return !premiumFxAssetsLoading();
+    return !premiumFxAssetsLoading() && !premiumFxAssetsReady();
+  }
+
+  function allowLegacyPickupFallback() {
+    return !imageStillLoading(premiumPickupAtlas) && !premiumPickupAtlasReady();
   }
 
   function allowAtlasFx() {
@@ -3659,7 +3770,7 @@
   }
 
   function suppressLegacyEnemyFx(e) {
-    return Boolean(premiumEnemySprite(e) || premiumHordeSprite(e) || premiumMinionSprite(e));
+    return hasPremiumEnemyArt(e);
   }
 
   function recordLegacyEnemyFallback(e) {
@@ -3923,6 +4034,7 @@
       });
       return;
     }
+    if (hasPremiumEnemyArt(e)) return;
     const sprite = enemyCreatureSprite(e);
     if (!sprite || !creatureAtlasReady()) return;
     const allow = e.boss || e.elite || (state.enemies.length < 150 && hasParticleRoom(40) && chance(0.42));
@@ -4431,8 +4543,9 @@
     const atlasFx = allowAtlasFx();
     const premiumPlayer = premiumPlayerSprite(p.character.id);
     const usePremiumPlayerSprite = premiumPlayer && premiumPlayerAtlasReady();
+    const hasPremiumPlayerArt = Boolean(premiumPlayer);
     const playerSprite = playerCreatureSprite(p.character.id);
-    const usePlayerSprite = usePremiumPlayerSprite || (playerSprite && creatureAtlasReady());
+    const usePlayerSprite = usePremiumPlayerSprite || (!hasPremiumPlayerArt && playerSprite && creatureAtlasReady());
     ctx.save();
     ctx.translate(s.x, s.y);
     ctx.rotate(face * 0.06);
@@ -4450,13 +4563,13 @@
 
     ctx.save();
     ctx.rotate(-face * 0.06);
-    if (!usePremiumPlayerSprite) drawSoftParticleFallback(0, 1, p.r + 8, p.character.color, 0.12, t * 0.35, 1.18);
+    if (!usePremiumPlayerSprite && !hasPremiumPlayerArt) drawSoftParticleFallback(0, 1, p.r + 8, p.character.color, 0.12, t * 0.35, 1.18);
     ctx.restore();
 
     ctx.save();
     ctx.globalCompositeOperation = "lighter";
-    if (!usePremiumPlayerSprite && atlasFx) drawAtlasFrame("swordFan", 0, 2, p.r * 5.6, p.r * 4.0, 0.12, -face * 0.35);
-    if (!usePlayerSprite) {
+    if (!usePremiumPlayerSprite && !hasPremiumPlayerArt && atlasFx) drawAtlasFrame("swordFan", 0, 2, p.r * 5.6, p.r * 4.0, 0.12, -face * 0.35);
+    if (!usePlayerSprite && !hasPremiumPlayerArt) {
       for (let i = 0; i < 4; i++) {
         const a = t * 1.25 + i * (TAU / 4);
         const rr = p.r * (1.55 + Math.sin(t * 2 + i) * 0.08);
@@ -4488,6 +4601,11 @@
         drawGlow(0, -5, p.r * 2.35, p.character.color, 0.1 * p.hitFlash);
         ctx.restore();
       }
+      ctx.restore();
+      return;
+    }
+
+    if (hasPremiumPlayerArt) {
       ctx.restore();
       return;
     }
@@ -4611,6 +4729,7 @@
       if (sx < -120 || sx > viewW + 120 || sy < -120 || sy > viewH + 120) continue;
       const pulse = Math.sin(t * (e.boss ? 2.6 : e.elite ? 3.2 : 4.5) + e.x * 0.01 + e.y * 0.01);
       const detailed = e.boss || e.elite || state.enemies.length <= DETAIL_ENEMY_LIMIT;
+      const hasPremiumArt = hasPremiumEnemyArt(e);
       const premiumHordeId = premiumHordeSprite(e);
       const premiumMinionId = premiumMinionSprite(e);
       if (!e.boss && !e.elite && (swarmMode || !detailed)) {
@@ -4634,18 +4753,24 @@
         }
         else {
           recordLegacyEnemyFallback(e);
-          drawSwarmEnemyAt(e, sx, sy, t);
+          if (!hasPremiumArt) drawSwarmEnemyAt(e, sx, sy, t);
         }
         continue;
       }
       ctx.save();
       ctx.translate(sx, sy);
+      const premiumEnemyId = premiumEnemySprite(e);
       const atlasCreatureId = enemyCreatureSprite(e);
-      const usePremiumHordeSprite = premiumHordeId && !premiumEnemySprite(e);
-      const usePremiumMinionSprite = premiumMinionId && !premiumEnemySprite(e);
-      const useCreatureSprite = usePremiumHordeSprite || usePremiumMinionSprite || (atlasCreatureId && (e.boss || e.elite || allowCreatureAtlas()));
+      const usePremiumHordeSprite = premiumHordeId && !premiumEnemyId;
+      const usePremiumMinionSprite = premiumMinionId && !premiumEnemyId;
+      const useCreatureSprite = Boolean(premiumEnemyId || usePremiumHordeSprite || usePremiumMinionSprite || (!hasPremiumArt && atlasCreatureId && allowCreatureAtlas()));
       if (useCreatureSprite) {
         drawSpriteEnemy(e, atlasCreatureId, t, pulse, usePremiumMinionSprite ? premiumMinionId : null, usePremiumHordeSprite ? premiumHordeId : null);
+        ctx.restore();
+        continue;
+      }
+      if (hasPremiumArt) {
+        recordLegacyEnemyFallback(e);
         ctx.restore();
         continue;
       }
@@ -4776,10 +4901,7 @@
       }
       if (e.elite) {
         const hpw = e.boss ? 96 : 56;
-        ctx.fillStyle = "rgba(0,0,0,0.55)";
-        ctx.fillRect(-hpw / 2, -e.r - 14, hpw, 6);
-        ctx.fillStyle = e.boss ? colors.danger : colors.gold;
-        ctx.fillRect(-hpw / 2, -e.r - 14, hpw * clamp(e.hp / e.maxHp, 0, 1), 6);
+        drawEnemyHealthBar(e, hpw, -e.r - 15);
       }
       ctx.restore();
     }
@@ -5004,10 +5126,7 @@
 
     if (e.elite) {
       const hpw = e.boss ? 96 : 56;
-      ctx.fillStyle = "rgba(0,0,0,0.55)";
-      ctx.fillRect(-hpw / 2, -e.r - 14, hpw, 6);
-      ctx.fillStyle = e.boss ? colors.danger : colors.gold;
-      ctx.fillRect(-hpw / 2, -e.r - 14, hpw * clamp(e.hp / e.maxHp, 0, 1), 6);
+      drawEnemyHealthBar(e, hpw, -e.r - 15);
     }
   }
 
@@ -5309,7 +5428,8 @@
         const drewAtlas = drawProjectileSpec(projectileSpec);
         if (drewAtlas) state.qa.premiumAtlasFxDraws += 1;
         if (!drewAtlas) drawSoftProjectileFallback(pr, highFx ? 0.18 : 0.12);
-      } else {
+      } else if (allowLegacyFallbackFx()) {
+        recordLegacyFallbackFx();
         ctx.beginPath();
         ctx.arc(0, 0, pr.r, 0, TAU);
         ctx.fill();
@@ -5479,6 +5599,7 @@
     const now = performance.now() / 1000;
     const usePremiumSmallPickups = premiumPickupAtlasReady();
     const usePremiumLoot = premiumPickupAtlasReady();
+    const useLegacyPickupFallback = allowLegacyPickupFallback();
     const viewW = window.innerWidth;
     const viewH = window.innerHeight;
     for (const g of state.gems) {
@@ -5491,7 +5612,7 @@
       ctx.restore();
       if (usePremiumSmallPickups) {
         drawPremiumPickupSprite("xpCrystal", s.x, s.y + bob, g.r * 6.4, g.r * 7.1, 0.88, Math.sin(now * 2.2 + g.x * 0.01) * 0.12);
-      } else {
+      } else if (useLegacyPickupFallback) {
         ctx.fillStyle = g.color;
         ctx.shadowColor = g.color;
         ctx.shadowBlur = 9;
@@ -5519,7 +5640,7 @@
       ctx.restore();
       if (usePremiumSmallPickups) {
         drawPremiumPickupSprite("spiritCoin", s.x, s.y + bob, c.r * 6.2, c.r * 6.2, 0.9, Math.sin(now * 3 + c.x * 0.01) * 0.1);
-      } else {
+      } else if (useLegacyPickupFallback) {
         ctx.fillStyle = colors.gold;
         ctx.shadowColor = colors.gold;
         ctx.shadowBlur = 8;
@@ -5551,6 +5672,9 @@
         drawGlow(s.x, s.y, item.r * 4.8 + pulse * 2, info.color, 0.22);
         ctx.restore();
         drawPremiumPickupSprite(sprite, s.x, s.y - 2 + pulse * 0.25, item.r * 4.5 + pulse, item.r * 4.5 + pulse, 0.95, item.type === "magnet" ? item.pulse * 0.08 : Math.sin(item.pulse * 0.4) * 0.08);
+        continue;
+      } else if (!useLegacyPickupFallback) {
+        ctx.restore();
         continue;
       } else if (item.type === "heal") {
         ctx.beginPath();
@@ -5593,7 +5717,7 @@
       ctx.restore();
       if (usePremiumLoot) {
         drawPremiumPickupSprite("treasureChest", s.x, s.y - 4 + pulse * 0.25, chest.r * 4.35 + pulse * 2, chest.r * 3.65 + pulse * 2, 0.96, Math.sin(chest.pulse * 1.3) * 0.04);
-      } else {
+      } else if (useLegacyPickupFallback) {
         ctx.shadowColor = colors.gold;
         ctx.shadowBlur = 14;
         ctx.fillStyle = "#8b5726";
@@ -5785,15 +5909,37 @@
   function renderTexts() {
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
+    const viewW = window.innerWidth;
+    const viewH = window.innerHeight;
+    const compact = Math.min(viewW, viewH) < 560;
+    const damageRenderLimit = state.enemies.length >= SWARM_RENDER_LIMIT ? (compact ? 16 : 24) : (compact ? 34 : 58);
+    let damageRendered = 0;
     for (const t of state.texts) {
       const s = worldToScreen(t.x, t.y);
+      if (s.x < -60 || s.x > viewW + 60 || s.y < -60 || s.y > viewH + 60) continue;
+      const isDamage = t.kind === "damage";
+      if (isDamage && damageRendered >= damageRenderLimit) continue;
+      if (isDamage) damageRendered += 1;
+      const fade = clamp(t.life / t.max, 0, 1);
+      const pop = isDamage ? 0.92 + Math.sin((1 - fade) * Math.PI) * (t.critical ? 0.18 : 0.08) : 1;
       ctx.save();
-      ctx.globalAlpha = clamp(t.life / t.max, 0, 1);
-      ctx.font = `800 ${t.size}px "Microsoft YaHei", sans-serif`;
-      ctx.fillStyle = "#000";
-      ctx.fillText(t.text, s.x + 1, s.y + 1);
-      ctx.fillStyle = t.color;
-      ctx.fillText(t.text, s.x, s.y);
+      ctx.translate(s.x, s.y);
+      ctx.scale(pop, pop);
+      ctx.globalAlpha = isDamage ? Math.min(0.9, fade * 0.92) : fade;
+      ctx.font = `${isDamage ? 800 : 700} ${t.size}px "Microsoft YaHei", sans-serif`;
+      ctx.lineWidth = isDamage ? (t.critical ? 3.4 : 2.4) : 2.2;
+      ctx.strokeStyle = isDamage ? "rgba(7, 9, 12, 0.82)" : "rgba(0, 0, 0, 0.72)";
+      ctx.strokeText(t.text, 0, 0);
+      const fill = isDamage ? ctx.createLinearGradient(0, -t.size * 0.6, 0, t.size * 0.65) : null;
+      if (fill) {
+        fill.addColorStop(0, t.critical ? "#fff8d0" : "#f9fff4");
+        fill.addColorStop(0.52, t.color);
+        fill.addColorStop(1, colorAlpha(t.color, 0.72));
+        ctx.fillStyle = fill;
+      } else {
+        ctx.fillStyle = t.color;
+      }
+      ctx.fillText(t.text, 0, 0);
       ctx.restore();
     }
   }
