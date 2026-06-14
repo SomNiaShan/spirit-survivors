@@ -57,11 +57,11 @@
   const SWARM_RENDER_LIMIT = 420;
   const DENSE_AREA_LIMIT = 48;
   const HIGH_FX_LIMIT = 560;
-  const GROUND_DECAL_DENSE_LIMIT = 72;
+  const GROUND_DECAL_DENSE_LIMIT = 18;
   const QA_MODE = new URLSearchParams(window.location.search).has("qa");
   const STORAGE_KEY = QA_MODE ? "spirit-survivors-save-qa-v1" : "spirit-survivors-save-v2";
   const SWARM_IMPOSTOR_BASE_R = 18;
-  const SWARM_IMPOSTOR_CANVAS = 160;
+  const SWARM_IMPOSTOR_CANVAS = 128;
   const swarmImpostorCache = new Map();
 
   const colors = {
@@ -220,6 +220,18 @@
       render();
     };
     atmosphereAtlas.src = "assets/premium-atmosphere-atlas-v1.png";
+  }
+
+  const premiumHeroFxAtlas = typeof Image !== "undefined" ? new Image() : null;
+  if (premiumHeroFxAtlas) {
+    premiumHeroFxAtlas.decoding = "async";
+    premiumHeroFxAtlas.onload = () => {
+      if (!QA_MODE) return;
+      state.qa.visualDone = false;
+      updateQaDataset();
+      render();
+    };
+    premiumHeroFxAtlas.src = "assets/premium-hero-fx-atlas-v1.png";
   }
 
   const hitAtlas = typeof Image !== "undefined" ? new Image() : null;
@@ -384,6 +396,17 @@
     lowMist: { x: 443, y: 443, w: 444, h: 444 },
     bossAura: { x: 887, y: 443, w: 443, h: 444 },
     sparkleCluster: { x: 1330, y: 443, w: 444, h: 444 }
+  };
+
+  const heroFxFrames = {
+    heroMandala: { x: 0, y: 0, w: 512, h: 512 },
+    swordStorm: { x: 512, y: 0, w: 512, h: 512 },
+    fireDragon: { x: 1024, y: 0, w: 512, h: 512 },
+    thunderRune: { x: 1536, y: 0, w: 512, h: 512 },
+    voidBlossom: { x: 0, y: 512, w: 512, h: 512 },
+    frostLotus: { x: 512, y: 512, w: 512, h: 512 },
+    soulShield: { x: 1024, y: 512, w: 512, h: 512 },
+    emberImpact: { x: 1536, y: 512, w: 512, h: 512 }
   };
 
   const hitFrames = {
@@ -800,9 +823,10 @@
     decorations: [],
     pendingLevels: 0,
     hudSignature: "",
+    nextHudUpdate: 0,
     forceNextChestEvolution: false,
     lastResult: null,
-    qa: { mode: null, autoChoices: false, autoMove: false, timeScale: 1, maxSteps: 1, syncRunning: false, syncSteps: 0, syncMs: 0, visualDone: false, groundDecalDraws: 0, environmentPropDraws: 0, atmosphereDraws: 0, hitAtlasDraws: 0, threatDraws: 0, hordeSpriteDraws: 0, hordeSpritesSkipped: 0, hordeRenderBudget: 0, hordeBudgetUsed: 0, projectileSpriteDraws: 0, projectilesSkipped: 0, projectileRenderBudget: 0, hostileProjectileDraws: 0, hostileProjectilesSkipped: 0, hostileProjectileRenderBudget: 0, particlesRendered: 0, particlesCulled: 0, swarmImpostorDraws: 0, legacyWorldOverlays: 0, legacyVectorOverlays: 0, legacyFallbackFx: 0, premiumAtlasFxDraws: 0 },
+    qa: { mode: null, autoChoices: false, autoMove: false, timeScale: 1, maxSteps: 1, syncRunning: false, syncSteps: 0, syncMs: 0, visualDone: false, groundDecalDraws: 0, areaFxDraws: 0, environmentPropDraws: 0, atmosphereDraws: 0, heroFxDraws: 0, hitAtlasDraws: 0, threatDraws: 0, hordeSpriteDraws: 0, hordeSpritesSkipped: 0, hordeRenderBudget: 0, hordeBudgetUsed: 0, projectileSpriteDraws: 0, projectilesSkipped: 0, projectileRenderBudget: 0, hostileProjectileDraws: 0, hostileProjectilesSkipped: 0, hostileProjectileRenderBudget: 0, particlesRendered: 0, particlesCulled: 0, swarmImpostorDraws: 0, legacyWorldOverlays: 0, legacyVectorOverlays: 0, legacyFallbackFx: 0, premiumAtlasFxDraws: 0 },
     wave: 1,
     spawnTimer: 0,
     eliteSchedule: [90, 180, 300, 450, 600, 760],
@@ -2708,12 +2732,17 @@
     showScreen("result");
   }
 
-  function updateHud() {
+  function updateHud(force = true) {
     const p = state.player;
     if (!p) {
       ui.totalCoins.textContent = state.save.coins;
       return;
     }
+    if (!force && state.screen === "playing" && state.elapsed < state.nextHudUpdate) {
+      return;
+    }
+    const hudStep = state.enemies.length >= SWARM_RENDER_LIMIT ? 0.16 : state.enemies.length > DETAIL_ENEMY_LIMIT ? 0.13 : 0.1;
+    state.nextHudUpdate = state.elapsed + hudStep;
     ui.timer.textContent = formatTime(state.elapsed);
     ui.levelText.textContent = p.level;
     ui.wave.textContent = state.wave;
@@ -2810,10 +2839,13 @@
     document.body.dataset.qaPremiumPickupAtlasReady = premiumPickupAtlasReady() ? "1" : "0";
     document.body.dataset.qaGroundDecalAtlasReady = groundDecalAtlasReady() ? "1" : "0";
     document.body.dataset.qaGroundDecalDraws = String(state.qa.groundDecalDraws || 0);
+    document.body.dataset.qaAreaFxDraws = String(state.qa.areaFxDraws || 0);
     document.body.dataset.qaEnvironmentPropAtlasReady = environmentPropAtlasReady() ? "1" : "0";
     document.body.dataset.qaEnvironmentPropDraws = String(state.qa.environmentPropDraws || 0);
     document.body.dataset.qaAtmosphereAtlasReady = atmosphereAtlasReady() ? "1" : "0";
     document.body.dataset.qaAtmosphereDraws = String(state.qa.atmosphereDraws || 0);
+    document.body.dataset.qaPremiumHeroFxAtlasReady = premiumHeroFxAtlasReady() ? "1" : "0";
+    document.body.dataset.qaHeroFxDraws = String(state.qa.heroFxDraws || 0);
     document.body.dataset.qaHitAtlasReady = hitAtlasReady() ? "1" : "0";
     document.body.dataset.qaHitAtlasDraws = String(state.qa.hitAtlasDraws || 0);
     document.body.dataset.qaThreatAtlasReady = threatAtlasReady() ? "1" : "0";
@@ -2946,9 +2978,9 @@
     updateCamera(dt);
     if (state.qa.syncRunning) {
       state.qa.syncSteps += 1;
-      if (state.qa.syncSteps % 10 === 0) updateHud();
+      if (state.qa.syncSteps % 10 === 0) updateHud(false);
     } else {
-      updateHud();
+      updateHud(false);
     }
     if (state.elapsed >= RUN_DURATION) {
       finishRun(true);
@@ -3067,6 +3099,8 @@
     state.qa.legacyFallbackFx = 0;
     state.qa.premiumAtlasFxDraws = 0;
     state.qa.atmosphereDraws = 0;
+    state.qa.heroFxDraws = 0;
+    state.qa.areaFxDraws = 0;
     state.qa.hitAtlasDraws = 0;
     state.qa.threatDraws = 0;
     state.qa.hordeSpriteDraws = 0;
@@ -3260,8 +3294,8 @@
 
   function fxParticleLimit() {
     const compact = Math.min(window.innerWidth, window.innerHeight) < 560;
-    if (state.enemies.length >= SWARM_RENDER_LIMIT) return compact ? 240 : 340;
-    if (state.enemies.length > DETAIL_ENEMY_LIMIT) return compact ? 290 : 430;
+    if (state.enemies.length >= SWARM_RENDER_LIMIT) return compact ? 180 : 280;
+    if (state.enemies.length > DETAIL_ENEMY_LIMIT) return compact ? 230 : 360;
     if (state.enemies.length > 180) return compact ? 320 : 420;
     return compact ? 560 : MAX_PARTICLES;
   }
@@ -3272,9 +3306,9 @@
 
   function fxParticleRenderBudget() {
     const compact = Math.min(window.innerWidth, window.innerHeight) < 560;
-    if (state.enemies.length >= SWARM_RENDER_LIMIT) return compact ? 110 : 135;
-    if (state.enemies.length > DETAIL_ENEMY_LIMIT) return compact ? 110 : 165;
-    if (state.enemies.length > 180) return compact ? 170 : 260;
+    if (state.enemies.length >= SWARM_RENDER_LIMIT) return compact ? 58 : 80;
+    if (state.enemies.length > DETAIL_ENEMY_LIMIT) return compact ? 72 : 108;
+    if (state.enemies.length > 180) return compact ? 140 : 220;
     return compact ? 240 : 420;
   }
 
@@ -3296,8 +3330,8 @@
 
   function hordeSpriteRenderBudget() {
     const compact = Math.min(window.innerWidth, window.innerHeight) < 560;
-    if (state.enemies.length >= SWARM_RENDER_LIMIT) return compact ? 210 : 350;
-    if (state.enemies.length > DETAIL_ENEMY_LIMIT) return compact ? 220 : 420;
+    if (state.enemies.length >= SWARM_RENDER_LIMIT) return compact ? 130 : 220;
+    if (state.enemies.length > DETAIL_ENEMY_LIMIT) return compact ? 160 : 280;
     return Infinity;
   }
 
@@ -3349,6 +3383,10 @@
     return Boolean(atmosphereAtlas && atmosphereAtlas.complete && atmosphereAtlas.naturalWidth > 0);
   }
 
+  function premiumHeroFxAtlasReady() {
+    return Boolean(premiumHeroFxAtlas && premiumHeroFxAtlas.complete && premiumHeroFxAtlas.naturalWidth > 0);
+  }
+
   function hitAtlasReady() {
     return Boolean(hitAtlas && hitAtlas.complete && hitAtlas.naturalWidth > 0);
   }
@@ -3380,7 +3418,8 @@
       hostileProjectileAtlas,
       groundDecalAtlas,
       hitAtlas,
-      threatAtlas
+      threatAtlas,
+      premiumHeroFxAtlas
     ].some(imageStillLoading);
   }
 
@@ -3391,7 +3430,8 @@
       hostileProjectileAtlas,
       groundDecalAtlas,
       hitAtlas,
-      threatAtlas
+      threatAtlas,
+      premiumHeroFxAtlas
     ].some(imageReady);
   }
 
@@ -3568,6 +3608,21 @@
     ctx.drawImage(atmosphereAtlas, frame.x, frame.y, frame.w, frame.h, -w / 2, -h / 2, w, h);
     ctx.restore();
     if (QA_MODE) state.qa.atmosphereDraws += 1;
+    return true;
+  }
+
+  function drawHeroFxFrame(id, x, y, w, h, alpha = 1, rotation = 0, blend = "lighter", flip = 1) {
+    const frame = heroFxFrames[id];
+    if (!frame || !premiumHeroFxAtlasReady()) return false;
+    ctx.save();
+    ctx.globalAlpha *= alpha;
+    ctx.globalCompositeOperation = blend;
+    ctx.translate(x, y);
+    ctx.rotate(rotation);
+    ctx.scale(flip, 1);
+    ctx.drawImage(premiumHeroFxAtlas, frame.x, frame.y, frame.w, frame.h, -w / 2, -h / 2, w, h);
+    ctx.restore();
+    if (QA_MODE) state.qa.heroFxDraws += 1;
     return true;
   }
 
@@ -4500,6 +4555,32 @@
     return "eliteCrown";
   }
 
+  function currentHeroFxFrame(p) {
+    const owned = p?.weapons || {};
+    if (owned.thunderArray || owned.thunderPearl) return "thunderRune";
+    if (owned.fireSea || owned.spiritFire) return "fireDragon";
+    if (owned.voidSeal || owned.talisman) return "voidBlossom";
+    if (owned.glacierRain || owned.frostNeedle) return "frostLotus";
+    if (owned.moonWheel || owned.spinningBlade) return "soulShield";
+    if (owned.thousandSword || owned.flyingSword) return "swordStorm";
+    if (owned.dragonRepeater || owned.crossbow) return "emberImpact";
+    return "heroMandala";
+  }
+
+  function renderHeroAura(p, t) {
+    if (!premiumHeroFxAtlasReady()) return;
+    const dense = state.enemies.length >= SWARM_RENDER_LIMIT;
+    const compact = Math.min(window.innerWidth, window.innerHeight) < 560;
+    const frame = currentHeroFxFrame(p);
+    const baseSize = p.r * (compact ? 6.2 : dense ? 6.4 : 7.2);
+    const pulse = 1 + Math.sin(t * 2.4) * 0.035;
+    const alpha = compact ? 0.11 : dense ? 0.10 : 0.14;
+    drawHeroFxFrame(frame, 0, -2, baseSize * pulse, baseSize * pulse, alpha, t * 0.035, "lighter");
+    if (!dense && frame !== "heroMandala") {
+      drawHeroFxFrame("heroMandala", 0, -4, p.r * 5.35, p.r * 5.35, compact ? 0.055 : 0.075, -t * 0.024, "lighter");
+    }
+  }
+
   function renderThreatsBack() {
     if (!threatAtlasReady()) return;
     const w = window.innerWidth;
@@ -4559,6 +4640,7 @@
     if (usePremiumPlayerSprite) {
       drawGlow(0, -10, p.r * 4.4 + Math.sin(t * 3.4) * 3, p.character.color, 0.18);
     }
+    renderHeroAura(p, t);
     ctx.globalCompositeOperation = "source-over";
 
     ctx.save();
@@ -4720,7 +4802,7 @@
     let swarmImpostorDraws = 0;
     let hordeSpritesSkipped = 0;
     const hordeBudget = hordeSpriteRenderBudget();
-    const hordeNearExtraBudget = 40;
+    const hordeNearExtraBudget = Math.min(28, Math.max(14, Math.floor(hordeBudget * 0.1)));
     let hordeBudgetUsed = 0;
     let hordeNearExtraUsed = 0;
     for (const e of state.enemies) {
@@ -5506,6 +5588,34 @@
     }
   }
 
+  function areaHeroFxSpec(area, now) {
+    switch (area.kind) {
+      case "voidSeal":
+        return { id: "voidBlossom", w: area.r * 2.45, h: area.r * 2.25, alpha: 0.52, rotation: -now / 2600 };
+      case "fireSea":
+        return { id: "fireDragon", w: area.r * 2.9, h: area.r * 2.05, alpha: 0.46, rotation: now / 3600 };
+      case "plagueDomain":
+      case "poison":
+        return { id: "voidBlossom", w: area.r * 2.25, h: area.r * 1.9, alpha: 0.32, rotation: -now / 3200 };
+      case "burst":
+        if (area.color === weapons.thunderArray.color || area.color === weapons.thunderPearl.color) {
+          return { id: "thunderRune", w: area.r * 2.05, h: area.r * 2.05, alpha: 0.48, rotation: now / 1800 };
+        }
+        if (area.slow || area.color === weapons.frostNeedle.color || area.color === weapons.glacierRain.color || area.color === colors.frost) {
+          return { id: "frostLotus", w: area.r * 2.2, h: area.r * 1.95, alpha: 0.5, rotation: now / 2400 };
+        }
+        if (area.color === weapons.spiritFire.color || area.color === weapons.fireSea.color || area.color === colors.danger) {
+          return { id: "emberImpact", w: area.r * 2.35, h: area.r * 2.0, alpha: 0.5, rotation: now / 2800 };
+        }
+        if (area.color === weapons.talisman.color || area.color === weapons.voidSeal.color || area.color === colors.gold || area.color === colors.violet) {
+          return { id: "heroMandala", w: area.r * 2.15, h: area.r * 2.15, alpha: 0.42, rotation: -now / 2600 };
+        }
+        return { id: "soulShield", w: area.r * 2.0, h: area.r * 2.0, alpha: 0.34, rotation: now / 3000 };
+      default:
+        return null;
+    }
+  }
+
   function impactAtlasFrameId(color) {
     if (color === weapons.thunderArray.color || color === weapons.thunderPearl.color) return "thunderSigil";
     if (color === weapons.frostNeedle.color || color === weapons.glacierRain.color || color === colors.frost) return "frostBurst";
@@ -5556,42 +5666,65 @@
     const viewH = window.innerHeight;
     const compactViewport = Math.min(viewW, viewH) < 560;
     const groundDecalBudget = compactViewport ? 8 : denseAreas ? GROUND_DECAL_DENSE_LIMIT : 160;
+    const heroFxAreaBudget = premiumHeroFxAtlasReady() ? (compactViewport ? 1 : denseAreas ? 2 : 8) : 0;
+    const areaFxBudget = compactViewport ? 12 : denseAreas ? 20 : Infinity;
     let groundDecalDraws = 0;
-    for (const area of state.areas) {
+    let heroFxAreaDraws = 0;
+    let areaFxDraws = 0;
+    for (let i = state.areas.length - 1; i >= 0; i--) {
+      const area = state.areas[i];
       const s = worldToScreen(area.x, area.y);
       const cull = area.r * 2.4;
       if (s.x < -cull || s.x > viewW + cull || s.y < -cull || s.y > viewH + cull) continue;
       const alpha = clamp(area.life / area.maxLife, 0, 1);
       ctx.save();
+      if (areaFxDraws >= areaFxBudget) {
+        ctx.restore();
+        continue;
+      }
       const groundSpec = groundDecalDraws < groundDecalBudget ? areaGroundDecalSpec(area, now) : null;
       if (groundSpec && drawGroundDecalFrame(groundSpec.id, s.x, s.y, groundSpec.w, groundSpec.h, groundSpec.alpha * alpha, groundSpec.rotation, "source-over")) {
         groundDecalDraws += 1;
+      }
+      const heroSpec = heroFxAreaDraws < heroFxAreaBudget ? areaHeroFxSpec(area, now) : null;
+      if (heroSpec && drawHeroFxFrame(heroSpec.id, s.x, s.y, heroSpec.w, heroSpec.h, heroSpec.alpha * alpha, heroSpec.rotation, "lighter")) {
+        areaFxDraws += 1;
+        heroFxAreaDraws += 1;
+        if (denseAreas) {
+          ctx.restore();
+          continue;
+        }
       }
       ctx.globalCompositeOperation = "lighter";
       ctx.globalAlpha = area.kind === "voidSeal" ? 0.18 + alpha * 0.26 : 0.16 + alpha * 0.24;
       ctx.shadowColor = area.color;
       ctx.shadowBlur = area.kind === "plagueDomain" || area.kind === "fireSea" ? 34 : 24;
-      const atlasSpec = atlasFx ? areaAtlasSpec(area, now) : null;
+      const atlasSpec = heroSpec ? null : atlasFx ? areaAtlasSpec(area, now) : null;
       if (denseAreas) {
         if (atlasSpec && drawAtlasFrame(atlasSpec.id, s.x, s.y, atlasSpec.w, atlasSpec.h, atlasSpec.alpha * alpha * 0.78, atlasSpec.rotation, "source-over")) {
+          areaFxDraws += 1;
           ctx.restore();
           continue;
         }
-        drawSoftAreaFallback(area, s.x, s.y, alpha, now, true);
+        if (drawSoftAreaFallback(area, s.x, s.y, alpha, now, true)) areaFxDraws += 1;
         ctx.restore();
         continue;
       }
       if (atlasSpec && drawAtlasFrame(atlasSpec.id, s.x, s.y, atlasSpec.w, atlasSpec.h, atlasSpec.alpha * alpha, atlasSpec.rotation, "source-over")) {
+        areaFxDraws += 1;
         drawGlow(s.x, s.y, area.r * 1.22, area.color, 0.16 * alpha);
         ctx.shadowBlur = 0;
         ctx.restore();
         continue;
       }
-      drawSoftAreaFallback(area, s.x, s.y, alpha, now, false);
+      if (drawSoftAreaFallback(area, s.x, s.y, alpha, now, false)) areaFxDraws += 1;
       ctx.shadowBlur = 0;
       ctx.restore();
     }
-    if (QA_MODE) state.qa.groundDecalDraws = groundDecalDraws;
+    if (QA_MODE) {
+      state.qa.groundDecalDraws = groundDecalDraws;
+      state.qa.areaFxDraws = areaFxDraws;
+    }
   }
 
   function renderPickups() {
@@ -6426,6 +6559,9 @@
           visuals: {
             atmosphereReady: atmosphereAtlasReady(),
             atmosphereDraws: state.qa.atmosphereDraws || 0,
+            heroFxReady: premiumHeroFxAtlasReady(),
+            heroFxDraws: state.qa.heroFxDraws || 0,
+            areaFxDraws: state.qa.areaFxDraws || 0,
             hitReady: hitAtlasReady(),
             hitDraws: state.qa.hitAtlasDraws || 0,
             threatReady: threatAtlasReady(),
@@ -6470,8 +6606,10 @@
       resetPerf() {
         state.perf = { frames: 0, totalDt: 0, maxDt: 0, workFrames: 0, totalWorkMs: 0, maxWorkMs: 0 };
         state.qa.groundDecalDraws = 0;
+        state.qa.areaFxDraws = 0;
         state.qa.environmentPropDraws = 0;
         state.qa.atmosphereDraws = 0;
+        state.qa.heroFxDraws = 0;
         state.qa.hitAtlasDraws = 0;
         state.qa.threatDraws = 0;
         state.qa.hordeSpriteDraws = 0;
