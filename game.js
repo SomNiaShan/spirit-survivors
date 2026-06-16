@@ -63,6 +63,7 @@
   const SWARM_IMPOSTOR_BASE_R = 18;
   const SWARM_IMPOSTOR_CANVAS = 128;
   const ENABLE_LEGACY_RUNTIME_ART = false;
+  const ENABLE_SECONDARY_COMBAT_OVERLAYS = false;
   const swarmImpostorCache = new Map();
 
   const colors = {
@@ -2472,7 +2473,7 @@
     }
     if (premiumTarget && hitAtlasReady() && hasParticleRoom(14)) {
       const dense = state.enemies.length >= SWARM_RENDER_LIMIT;
-      const hitChance = e.boss ? 0.72 : e.elite ? 0.46 : dense ? 0.035 : state.enemies.length > DETAIL_ENEMY_LIMIT ? 0.08 : 0.18;
+      const hitChance = e.boss ? 0.72 : e.elite ? 0.46 : dense ? 0 : state.enemies.length > DETAIL_ENEMY_LIMIT ? 0.045 : 0.18;
       if (chance(text ? hitChance : hitChance * 0.45)) {
         const from = state.player || { x: e.x - 1, y: e.y };
         const angle = Math.atan2(e.y - from.y, e.x - from.x) + rand(-0.38, 0.38);
@@ -3631,7 +3632,7 @@
   }
 
   function allowLegacyPickupFallback() {
-    return !imageStillLoading(premiumPickupAtlas) && !premiumPickupAtlasReady();
+    return ENABLE_LEGACY_RUNTIME_ART && !imageStillLoading(premiumPickupAtlas) && !premiumPickupAtlasReady();
   }
 
   function allowAtlasFx() {
@@ -4568,7 +4569,7 @@
     const now = performance.now();
     const t = now / 1000;
     const texturedArena = arenaBackgroundReady();
-    const useLegacyWorldFallback = !texturedArena && (!arenaBackground || arenaBackground.complete);
+    const useLegacyWorldFallback = ENABLE_LEGACY_RUNTIME_ART && !texturedArena && (!arenaBackground || arenaBackground.complete);
     const bg = ctx.createLinearGradient(0, 0, w, h);
     bg.addColorStop(0, "#101722");
     bg.addColorStop(0.45, "#161c1c");
@@ -4831,7 +4832,7 @@
     const pulse = 1 + Math.sin(t * 2.4) * 0.035;
     const alpha = compact ? 0.11 : dense ? 0.10 : 0.14;
     drawHeroFxFrame(frame, 0, -2, baseSize * pulse, baseSize * pulse, alpha, t * 0.035, "lighter");
-    if (!dense && frame !== "heroMandala") {
+    if (ENABLE_SECONDARY_COMBAT_OVERLAYS && !dense && frame !== "heroMandala") {
       drawHeroFxFrame("heroMandala", 0, -4, p.r * 5.35, p.r * 5.35, compact ? 0.055 : 0.075, -t * 0.024, "lighter");
     }
   }
@@ -4950,6 +4951,10 @@
       ctx.restore();
       return;
     }
+    if (!ENABLE_LEGACY_RUNTIME_ART) {
+      ctx.restore();
+      return;
+    }
 
     ctx.shadowColor = p.character.color;
     ctx.shadowBlur = 18;
@@ -5063,7 +5068,7 @@
     const hordeBudget = hordeSpriteRenderBudget();
     const hordeNearExtraBudget = Math.min(28, Math.max(14, Math.floor(hordeBudget * 0.1)));
     const compactViewport = Math.min(viewW, viewH) < 560;
-    const unitAuraBudget = premiumUnitAuraAtlasReady() ? (compactViewport ? 8 : swarmMode ? 16 : 36) : 0;
+    const unitAuraBudget = premiumUnitAuraAtlasReady() ? (compactViewport || swarmMode ? 0 : 36) : 0;
     let hordeBudgetUsed = 0;
     let hordeNearExtraUsed = 0;
     let unitAuraBudgetUsed = 0;
@@ -5098,7 +5103,7 @@
           if (drawSwarmImpostorEnemyAt(e, sx, sy, t, premiumMinionId)) swarmImpostorDraws += 1;
           else drawSwarmSpriteEnemyAt(e, sx, sy, t, premiumMinionId);
         }
-        else if (!hasPremiumArt) {
+        else if (!hasPremiumArt && ENABLE_LEGACY_RUNTIME_ART) {
           recordLegacyEnemyFallback(e);
           drawSwarmEnemyAt(e, sx, sy, t);
         }
@@ -5117,6 +5122,10 @@
         continue;
       }
       if (hasPremiumArt) {
+        ctx.restore();
+        continue;
+      }
+      if (!ENABLE_LEGACY_RUNTIME_ART) {
         ctx.restore();
         continue;
       }
@@ -5429,7 +5438,8 @@
     ctx.ellipse(0, e.r * 0.88, e.r * 1.08, e.r * 0.36, 0, 0, TAU);
     ctx.fill();
 
-    drawEnemyUnitAuraAt(e, 0, 0, t, premiumHordeId, premiumMinionId, e.boss || e.elite ? 1 : 0.74);
+    const suppressEnemyAura = (Math.min(window.innerWidth, window.innerHeight) < 560 || state.enemies.length >= SWARM_RENDER_LIMIT) && !e.boss;
+    if (!suppressEnemyAura) drawEnemyUnitAuraAt(e, 0, 0, t, premiumHordeId, premiumMinionId, e.boss || e.elite ? 1 : 0.74);
 
     ctx.save();
     ctx.globalCompositeOperation = "lighter";
@@ -5997,23 +6007,30 @@
       if (groundSpec && drawGroundDecalFrame(groundSpec.id, s.x, s.y, groundSpec.w, groundSpec.h, groundSpec.alpha * alpha, groundSpec.rotation, "source-over")) {
         groundDecalDraws += 1;
       }
+      let premiumAreaOverlayDrawn = false;
       const strikeSpec = screenStrikeAreaDraws < screenStrikeAreaBudget ? areaScreenStrikeSpec(area, now) : null;
       if (strikeSpec && drawScreenStrikeFrame(strikeSpec.id, s.x, s.y, strikeSpec.w, strikeSpec.h, strikeSpec.alpha * alpha, strikeSpec.rotation, "lighter")) {
         areaFxDraws += 1;
         screenStrikeAreaDraws += 1;
+        premiumAreaOverlayDrawn = true;
         if (denseAreas) {
           ctx.restore();
           continue;
         }
       }
-      const heroSpec = heroFxAreaDraws < heroFxAreaBudget ? areaHeroFxSpec(area, now) : null;
+      const heroSpec = (!premiumAreaOverlayDrawn || ENABLE_SECONDARY_COMBAT_OVERLAYS) && heroFxAreaDraws < heroFxAreaBudget ? areaHeroFxSpec(area, now) : null;
       if (heroSpec && drawHeroFxFrame(heroSpec.id, s.x, s.y, heroSpec.w, heroSpec.h, heroSpec.alpha * alpha, heroSpec.rotation, "lighter")) {
         areaFxDraws += 1;
         heroFxAreaDraws += 1;
+        premiumAreaOverlayDrawn = true;
         if (denseAreas) {
           ctx.restore();
           continue;
         }
+      }
+      if (premiumAreaOverlayDrawn && !ENABLE_SECONDARY_COMBAT_OVERLAYS) {
+        ctx.restore();
+        continue;
       }
       ctx.globalCompositeOperation = "lighter";
       ctx.globalAlpha = area.kind === "voidSeal" ? 0.18 + alpha * 0.26 : 0.16 + alpha * 0.24;
@@ -6192,10 +6209,12 @@
     const renderBudget = fxParticleRenderBudget();
     const screenStrikeParticleBudget = premiumScreenStrikeAtlasReady() ? (compact ? 2 : dense ? 2 : 14) : 0;
     const ultimateCastParticleBudget = premiumUltimateCastAtlasReady() ? (compact ? 1 : dense ? 2 : 6) : 0;
+    const premiumHitParticleBudget = hitAtlasReady() ? (dense ? 0 : compact ? 5 : state.enemies.length > DETAIL_ENEMY_LIMIT ? 22 : 64) : 0;
     let renderedParticles = 0;
     let culledParticles = 0;
     let screenStrikeParticleDraws = 0;
     let ultimateCastParticleDraws = 0;
+    let premiumHitParticleDraws = 0;
     const nowMs = performance.now();
     const tryDrawParticleStrike = (id, x, y, width, height, alpha, rotation = 0, flip = 1) => {
       if (screenStrikeParticleDraws >= screenStrikeParticleBudget) return false;
@@ -6212,6 +6231,10 @@
         continue;
       }
       if (p.kind === "ultimateCast" && ultimateCastParticleDraws >= ultimateCastParticleBudget) {
+        culledParticles += 1;
+        continue;
+      }
+      if ((p.kind === "premiumHit" || p.kind === "premiumDeath") && premiumHitParticleDraws >= premiumHitParticleBudget) {
         culledParticles += 1;
         continue;
       }
@@ -6244,20 +6267,32 @@
       } else if (p.kind === "premiumHit") {
         ctx.globalCompositeOperation = "lighter";
         ctx.shadowBlur = 18;
+        const hitAlphaScale = dense ? 0.42 : compact ? 0.58 : state.enemies.length > DETAIL_ENEMY_LIMIT ? 0.66 : 1;
         const frame = p.hitFrame || hitFrameId(p.color, "impact");
         const size = p.hitFrame === "spectralSlash" ? [p.r * 3.8, p.r * 2.0] : [p.r * 3.15, p.r * 2.65];
         const strikeId = p.hitFrame === "spectralSlash" ? "jadeCrescent" : screenStrikeFrameId(p.color, "impact");
-        tryDrawParticleStrike(strikeId, s.x, s.y, p.r * (p.hitFrame === "spectralSlash" ? 4.8 : 4.05), p.r * (p.hitFrame === "spectralSlash" ? 2.75 : 3.55), 0.22 * alpha, p.angle || 0);
-        const drewHit = drawHitFrame(frame, s.x, s.y, size[0], size[1], 0.68, p.angle || 0, "source-over");
-        if (drewHit) drawGlow(s.x, s.y, p.r * 1.65, p.color, 0.12 * alpha);
+        if (ENABLE_SECONDARY_COMBAT_OVERLAYS) {
+          tryDrawParticleStrike(strikeId, s.x, s.y, p.r * (p.hitFrame === "spectralSlash" ? 4.8 : 4.05), p.r * (p.hitFrame === "spectralSlash" ? 2.75 : 3.55), 0.22 * alpha, p.angle || 0);
+        }
+        const drewHit = drawHitFrame(frame, s.x, s.y, size[0], size[1], 0.68 * hitAlphaScale, p.angle || 0, "source-over");
+        if (drewHit) {
+          premiumHitParticleDraws += 1;
+          drawGlow(s.x, s.y, p.r * 1.65, p.color, 0.12 * alpha * hitAlphaScale);
+        }
       } else if (p.kind === "premiumDeath") {
         ctx.globalCompositeOperation = "lighter";
         ctx.shadowBlur = 22;
+        const deathAlphaScale = dense ? 0.5 : compact ? 0.68 : state.enemies.length > DETAIL_ENEMY_LIMIT ? 0.78 : 1;
         const frame = p.hitFrame || hitFrameId(p.color, "death");
         const size = p.hitFrame === "lootPop" ? [p.r * 3.4, p.r * 3.1] : [p.r * 3.0, p.r * 3.45];
-        tryDrawParticleStrike(screenStrikeFrameId(p.color, "death"), s.x, s.y, p.r * 3.85, p.r * 3.55, 0.18 * alpha, (p.angle || 0) + (1 - alpha) * 0.16);
-        const drewHit = drawHitFrame(frame, s.x, s.y, size[0], size[1], 0.58, (p.angle || 0) + (1 - alpha) * 0.12, "source-over");
-        if (drewHit) drawGlow(s.x, s.y, p.r * 1.95, p.color, 0.14 * alpha);
+        if (ENABLE_SECONDARY_COMBAT_OVERLAYS) {
+          tryDrawParticleStrike(screenStrikeFrameId(p.color, "death"), s.x, s.y, p.r * 3.85, p.r * 3.55, 0.18 * alpha, (p.angle || 0) + (1 - alpha) * 0.16);
+        }
+        const drewHit = drawHitFrame(frame, s.x, s.y, size[0], size[1], 0.58 * deathAlphaScale, (p.angle || 0) + (1 - alpha) * 0.12, "source-over");
+        if (drewHit) {
+          premiumHitParticleDraws += 1;
+          drawGlow(s.x, s.y, p.r * 1.95, p.color, 0.14 * alpha * deathAlphaScale);
+        }
       } else if (p.kind === "blade" || p.kind === "moonBlade") {
         ctx.globalCompositeOperation = "lighter";
         ctx.shadowBlur = p.kind === "moonBlade" ? 16 : 8;
@@ -6277,7 +6312,9 @@
         ctx.globalCompositeOperation = "lighter";
         ctx.shadowBlur = 24;
         const rotation = (p.x + p.y) * 0.0018 + nowMs / 980;
-        tryDrawParticleStrike("lightningBurst", s.x, s.y, p.r * 4.2, p.r * 3.7, 0.2 * alpha, rotation);
+        if (ENABLE_SECONDARY_COMBAT_OVERLAYS) {
+          tryDrawParticleStrike("lightningBurst", s.x, s.y, p.r * 4.2, p.r * 3.7, 0.2 * alpha, rotation);
+        }
         const drewAtlas = (
           premiumProjectileAtlasReady() &&
           drawPremiumProjectileFrame("thunderPearl", s.x, s.y, p.r * 3.45, p.r * 2.8, 0.62, rotation, "source-over")
@@ -6310,7 +6347,7 @@
         ctx.shadowBlur = 14;
         const rotation = (p.x + p.y) * 0.002 + nowMs / 1500;
         const hitFrame = hitFrameId(p.color, "impact");
-        if (!dense || p.r >= 6) tryDrawParticleStrike(screenStrikeFrameId(p.color, "impact"), s.x, s.y, p.r * 3.25, p.r * 2.9, 0.15 * alpha, rotation);
+        if (ENABLE_SECONDARY_COMBAT_OVERLAYS && (!dense || p.r >= 6)) tryDrawParticleStrike(screenStrikeFrameId(p.color, "impact"), s.x, s.y, p.r * 3.25, p.r * 2.9, 0.15 * alpha, rotation);
         const drewHit = drawHitFrame(hitFrame, s.x, s.y, p.r * 2.72, p.r * 2.46, 0.34, rotation, "source-over");
         if (drewHit) {
           drawGlow(s.x, s.y, p.r * 1.7, p.color, 0.11 * alpha);
@@ -6327,7 +6364,9 @@
       } else if (p.kind === "slash") {
         ctx.globalCompositeOperation = "lighter";
         ctx.shadowBlur = 18;
-        tryDrawParticleStrike("jadeCrescent", s.x, s.y, p.r * 4.6, p.r * 2.55, 0.26 * alpha, p.angle || 0);
+        if (ENABLE_SECONDARY_COMBAT_OVERLAYS) {
+          tryDrawParticleStrike("jadeCrescent", s.x, s.y, p.r * 4.6, p.r * 2.55, 0.26 * alpha, p.angle || 0);
+        }
         const drewHit = drawHitFrame("spectralSlash", s.x, s.y, p.r * 3.75, p.r * 1.95, 0.42, p.angle || 0, "source-over");
         if (drewHit) {
           drawGlow(s.x, s.y, p.r * 1.45, p.color, 0.08 * alpha);
