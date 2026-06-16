@@ -535,12 +535,12 @@
   };
 
   const areaEventFrames = {
-    fireDragonField: { x: 0, y: 0, w: 768, h: 512 },
-    thunderPearlArray: { x: 768, y: 0, w: 768, h: 512 },
-    frostLotusField: { x: 0, y: 512, w: 768, h: 512 },
-    voidCrackField: { x: 768, y: 512, w: 768, h: 512 },
-    talismanSealField: { x: 0, y: 1024, w: 768, h: 512 },
-    plagueMireField: { x: 768, y: 1024, w: 768, h: 512 }
+    fireDragonField: { x: 0, y: 0, w: 576, h: 384 },
+    thunderPearlArray: { x: 576, y: 0, w: 576, h: 384 },
+    frostLotusField: { x: 0, y: 384, w: 576, h: 384 },
+    voidCrackField: { x: 576, y: 384, w: 576, h: 384 },
+    talismanSealField: { x: 0, y: 768, w: 576, h: 384 },
+    plagueMireField: { x: 576, y: 768, w: 576, h: 384 }
   };
 
   const hitFrames = {
@@ -963,7 +963,7 @@
     forceNextChestEvolution: false,
     lastResult: null,
     quality: { pressure: 0, avgWorkMs: 0 },
-    qa: { mode: null, autoChoices: false, autoMove: false, timeScale: 1, maxSteps: 1, syncRunning: false, syncSteps: 0, syncMs: 0, visualDone: false, groundDecalDraws: 0, areaEventDraws: 0, areaFxDraws: 0, environmentPropDraws: 0, atmosphereDraws: 0, swarmPressureDraws: 0, heroFxDraws: 0, screenStrikeDraws: 0, ultimateCastDraws: 0, unitAuraDraws: 0, hitAtlasDraws: 0, threatDraws: 0, hordeSpriteDraws: 0, hordeSpritesSkipped: 0, hordeRenderBudget: 0, hordeBudgetUsed: 0, projectileSpriteDraws: 0, projectilesSkipped: 0, projectileRenderBudget: 0, motionTrailDraws: 0, motionTrailRenderBudget: 0, hostileProjectileDraws: 0, hostileProjectilesSkipped: 0, hostileProjectileRenderBudget: 0, particlesRendered: 0, particlesCulled: 0, swarmImpostorDraws: 0, legacyWorldOverlays: 0, legacyVectorOverlays: 0, legacyFallbackFx: 0, legacyCombatAtlasDraws: 0, premiumAtlasFxDraws: 0, renderDpr: 1 },
+    qa: { mode: null, autoChoices: false, autoMove: false, timeScale: 1, maxSteps: 1, syncRunning: false, syncSteps: 0, syncMs: 0, visualDone: false, groundDecalDraws: 0, areaEventDraws: 0, areaFxDraws: 0, environmentPropDraws: 0, atmosphereDraws: 0, swarmPressureDraws: 0, heroFxDraws: 0, screenStrikeDraws: 0, ultimateCastDraws: 0, unitAuraDraws: 0, hitAtlasDraws: 0, threatDraws: 0, hordeSpriteDraws: 0, hordeSpritesSkipped: 0, hordeRenderBudget: 0, hordeBudgetUsed: 0, projectileSpriteDraws: 0, projectilesSkipped: 0, projectileRenderBudget: 0, motionTrailDraws: 0, motionTrailRenderBudget: 0, hostileProjectileDraws: 0, hostileProjectilesSkipped: 0, hostileProjectileRenderBudget: 0, particlesRendered: 0, particlesCulled: 0, swarmImpostorDraws: 0, legacyWorldOverlays: 0, legacyVectorOverlays: 0, legacyAreaFallbackDraws: 0, legacyFallbackFx: 0, legacyCombatAtlasDraws: 0, premiumAtlasFxDraws: 0, renderDpr: 1 },
     wave: 1,
     spawnTimer: 0,
     eliteSchedule: [90, 180, 300, 450, 600, 760],
@@ -1457,6 +1457,7 @@
     state.qa.particlesCulled = 0;
     state.qa.legacyWorldOverlays = 0;
     state.qa.legacyVectorOverlays = 0;
+    state.qa.legacyAreaFallbackDraws = 0;
     state.qa.legacyFallbackFx = 0;
     state.qa.legacyCombatAtlasDraws = 0;
     state.qa.premiumAtlasFxDraws = 0;
@@ -3130,6 +3131,7 @@
     document.body.dataset.qaSwarmImpostorDraws = String(state.qa.swarmImpostorDraws || 0);
     document.body.dataset.qaLegacyWorldOverlays = String(state.qa.legacyWorldOverlays || 0);
     document.body.dataset.qaLegacyVectorOverlays = String(state.qa.legacyVectorOverlays || 0);
+    document.body.dataset.qaLegacyAreaFallbackDraws = String(state.qa.legacyAreaFallbackDraws || 0);
     document.body.dataset.qaLegacyFallbackFx = String(state.qa.legacyFallbackFx || 0);
     document.body.dataset.qaLegacyCombatAtlasDraws = String(state.qa.legacyCombatAtlasDraws || 0);
     document.body.dataset.qaPremiumAtlasFxDraws = String(state.qa.premiumAtlasFxDraws || 0);
@@ -3361,6 +3363,7 @@
     resize();
     state.qa.legacyWorldOverlays = 0;
     state.qa.legacyVectorOverlays = 0;
+    state.qa.legacyAreaFallbackDraws = 0;
     state.qa.legacyFallbackFx = 0;
     state.qa.legacyCombatAtlasDraws = 0;
     state.qa.premiumAtlasFxDraws = 0;
@@ -4149,6 +4152,7 @@
   function drawSoftAreaFallback(area, x, y, alpha, now, compact = false) {
     if (!allowLegacyFallbackFx()) return false;
     recordLegacyFallbackFx();
+    if (QA_MODE) state.qa.legacyAreaFallbackDraws = (state.qa.legacyAreaFallbackDraws || 0) + 1;
     const stretch = area.kind === "plagueDomain" || area.kind === "poison" || area.kind === "fireSea" ? 1.18 : 1;
     const radius = area.r * (compact ? 0.82 : 1);
     ctx.save();
@@ -6258,8 +6262,7 @@
     };
   }
 
-  function areaEventSpec(area, now) {
-    if (!premiumAreaEventAtlasReady()) return null;
+  function areaEventFrameId(area) {
     let id = null;
     if (area.kind === "voidSeal") id = "voidCrackField";
     else if (area.kind === "plagueDomain" || area.kind === "poison") id = "plagueMireField";
@@ -6271,6 +6274,11 @@
       else if (area.color === weapons.poisonMist.color || area.color === weapons.plagueDomain.color || area.color === colors.poison) id = "plagueMireField";
       else if (area.color === weapons.talisman.color || area.color === weapons.voidSeal.color || area.color === colors.gold || area.color === colors.violet) id = "talismanSealField";
     }
+    return id;
+  }
+
+  function areaEventSpec(area, now, id = areaEventFrameId(area)) {
+    if (!premiumAreaEventAtlasReady()) return null;
     if (!id) return null;
     const pulse = 1 + Math.sin(now / 360 + area.x * 0.013 + area.y * 0.007) * 0.018;
     const wideField = id === "fireDragonField" || id === "plagueMireField" || id === "voidCrackField";
@@ -6314,7 +6322,7 @@
     const viewH = window.innerHeight;
     const compactViewport = Math.min(viewW, viewH) < 560;
     const groundDecalBudget = scaledRenderBudget(compactViewport ? 8 : denseAreas ? GROUND_DECAL_DENSE_LIMIT : 160, compactViewport ? 4 : denseAreas ? 9 : 42, 0.62);
-    const areaEventBudget = premiumAreaEventAtlasReady() ? scaledRenderBudget(compactViewport ? 3 : denseAreas ? 8 : 24, compactViewport ? 1 : denseAreas ? 4 : 10, 0.62) : 0;
+    const areaEventBudget = premiumAreaEventAtlasReady() ? scaledRenderBudget(compactViewport ? 3 : denseAreas ? 6 : 24, compactViewport ? 1 : denseAreas ? 3 : 10, 0.62) : 0;
     const heroFxAreaBudget = premiumHeroFxAtlasReady() ? scaledRenderBudget(compactViewport ? 1 : denseAreas ? 2 : 8, compactViewport ? 1 : 1, 0.68) : 0;
     const screenStrikeAreaBudget = premiumScreenStrikeAtlasReady() ? scaledRenderBudget(compactViewport ? 1 : denseAreas ? 2 : 10, compactViewport ? 1 : 1, 0.68) : 0;
     const areaFxBudget = compactViewport ? scaledRenderBudget(10, 5, 0.62) : denseAreas ? scaledRenderBudget(18, 8, 0.62) : Infinity;
@@ -6334,20 +6342,22 @@
         ctx.restore();
         continue;
       }
-      const groundSpec = groundDecalDraws < groundDecalBudget ? areaGroundDecalSpec(area, now) : null;
-      if (groundSpec && drawGroundDecalFrame(groundSpec.id, s.x, s.y, groundSpec.w, groundSpec.h, groundSpec.alpha * alpha, groundSpec.rotation, "source-over")) {
-        groundDecalDraws += 1;
-      }
       let premiumAreaOverlayDrawn = false;
-      const eventSpec = areaEventDraws < areaEventBudget ? areaEventSpec(area, now) : null;
+      const premiumAreaEventId = premiumAreaEventAtlasReady() ? areaEventFrameId(area) : null;
+      const eventSpec = premiumAreaEventId && areaEventDraws < areaEventBudget ? areaEventSpec(area, now, premiumAreaEventId) : null;
       if (eventSpec && drawAreaEventFrame(eventSpec.id, s.x, s.y, eventSpec.w, eventSpec.h, eventSpec.alpha * alpha, eventSpec.rotation, "source-over")) {
         areaFxDraws += 1;
         areaEventDraws += 1;
-        premiumAreaOverlayDrawn = true;
-        if (denseAreas || !ENABLE_SECONDARY_COMBAT_OVERLAYS) {
-          ctx.restore();
-          continue;
-        }
+        ctx.restore();
+        continue;
+      }
+      if (premiumAreaEventId) {
+        ctx.restore();
+        continue;
+      }
+      const groundSpec = groundDecalDraws < groundDecalBudget ? areaGroundDecalSpec(area, now) : null;
+      if (groundSpec && drawGroundDecalFrame(groundSpec.id, s.x, s.y, groundSpec.w, groundSpec.h, groundSpec.alpha * alpha, groundSpec.rotation, "source-over")) {
+        groundDecalDraws += 1;
       }
       const strikeSpec = screenStrikeAreaDraws < screenStrikeAreaBudget ? areaScreenStrikeSpec(area, now) : null;
       if (strikeSpec && drawScreenStrikeFrame(strikeSpec.id, s.x, s.y, strikeSpec.w, strikeSpec.h, strikeSpec.alpha * alpha, strikeSpec.rotation, "lighter")) {
@@ -7326,6 +7336,7 @@
             particleRenderBudget: fxParticleRenderBudget(),
             legacyWorldOverlays: state.qa.legacyWorldOverlays || 0,
             legacyVectorOverlays: state.qa.legacyVectorOverlays || 0,
+            legacyAreaFallbackDraws: state.qa.legacyAreaFallbackDraws || 0,
             legacyFallbackFx: state.qa.legacyFallbackFx || 0,
             legacyCombatAtlasDraws: state.qa.legacyCombatAtlasDraws || 0,
             premiumAtlasFxDraws: state.qa.premiumAtlasFxDraws || 0,
@@ -7379,6 +7390,7 @@
         state.qa.swarmImpostorDraws = 0;
         state.qa.legacyWorldOverlays = 0;
         state.qa.legacyVectorOverlays = 0;
+        state.qa.legacyAreaFallbackDraws = 0;
         state.qa.legacyFallbackFx = 0;
         state.qa.legacyCombatAtlasDraws = 0;
         state.qa.premiumAtlasFxDraws = 0;
