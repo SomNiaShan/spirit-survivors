@@ -102,6 +102,18 @@
     premiumProjectileAtlas.src = "assets/premium-projectile-atlas-v1.png";
   }
 
+  const premiumMotionTrailAtlas = typeof Image !== "undefined" ? new Image() : null;
+  if (premiumMotionTrailAtlas) {
+    premiumMotionTrailAtlas.decoding = "async";
+    premiumMotionTrailAtlas.onload = () => {
+      if (!QA_MODE) return;
+      state.qa.visualDone = false;
+      updateQaDataset();
+      render();
+    };
+    premiumMotionTrailAtlas.src = "assets/premium-motion-trail-atlas-v1.png";
+  }
+
   const hostileProjectileAtlas = typeof Image !== "undefined" ? new Image() : null;
   if (hostileProjectileAtlas) {
     hostileProjectileAtlas.decoding = "async";
@@ -338,6 +350,17 @@
     moonWheelArc: { x: 384, y: 512, w: 384, h: 512 },
     plagueSkull: { x: 768, y: 512, w: 384, h: 512 },
     thunderPearl: { x: 1152, y: 512, w: 384, h: 512 }
+  };
+
+  const premiumMotionTrailFrames = {
+    jadeSwordWake: { x: 0, y: 0, w: 512, h: 512 },
+    talismanWake: { x: 512, y: 0, w: 512, h: 512 },
+    spiritFlameWake: { x: 1024, y: 0, w: 512, h: 512 },
+    thunderWake: { x: 1536, y: 0, w: 512, h: 512 },
+    frostWake: { x: 0, y: 512, w: 512, h: 512 },
+    voidWake: { x: 512, y: 512, w: 512, h: 512 },
+    poisonWake: { x: 1024, y: 512, w: 512, h: 512 },
+    crescentWake: { x: 1536, y: 512, w: 512, h: 512 }
   };
 
   const hostileProjectileFrames = {
@@ -899,7 +922,7 @@
     nextHudUpdate: 0,
     forceNextChestEvolution: false,
     lastResult: null,
-    qa: { mode: null, autoChoices: false, autoMove: false, timeScale: 1, maxSteps: 1, syncRunning: false, syncSteps: 0, syncMs: 0, visualDone: false, groundDecalDraws: 0, areaFxDraws: 0, environmentPropDraws: 0, atmosphereDraws: 0, heroFxDraws: 0, screenStrikeDraws: 0, ultimateCastDraws: 0, unitAuraDraws: 0, hitAtlasDraws: 0, threatDraws: 0, hordeSpriteDraws: 0, hordeSpritesSkipped: 0, hordeRenderBudget: 0, hordeBudgetUsed: 0, projectileSpriteDraws: 0, projectilesSkipped: 0, projectileRenderBudget: 0, hostileProjectileDraws: 0, hostileProjectilesSkipped: 0, hostileProjectileRenderBudget: 0, particlesRendered: 0, particlesCulled: 0, swarmImpostorDraws: 0, legacyWorldOverlays: 0, legacyVectorOverlays: 0, legacyFallbackFx: 0, legacyCombatAtlasDraws: 0, premiumAtlasFxDraws: 0, renderDpr: 1 },
+    qa: { mode: null, autoChoices: false, autoMove: false, timeScale: 1, maxSteps: 1, syncRunning: false, syncSteps: 0, syncMs: 0, visualDone: false, groundDecalDraws: 0, areaFxDraws: 0, environmentPropDraws: 0, atmosphereDraws: 0, heroFxDraws: 0, screenStrikeDraws: 0, ultimateCastDraws: 0, unitAuraDraws: 0, hitAtlasDraws: 0, threatDraws: 0, hordeSpriteDraws: 0, hordeSpritesSkipped: 0, hordeRenderBudget: 0, hordeBudgetUsed: 0, projectileSpriteDraws: 0, projectilesSkipped: 0, projectileRenderBudget: 0, motionTrailDraws: 0, motionTrailRenderBudget: 0, hostileProjectileDraws: 0, hostileProjectilesSkipped: 0, hostileProjectileRenderBudget: 0, particlesRendered: 0, particlesCulled: 0, swarmImpostorDraws: 0, legacyWorldOverlays: 0, legacyVectorOverlays: 0, legacyFallbackFx: 0, legacyCombatAtlasDraws: 0, premiumAtlasFxDraws: 0, renderDpr: 1 },
     wave: 1,
     spawnTimer: 0,
     eliteSchedule: [90, 180, 300, 450, 600, 760],
@@ -1379,6 +1402,8 @@
     state.qa.projectileSpriteDraws = 0;
     state.qa.projectilesSkipped = 0;
     state.qa.projectileRenderBudget = 0;
+    state.qa.motionTrailDraws = 0;
+    state.qa.motionTrailRenderBudget = 0;
     state.qa.hostileProjectileDraws = 0;
     state.qa.hostileProjectilesSkipped = 0;
     state.qa.hostileProjectileRenderBudget = 0;
@@ -1837,6 +1862,21 @@
       state.input.lastMove.x = x;
       state.input.lastMove.y = y;
     }
+  }
+
+  function playerMovingForVisuals() {
+    return (
+      state.input.pointerDown ||
+      state.input.keys.has("KeyW") ||
+      state.input.keys.has("ArrowUp") ||
+      state.input.keys.has("KeyS") ||
+      state.input.keys.has("ArrowDown") ||
+      state.input.keys.has("KeyA") ||
+      state.input.keys.has("ArrowLeft") ||
+      state.input.keys.has("KeyD") ||
+      state.input.keys.has("ArrowRight") ||
+      Boolean(state.qa.autoMove)
+    );
   }
 
   function nearestEnemy(range = Infinity, from = state.player, exclude = null) {
@@ -3022,6 +3062,9 @@
     document.body.dataset.qaProjectileSpriteDraws = String(state.qa.projectileSpriteDraws || 0);
     document.body.dataset.qaProjectilesSkipped = String(state.qa.projectilesSkipped || 0);
     document.body.dataset.qaProjectileRenderBudget = String(state.qa.projectileRenderBudget || 0);
+    document.body.dataset.qaPremiumMotionTrailAtlasReady = premiumMotionTrailAtlasReady() ? "1" : "0";
+    document.body.dataset.qaMotionTrailDraws = String(state.qa.motionTrailDraws || 0);
+    document.body.dataset.qaMotionTrailRenderBudget = String(state.qa.motionTrailRenderBudget || 0);
     document.body.dataset.qaHostileProjectileAtlasReady = hostileProjectileAtlasReady() ? "1" : "0";
     document.body.dataset.qaHostileProjectileDraws = String(state.qa.hostileProjectileDraws || 0);
     document.body.dataset.qaHostileProjectilesSkipped = String(state.qa.hostileProjectilesSkipped || 0);
@@ -3284,6 +3327,8 @@
     state.qa.projectileSpriteDraws = 0;
     state.qa.projectilesSkipped = 0;
     state.qa.projectileRenderBudget = 0;
+    state.qa.motionTrailDraws = 0;
+    state.qa.motionTrailRenderBudget = 0;
     state.qa.hostileProjectileDraws = 0;
     state.qa.hostileProjectilesSkipped = 0;
     state.qa.hostileProjectileRenderBudget = 0;
@@ -3494,6 +3539,14 @@
     return Infinity;
   }
 
+  function motionTrailRenderBudget() {
+    const compact = Math.min(window.innerWidth, window.innerHeight) < 560;
+    if (state.enemies.length >= SWARM_RENDER_LIMIT) return compact ? 18 : 44;
+    if (state.enemies.length > DETAIL_ENEMY_LIMIT) return compact ? 30 : 72;
+    if (state.projectiles.length > 220) return compact ? 52 : 118;
+    return compact ? 86 : 180;
+  }
+
   function hostileProjectileRenderBudget() {
     const compact = Math.min(window.innerWidth, window.innerHeight) < 560;
     if (state.enemies.length >= SWARM_RENDER_LIMIT) return compact ? 48 : 86;
@@ -3515,6 +3568,10 @@
 
   function premiumProjectileAtlasReady() {
     return Boolean(premiumProjectileAtlas && premiumProjectileAtlas.complete && premiumProjectileAtlas.naturalWidth > 0);
+  }
+
+  function premiumMotionTrailAtlasReady() {
+    return Boolean(premiumMotionTrailAtlas && premiumMotionTrailAtlas.complete && premiumMotionTrailAtlas.naturalWidth > 0);
   }
 
   function hostileProjectileAtlasReady() {
@@ -3601,6 +3658,7 @@
     return [
       visualAtlas,
       premiumProjectileAtlas,
+      premiumMotionTrailAtlas,
       hostileProjectileAtlas,
       groundDecalAtlas,
       hitAtlas,
@@ -3616,6 +3674,7 @@
     return [
       visualAtlas,
       premiumProjectileAtlas,
+      premiumMotionTrailAtlas,
       hostileProjectileAtlas,
       groundDecalAtlas,
       hitAtlas,
@@ -3668,6 +3727,21 @@
     ctx.drawImage(premiumProjectileAtlas, frame.x, frame.y, frame.w, frame.h, -w / 2, -h / 2, w, h);
     ctx.restore();
     if (QA_MODE) state.qa.projectileSpriteDraws += 1;
+    return true;
+  }
+
+  function drawMotionTrailFrame(id, x, y, w, h, alpha = 1, rotation = 0, blend = "lighter", flip = 1) {
+    const frame = premiumMotionTrailFrames[id];
+    if (!frame || !premiumMotionTrailAtlasReady()) return false;
+    ctx.save();
+    ctx.globalAlpha *= alpha;
+    ctx.globalCompositeOperation = blend;
+    ctx.translate(x, y);
+    ctx.rotate(rotation);
+    ctx.scale(flip, 1);
+    ctx.drawImage(premiumMotionTrailAtlas, frame.x, frame.y, frame.w, frame.h, -w / 2, -h / 2, w, h);
+    ctx.restore();
+    if (QA_MODE) state.qa.motionTrailDraws += 1;
     return true;
   }
 
@@ -4439,6 +4513,77 @@
     }
   }
 
+  function motionTrailFrameId(kind, color = "") {
+    switch (kind) {
+      case "thousandSword":
+      case "sword":
+      case "slash":
+        return "jadeSwordWake";
+      case "talisman":
+        return "talismanWake";
+      case "fireSea":
+      case "fire":
+        return "spiritFlameWake";
+      case "dragonBolt":
+      case "bolt":
+      case "lightning":
+        return "thunderWake";
+      case "glacierNeedle":
+      case "needle":
+        return "frostWake";
+      case "poison":
+      case "plagueDomain":
+        return "poisonWake";
+      default:
+        if (color === colors.violet || color === weapons.voidSeal.color) return "voidWake";
+        if (color === colors.poison || color === weapons.poisonMist.color || color === weapons.plagueDomain.color) return "poisonWake";
+        return null;
+    }
+  }
+
+  function projectileMotionTrailSpec(pr) {
+    const id = motionTrailFrameId(pr.kind, pr.color);
+    if (!id || !premiumMotionTrailAtlasReady()) return null;
+    const dense = state.enemies.length >= SWARM_RENDER_LIMIT;
+    const alphaScale = dense ? 0.72 : state.enemies.length > DETAIL_ENEMY_LIMIT ? 0.84 : 1;
+    switch (pr.kind) {
+      case "thousandSword":
+        return { id, x: -pr.r * 2.1, y: 0, w: pr.r * 15.8, h: pr.r * 7.4, alpha: 0.24 * alphaScale, rotation: 0, flip: -1 };
+      case "sword":
+        return { id, x: -pr.r * 1.65, y: 0, w: pr.r * 11.5, h: pr.r * 5.5, alpha: 0.2 * alphaScale, rotation: 0, flip: -1 };
+      case "talisman":
+        return { id, x: -pr.r * 1.25, y: 0, w: pr.r * 9.2, h: pr.r * 5.9, alpha: 0.17 * alphaScale, rotation: 0, flip: -1 };
+      case "fireSea":
+        return { id, x: -pr.r * 1.4, y: 0, w: pr.r * 11.8, h: pr.r * 7.0, alpha: 0.24 * alphaScale, rotation: 0, flip: -1 };
+      case "fire":
+        return { id, x: -pr.r * 1.15, y: 0, w: pr.r * 9.8, h: pr.r * 5.9, alpha: 0.22 * alphaScale, rotation: 0, flip: -1 };
+      case "dragonBolt":
+        return { id, x: -pr.r * 1.65, y: 0, w: pr.r * 12.8, h: pr.r * 6.4, alpha: 0.22 * alphaScale, rotation: 0, flip: -1 };
+      case "bolt":
+        return { id, x: -pr.r * 1.25, y: 0, w: pr.r * 10.4, h: pr.r * 5.4, alpha: 0.18 * alphaScale, rotation: 0, flip: -1 };
+      case "glacierNeedle":
+        return { id, x: -pr.r * 1.3, y: 0, w: pr.r * 11.2, h: pr.r * 5.45, alpha: 0.2 * alphaScale, rotation: 0, flip: -1 };
+      case "needle":
+        return { id, x: -pr.r * 1.05, y: 0, w: pr.r * 9.5, h: pr.r * 4.8, alpha: 0.16 * alphaScale, rotation: 0, flip: -1 };
+      default:
+        return null;
+    }
+  }
+
+  function playerMotionTrailFrame(characterId) {
+    switch (characterId) {
+      case "talisman":
+        return "talismanWake";
+      case "fox":
+        return "spiritFlameWake";
+      case "mechanist":
+        return "thunderWake";
+      case "sword":
+      default:
+        return "jadeSwordWake";
+    }
+  }
+
   function premiumProjectileAtlasSpec(pr) {
     const id = premiumProjectileFrameId(pr.kind);
     if (!id) return null;
@@ -4893,6 +5038,15 @@
     ctx.ellipse(0, 18, 24, 8, 0, 0, TAU);
     ctx.fill();
     ctx.globalCompositeOperation = "lighter";
+    const moving = playerMovingForVisuals();
+    if (moving && state.enemies.length < SWARM_RENDER_LIMIT && premiumMotionTrailAtlasReady()) {
+      const moveAngle = Math.atan2(state.input.lastMove.y || p.lastDir.y, state.input.lastMove.x || p.lastDir.x);
+      const compact = Math.min(window.innerWidth, window.innerHeight) < 560;
+      ctx.save();
+      ctx.rotate(moveAngle - face * 0.06);
+      drawMotionTrailFrame(playerMotionTrailFrame(p.character.id), -p.r * 1.45, 10, p.r * (compact ? 5.0 : 6.1), p.r * (compact ? 2.45 : 2.9), compact ? 0.065 : 0.09, 0, "lighter", -1);
+      ctx.restore();
+    }
     const unitAuraId = playerUnitAuraFrame(p.character.id);
     const auraPulse = 1 + Math.sin(t * 2.2) * 0.035;
     drawUnitAuraFrame(unitAuraId, 0, 14, p.r * 5.35 * auraPulse, p.r * 3.6 * auraPulse, usePremiumPlayerSprite ? 0.26 : 0.18, t * 0.05, "lighter", p.lastDir.x < -0.08 ? -1 : 1);
@@ -5730,8 +5884,10 @@
     const highFx = allowHighFx();
     const atlasFx = allowAtlasFx();
     const renderBudget = projectileRenderBudget();
+    const motionBudget = motionTrailRenderBudget();
     let projectileDraws = 0;
     let projectilesSkipped = 0;
+    let motionTrailDraws = 0;
     for (const pr of state.projectiles) {
       const s = worldToScreen(pr.x, pr.y);
       if (s.x < -80 || s.x > window.innerWidth + 80 || s.y < -80 || s.y > window.innerHeight + 80) continue;
@@ -5754,6 +5910,12 @@
         ctx.globalCompositeOperation = "lighter";
         drawGlow(pr.r * 0.35, 0, pr.r * 3.25, pr.color, 0.11);
         ctx.globalCompositeOperation = "source-over";
+      }
+      const motionSpec = projectileMotionTrailSpec(pr);
+      if (motionSpec && motionTrailDraws < motionBudget) {
+        if (drawMotionTrailFrame(motionSpec.id, motionSpec.x, motionSpec.y, motionSpec.w, motionSpec.h, motionSpec.alpha, motionSpec.rotation, "lighter", motionSpec.flip)) {
+          motionTrailDraws += 1;
+        }
       }
       if (pr.kind === "thousandSword") {
         ctx.globalCompositeOperation = "lighter";
@@ -5809,6 +5971,7 @@
     }
     if (QA_MODE) {
       state.qa.projectileRenderBudget = Number.isFinite(renderBudget) ? renderBudget : 0;
+      state.qa.motionTrailRenderBudget = Number.isFinite(motionBudget) ? motionBudget : 0;
       state.qa.projectileSpriteDraws = state.qa.projectileSpriteDraws || 0;
       state.qa.projectilesSkipped = projectilesSkipped;
     }
@@ -6972,6 +7135,9 @@
             projectileSpriteDraws: state.qa.projectileSpriteDraws || 0,
             projectilesSkipped: state.qa.projectilesSkipped || 0,
             projectileRenderBudget: state.qa.projectileRenderBudget || 0,
+            motionTrailReady: premiumMotionTrailAtlasReady(),
+            motionTrailDraws: state.qa.motionTrailDraws || 0,
+            motionTrailRenderBudget: state.qa.motionTrailRenderBudget || 0,
             hostileProjectileReady: hostileProjectileAtlasReady(),
             hostileProjectileDraws: state.qa.hostileProjectileDraws || 0,
             hostileProjectilesSkipped: state.qa.hostileProjectilesSkipped || 0,
@@ -7026,6 +7192,8 @@
         state.qa.projectileSpriteDraws = 0;
         state.qa.projectilesSkipped = 0;
         state.qa.projectileRenderBudget = 0;
+        state.qa.motionTrailDraws = 0;
+        state.qa.motionTrailRenderBudget = 0;
         state.qa.hostileProjectileDraws = 0;
         state.qa.hostileProjectilesSkipped = 0;
         state.qa.hostileProjectileRenderBudget = 0;
