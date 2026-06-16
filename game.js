@@ -259,6 +259,18 @@
     premiumScreenStrikeAtlas.src = "assets/premium-screen-strike-atlas-v1.png";
   }
 
+  const premiumUltimateCastAtlas = typeof Image !== "undefined" ? new Image() : null;
+  if (premiumUltimateCastAtlas) {
+    premiumUltimateCastAtlas.decoding = "async";
+    premiumUltimateCastAtlas.onload = () => {
+      if (!QA_MODE) return;
+      state.qa.visualDone = false;
+      updateQaDataset();
+      render();
+    };
+    premiumUltimateCastAtlas.src = "assets/premium-ultimate-cast-atlas-v1.png";
+  }
+
   const hitAtlas = typeof Image !== "undefined" ? new Image() : null;
   if (hitAtlas) {
     hitAtlas.decoding = "async";
@@ -454,6 +466,17 @@
     frostNova: { x: 443, y: 443, w: 444, h: 444 },
     plagueSplash: { x: 887, y: 443, w: 443, h: 444 },
     bloodMoonShock: { x: 1330, y: 443, w: 444, h: 444 }
+  };
+
+  const ultimateCastFrames = {
+    thousandSwordGate: { x: 0, y: 0, w: 418, h: 470 },
+    voidSealDrop: { x: 418, y: 0, w: 418, h: 470 },
+    fireSeaEruption: { x: 836, y: 0, w: 418, h: 470 },
+    thunderArrayStorm: { x: 1254, y: 0, w: 418, h: 470 },
+    glacierRainPortal: { x: 0, y: 470, w: 418, h: 471 },
+    moonWheelBloom: { x: 418, y: 470, w: 418, h: 471 },
+    plagueDomainBloom: { x: 836, y: 470, w: 418, h: 471 },
+    dragonRepeaterGear: { x: 1254, y: 470, w: 418, h: 471 }
   };
 
   const hitFrames = {
@@ -868,12 +891,14 @@
     particles: [],
     chests: [],
     decorations: [],
+    ultimateFxCooldowns: Object.create(null),
+    orbitFxNextAt: 0,
     pendingLevels: 0,
     hudSignature: "",
     nextHudUpdate: 0,
     forceNextChestEvolution: false,
     lastResult: null,
-    qa: { mode: null, autoChoices: false, autoMove: false, timeScale: 1, maxSteps: 1, syncRunning: false, syncSteps: 0, syncMs: 0, visualDone: false, groundDecalDraws: 0, areaFxDraws: 0, environmentPropDraws: 0, atmosphereDraws: 0, heroFxDraws: 0, screenStrikeDraws: 0, unitAuraDraws: 0, hitAtlasDraws: 0, threatDraws: 0, hordeSpriteDraws: 0, hordeSpritesSkipped: 0, hordeRenderBudget: 0, hordeBudgetUsed: 0, projectileSpriteDraws: 0, projectilesSkipped: 0, projectileRenderBudget: 0, hostileProjectileDraws: 0, hostileProjectilesSkipped: 0, hostileProjectileRenderBudget: 0, particlesRendered: 0, particlesCulled: 0, swarmImpostorDraws: 0, legacyWorldOverlays: 0, legacyVectorOverlays: 0, legacyFallbackFx: 0, legacyCombatAtlasDraws: 0, premiumAtlasFxDraws: 0, renderDpr: 1 },
+    qa: { mode: null, autoChoices: false, autoMove: false, timeScale: 1, maxSteps: 1, syncRunning: false, syncSteps: 0, syncMs: 0, visualDone: false, groundDecalDraws: 0, areaFxDraws: 0, environmentPropDraws: 0, atmosphereDraws: 0, heroFxDraws: 0, screenStrikeDraws: 0, ultimateCastDraws: 0, unitAuraDraws: 0, hitAtlasDraws: 0, threatDraws: 0, hordeSpriteDraws: 0, hordeSpritesSkipped: 0, hordeRenderBudget: 0, hordeBudgetUsed: 0, projectileSpriteDraws: 0, projectilesSkipped: 0, projectileRenderBudget: 0, hostileProjectileDraws: 0, hostileProjectilesSkipped: 0, hostileProjectileRenderBudget: 0, particlesRendered: 0, particlesCulled: 0, swarmImpostorDraws: 0, legacyWorldOverlays: 0, legacyVectorOverlays: 0, legacyFallbackFx: 0, legacyCombatAtlasDraws: 0, premiumAtlasFxDraws: 0, renderDpr: 1 },
     wave: 1,
     spawnTimer: 0,
     eliteSchedule: [90, 180, 300, 450, 600, 760],
@@ -1331,6 +1356,8 @@
     state.particles = [];
     state.chests = [];
     state.decorations = [];
+    state.ultimateFxCooldowns = Object.create(null);
+    state.orbitFxNextAt = 0;
     state.pendingLevels = 0;
     state.hudSignature = "";
     state.forceNextChestEvolution = false;
@@ -1340,6 +1367,7 @@
     state.qa.atmosphereDraws = 0;
     state.qa.heroFxDraws = 0;
     state.qa.screenStrikeDraws = 0;
+    state.qa.ultimateCastDraws = 0;
     state.qa.unitAuraDraws = 0;
     state.qa.hitAtlasDraws = 0;
     state.qa.threatDraws = 0;
@@ -1480,6 +1508,7 @@
     state.player.weapons[evoId] = { level: 1, evolved: true };
     playSfx("evolve");
     burst(state.player.x, state.player.y, weapons[evoId].color, 48, 260);
+    emitUltimateCastFx(evolvedCastFrame(evoId), state.player.x, state.player.y, 145, weapons[evoId].color, 0.1, 1.3, 1.2);
     floatingText(state.player.x, state.player.y - 42, weapons[evoId].name, weapons[evoId].color, 22);
     return true;
   }
@@ -1930,10 +1959,64 @@
     });
   }
 
+  function evolvedCastFrame(id) {
+    switch (id) {
+      case "thousandSword":
+        return "thousandSwordGate";
+      case "voidSeal":
+        return "voidSealDrop";
+      case "fireSea":
+        return "fireSeaEruption";
+      case "thunderArray":
+        return "thunderArrayStorm";
+      case "glacierRain":
+        return "glacierRainPortal";
+      case "moonWheel":
+        return "moonWheelBloom";
+      case "plagueDomain":
+        return "plagueDomainBloom";
+      case "dragonRepeater":
+        return "dragonRepeaterGear";
+      default:
+        return null;
+    }
+  }
+
+  function emitUltimateCastFx(frame, x, y, radius, color, cooldown = 0.52, scaleX = 1, scaleY = 1) {
+    if (!frame || !premiumUltimateCastAtlasReady() || !state.player) return false;
+    const dense = state.enemies.length >= SWARM_RENDER_LIMIT;
+    const crowded = state.enemies.length > DETAIL_ENEMY_LIMIT;
+    if (!hasParticleRoom(dense ? 42 : crowded ? 30 : 18)) return false;
+    const now = state.elapsed;
+    const key = `ultimate:${frame}`;
+    const crowdCooldown = cooldown * (dense ? 1.45 : crowded ? 1.18 : 1);
+    if ((state.ultimateFxCooldowns[key] || 0) > now) return false;
+    state.ultimateFxCooldowns[key] = now + crowdCooldown;
+    const size = radius * (dense ? 0.86 : crowded ? 0.94 : 1);
+    state.particles.push({
+      x,
+      y,
+      vx: 0,
+      vy: 0,
+      life: dense ? 0.36 : 0.46,
+      max: dense ? 0.36 : 0.46,
+      r: size,
+      w: size * 2 * scaleX,
+      h: size * 2 * scaleY,
+      color,
+      kind: "ultimateCast",
+      castFrame: frame,
+      angle: rand(-0.09, 0.09),
+      flip: chance(0.5) ? -1 : 1
+    });
+    return true;
+  }
+
   function castFlyingSword(level, dt, evolved) {
     const cd = evolved ? 0.34 : Math.max(0.42, 1.02 - level * 0.055);
     if (!weaponTimer(evolved ? "thousandSword" : "flyingSword", cd, dt)) return;
     const p = state.player;
+    if (evolved) emitUltimateCastFx("thousandSwordGate", p.x + p.lastDir.x * 30, p.y + p.lastDir.y * 30, 128, weapons.thousandSword.color, 0.58, 1.38, 1.12);
     const count = (evolved ? 5 : 1 + Math.floor(level / 3)) + p.amountBonus;
     const target = nearestEnemy(950);
     const baseAngle = target ? Math.atan2(target.y - p.y, target.x - p.x) : Math.atan2(p.lastDir.y, p.lastDir.x);
@@ -1961,6 +2044,7 @@
       const target = randomEnemyOnScreen() || nearestEnemy();
       if (!target) return;
       if (evolved) {
+        emitUltimateCastFx("voidSealDrop", target.x, target.y, 118 * p.areaMult, weapons.voidSeal.color, 0.68, 1.18, 1.18);
         addArea(target.x + rand(-44, 44), target.y + rand(-44, 44), {
           r: (78 + level * 4) * p.areaMult,
           life: 2.6 * p.durationMult,
@@ -1992,6 +2076,7 @@
     const cd = evolved ? 0.48 : Math.max(0.7, 1.2 - level * 0.045);
     if (!weaponTimer(id, cd, dt)) return;
     const count = (evolved ? 3 : 1 + Math.floor(level / 3)) + p.amountBonus;
+    if (evolved) emitUltimateCastFx("fireSeaEruption", p.x + p.lastDir.x * 48, p.y + p.lastDir.y * 48, 130 * p.areaMult, weapons.fireSea.color, 0.62, 1.35, 1.02);
     for (let i = 0; i < count; i++) {
       const a = Math.atan2(p.lastDir.y, p.lastDir.x) + (i - (count - 1) / 2) * 0.5 + rand(-0.2, 0.2);
       projectile(p.x + Math.cos(a) * 12, p.y + Math.sin(a) * 12, Math.cos(a) * (evolved ? 430 : 380), Math.sin(a) * (evolved ? 430 : 380), {
@@ -2026,6 +2111,7 @@
     for (let i = 0; i < strikes; i++) {
       const target = previous && evolved ? nearestEnemy(260, previous, previous) : randomEnemyOnScreen();
       if (!target) break;
+      if (evolved && i === 0) emitUltimateCastFx("thunderArrayStorm", target.x, target.y, 116 * p.areaMult, weapons.thunderArray.color, 0.74, 1.16, 1.16);
       lightning(target, (evolved ? 35 : 22 + level * 5) * p.damageMult, evolved);
       previous = target;
     }
@@ -2037,6 +2123,7 @@
     const cd = evolved ? 0.64 : Math.max(0.76, 1.1 - level * 0.04);
     if (!weaponTimer(id, cd, dt)) return;
     if (evolved) {
+      emitUltimateCastFx("glacierRainPortal", p.x, p.y, 142 * p.areaMult, weapons.glacierRain.color, 0.68, 1.25, 1.38);
       const count = 14 + p.amountBonus * 2;
       for (let i = 0; i < count; i++) {
         const a = (TAU / count) * i + rand(-0.08, 0.08);
@@ -2077,6 +2164,12 @@
     const speed = (evolved ? 3.1 : 2.2) + level * 0.08;
     const damage = (evolved ? 30 : 9 + level * 2.4) * p.damageMult;
     const t = performance.now() / 1000;
+    if (evolved) emitUltimateCastFx("moonWheelBloom", p.x, p.y, 118 * p.areaMult, weapons.moonWheel.color, 0.82, 1.18, 1.18);
+    const denseOrbitFx = state.enemies.length >= SWARM_RENDER_LIMIT;
+    const crowdedOrbitFx = state.enemies.length > DETAIL_ENEMY_LIMIT;
+    const canEmitOrbitFx = t >= state.orbitFxNextAt && hasParticleRoom(denseOrbitFx ? 16 : 8);
+    if (canEmitOrbitFx) state.orbitFxNextAt = t + (denseOrbitFx ? 0.08 : crowdedOrbitFx ? 0.05 : 0.028);
+    const orbitFxStride = denseOrbitFx ? 3 : crowdedOrbitFx ? 2 : 1;
     for (let i = 0; i < count; i++) {
       const a = t * speed + (TAU / count) * i;
       const bx = p.x + Math.cos(a) * radius;
@@ -2092,7 +2185,9 @@
           e.hit[evolved ? "moonWheel" : "spinningBlade"] = evolved ? 0.18 : 0.32;
         }
       });
-      state.particles.push({ x: bx, y: by, vx: 0, vy: 0, life: 0.08, max: 0.08, r: bladeR, color: evolved ? weapons.moonWheel.color : weapons.spinningBlade.color, kind: evolved ? "moonBlade" : "blade" });
+      if (canEmitOrbitFx && i % orbitFxStride === 0) {
+        state.particles.push({ x: bx, y: by, vx: 0, vy: 0, life: 0.08, max: 0.08, r: bladeR, color: evolved ? weapons.moonWheel.color : weapons.spinningBlade.color, kind: evolved ? "moonBlade" : "blade" });
+      }
     }
   }
 
@@ -2102,6 +2197,7 @@
     const cd = evolved ? 0.92 : Math.max(1.2, 2.3 - level * 0.09);
     if (!weaponTimer(id, cd, dt)) return;
     const count = (evolved ? 3 : 1 + Math.floor(level / 4)) + p.amountBonus;
+    if (evolved) emitUltimateCastFx("plagueDomainBloom", p.x, p.y, 136 * p.areaMult, weapons.plagueDomain.color, 0.88, 1.18, 1.18);
     for (let i = 0; i < count; i++) {
       const target = evolved ? { x: p.x + rand(-110, 110), y: p.y + rand(-110, 110) } : (randomEnemyOnScreen() || p);
       addArea(target.x + rand(-48, 48), target.y + rand(-48, 48), {
@@ -2124,6 +2220,7 @@
     const count = (evolved ? 3 : 1 + Math.floor(level / 3)) + p.amountBonus;
     const target = nearestEnemy(820);
     const base = target ? Math.atan2(target.y - p.y, target.x - p.x) : Math.atan2(p.lastDir.y, p.lastDir.x);
+    if (evolved) emitUltimateCastFx("dragonRepeaterGear", p.x + Math.cos(base) * 42, p.y + Math.sin(base) * 42, 118, weapons.dragonRepeater.color, 0.42, 1.55, 0.98);
     for (let i = 0; i < count; i++) {
       const a = base + rand(-0.14, 0.14) + (i - (count - 1) / 2) * 0.08;
       projectile(p.x, p.y, Math.cos(a) * (evolved ? 900 : 760), Math.sin(a) * (evolved ? 900 : 760), {
@@ -2912,6 +3009,8 @@
     document.body.dataset.qaHeroFxDraws = String(state.qa.heroFxDraws || 0);
     document.body.dataset.qaPremiumScreenStrikeAtlasReady = premiumScreenStrikeAtlasReady() ? "1" : "0";
     document.body.dataset.qaScreenStrikeDraws = String(state.qa.screenStrikeDraws || 0);
+    document.body.dataset.qaPremiumUltimateCastAtlasReady = premiumUltimateCastAtlasReady() ? "1" : "0";
+    document.body.dataset.qaUltimateCastDraws = String(state.qa.ultimateCastDraws || 0);
     document.body.dataset.qaPremiumUnitAuraAtlasReady = premiumUnitAuraAtlasReady() ? "1" : "0";
     document.body.dataset.qaUnitAuraDraws = String(state.qa.unitAuraDraws || 0);
     document.body.dataset.qaHitAtlasReady = hitAtlasReady() ? "1" : "0";
@@ -3172,6 +3271,7 @@
     state.qa.atmosphereDraws = 0;
     state.qa.heroFxDraws = 0;
     state.qa.screenStrikeDraws = 0;
+    state.qa.ultimateCastDraws = 0;
     state.qa.unitAuraDraws = 0;
     state.qa.areaFxDraws = 0;
     state.qa.hitAtlasDraws = 0;
@@ -3468,6 +3568,10 @@
     return Boolean(premiumScreenStrikeAtlas && premiumScreenStrikeAtlas.complete && premiumScreenStrikeAtlas.naturalWidth > 0);
   }
 
+  function premiumUltimateCastAtlasReady() {
+    return Boolean(premiumUltimateCastAtlas && premiumUltimateCastAtlas.complete && premiumUltimateCastAtlas.naturalWidth > 0);
+  }
+
   function hitAtlasReady() {
     return Boolean(hitAtlas && hitAtlas.complete && hitAtlas.naturalWidth > 0);
   }
@@ -3502,6 +3606,7 @@
       threatAtlas,
       premiumHeroFxAtlas,
       premiumScreenStrikeAtlas,
+      premiumUltimateCastAtlas,
       premiumUnitAuraAtlas
     ].some(imageStillLoading);
   }
@@ -3516,6 +3621,7 @@
       threatAtlas,
       premiumHeroFxAtlas,
       premiumScreenStrikeAtlas,
+      premiumUltimateCastAtlas,
       premiumUnitAuraAtlas
     ].some(imageReady);
   }
@@ -3739,6 +3845,21 @@
     ctx.drawImage(premiumScreenStrikeAtlas, frame.x, frame.y, frame.w, frame.h, -w / 2, -h / 2, w, h);
     ctx.restore();
     if (QA_MODE) state.qa.screenStrikeDraws += 1;
+    return true;
+  }
+
+  function drawUltimateCastFrame(id, x, y, w, h, alpha = 1, rotation = 0, blend = "lighter", flip = 1) {
+    const frame = ultimateCastFrames[id];
+    if (!frame || !premiumUltimateCastAtlasReady()) return false;
+    ctx.save();
+    ctx.globalAlpha *= alpha;
+    ctx.globalCompositeOperation = blend;
+    ctx.translate(x, y);
+    ctx.rotate(rotation);
+    ctx.scale(flip, 1);
+    ctx.drawImage(premiumUltimateCastAtlas, frame.x, frame.y, frame.w, frame.h, -w / 2, -h / 2, w, h);
+    ctx.restore();
+    if (QA_MODE) state.qa.ultimateCastDraws += 1;
     return true;
   }
 
@@ -6070,9 +6191,11 @@
     const dense = state.enemies.length >= SWARM_RENDER_LIMIT;
     const renderBudget = fxParticleRenderBudget();
     const screenStrikeParticleBudget = premiumScreenStrikeAtlasReady() ? (compact ? 2 : dense ? 2 : 14) : 0;
+    const ultimateCastParticleBudget = premiumUltimateCastAtlasReady() ? (compact ? 1 : dense ? 2 : 6) : 0;
     let renderedParticles = 0;
     let culledParticles = 0;
     let screenStrikeParticleDraws = 0;
+    let ultimateCastParticleDraws = 0;
     const nowMs = performance.now();
     const tryDrawParticleStrike = (id, x, y, width, height, alpha, rotation = 0, flip = 1) => {
       if (screenStrikeParticleDraws >= screenStrikeParticleBudget) return false;
@@ -6083,7 +6206,12 @@
     for (const p of state.particles) {
       const s = worldToScreen(p.x, p.y);
       const cull = p.kind === "deathSprite" ? Math.max(p.w || 0, p.h || 0, p.r * 5) * 0.55 : Math.max(86, p.r * 5.8);
-      if (s.x < -cull || s.x > viewW + cull || s.y < -cull || s.y > viewH + cull) {
+      const particleCull = p.kind === "ultimateCast" ? Math.max(p.w || 0, p.h || 0, p.r * 4.4) * 0.58 : cull;
+      if (s.x < -particleCull || s.x > viewW + particleCull || s.y < -particleCull || s.y > viewH + particleCull) {
+        culledParticles += 1;
+        continue;
+      }
+      if (p.kind === "ultimateCast" && ultimateCastParticleDraws >= ultimateCastParticleBudget) {
         culledParticles += 1;
         continue;
       }
@@ -6100,7 +6228,20 @@
       ctx.fillStyle = p.color;
       ctx.strokeStyle = p.color;
       ctx.shadowColor = p.color;
-      if (p.kind === "premiumHit") {
+      if (p.kind === "ultimateCast") {
+        const age = 1 - alpha;
+        const pulse = 0.86 + Math.sin(age * Math.PI) * 0.18 + age * 0.1;
+        const drawAlpha = (dense ? 0.44 : compact ? 0.5 : 0.62) * clamp(alpha * 1.35, 0, 1);
+        const width = (p.w || p.r * 2.4) * pulse;
+        const height = (p.h || p.r * 2.2) * pulse;
+        ctx.globalCompositeOperation = "lighter";
+        ctx.shadowBlur = 0;
+        const drew = drawUltimateCastFrame(p.castFrame, s.x, s.y, width, height, drawAlpha, (p.angle || 0) + age * 0.04, "lighter", p.flip || 1);
+        if (drew) {
+          ultimateCastParticleDraws += 1;
+          drawGlow(s.x, s.y, Math.max(width, height) * 0.24, p.color, 0.1 * alpha);
+        }
+      } else if (p.kind === "premiumHit") {
         ctx.globalCompositeOperation = "lighter";
         ctx.shadowBlur = 18;
         const frame = p.hitFrame || hitFrameId(p.color, "impact");
@@ -6779,6 +6920,8 @@
             heroFxDraws: state.qa.heroFxDraws || 0,
             screenStrikeReady: premiumScreenStrikeAtlasReady(),
             screenStrikeDraws: state.qa.screenStrikeDraws || 0,
+            ultimateCastReady: premiumUltimateCastAtlasReady(),
+            ultimateCastDraws: state.qa.ultimateCastDraws || 0,
             unitAuraReady: premiumUnitAuraAtlasReady(),
             unitAuraDraws: state.qa.unitAuraDraws || 0,
             areaFxDraws: state.qa.areaFxDraws || 0,
@@ -6833,6 +6976,7 @@
         state.qa.atmosphereDraws = 0;
         state.qa.heroFxDraws = 0;
         state.qa.screenStrikeDraws = 0;
+        state.qa.ultimateCastDraws = 0;
         state.qa.unitAuraDraws = 0;
         state.qa.hitAtlasDraws = 0;
         state.qa.threatDraws = 0;
