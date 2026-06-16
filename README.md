@@ -38,6 +38,7 @@ python -m http.server 4173
 - 单位脚下/移动存在感特效图集 `assets/premium-unit-aura-atlas-v1.png`
 - 进化技能释放瞬间特效图集 `assets/premium-ultimate-cast-atlas-v1.png`
 - 高级弹道拖尾/主角移动残影图集 `assets/premium-motion-trail-atlas-v1.png`
+- 高级怪潮压迫感屏幕叠层图集 `assets/premium-swarm-pressure-atlas-v1.png`
 - 程序化音效、氛围音和静音开关
 - 成就系统和角色解锁
 - 回血、吸附、清屏三类场上道具
@@ -48,7 +49,7 @@ python -m http.server 4173
 
 ## 美术方向
 
-当前目标是暗黑修仙题材的高可读 2.5D 幸存者画面：深色战场、强轮廓怪潮、中心法阵、粗亮弹道、清晰颜色分区和大面积技能领域。`assets/concept-visual-target.png` 是整体氛围方向稿，`assets/arena-bg-v3.png` 是当前实战战场底图，加入了破碎祭坛、青铜法阵、玉柱、魂雾和魔化裂隙，中心保持压暗以保证怪潮和弹道可读。`assets/premium-horde-atlas-v2.png` 是当前普通怪潮主图集，强化了符甲、尸傀、青铜虫甲、魂火和黑金法袍等暗黑修仙元素。`assets/premium-projectile-atlas-v1.png`、`assets/premium-motion-trail-atlas-v1.png`、`assets/premium-hit-atlas-v1.png`、`assets/premium-screen-strike-atlas-v1.png`、`assets/premium-hero-fx-atlas-v1.png`、`assets/premium-unit-aura-atlas-v1.png` 和 `assets/premium-ultimate-cast-atlas-v1.png` 是当前运行时战斗特效主资源；其中 motion trail 图集为飞剑、符咒、火焰、冰雷和主角移动提供受预算控制的拖尾/残影层。进化武器在释放和进化瞬间会触发受预算控制的大招图集爆发；怪潮密集时会自动减少大招层数量、弹道拖尾数量和月轮/旋刃视觉粒子创建频率，伤害判定不降级。主角、普通怪潮、精英和 Boss 使用 premium 系列透明图集绘制；旧的 `assets/creature-atlas-v1.png`、`assets/premium-combat-fx-atlas-v3.png` 与早期参考图只保留为历史资源，默认运行时不再加载、预加载或叠加绘制，避免粗糙旧动画压在高级贴图上。战斗区域和命中特效现在只保留一个主视觉叠层，避免命中、屏幕冲击、英雄光环和地面贴图在同一位置重复堆叠。`assets/item-icon-atlas-v1.png` 是法宝/心法 UI 图标图集，已用于 HUD 装备栏、升级选择和图鉴条目。
+当前目标是暗黑修仙题材的高可读 2.5D 幸存者画面：深色战场、强轮廓怪潮、中心法阵、粗亮弹道、清晰颜色分区和大面积技能领域。`assets/concept-visual-target.png` 是整体氛围方向稿，`assets/arena-bg-v3.png` 是当前实战战场底图，加入了破碎祭坛、青铜法阵、玉柱、魂雾和魔化裂隙，中心保持压暗以保证怪潮和弹道可读。`assets/premium-horde-atlas-v2.png` 是当前普通怪潮主图集，强化了符甲、尸傀、青铜虫甲、魂火和黑金法袍等暗黑修仙元素。`assets/premium-projectile-atlas-v1.png`、`assets/premium-motion-trail-atlas-v1.png`、`assets/premium-swarm-pressure-atlas-v1.png`、`assets/premium-hit-atlas-v1.png`、`assets/premium-screen-strike-atlas-v1.png`、`assets/premium-hero-fx-atlas-v1.png`、`assets/premium-unit-aura-atlas-v1.png` 和 `assets/premium-ultimate-cast-atlas-v1.png` 是当前运行时战斗特效主资源；其中 motion trail 图集为飞剑、符咒、火焰、冰雷和主角移动提供受预算控制的拖尾/残影层，swarm pressure 图集在高怪量时用少量屏幕级血雾、魂雾、符纹和裂纹叠层营造压迫感，避免靠无限粒子堆画面。进化武器在释放和进化瞬间会触发受预算控制的大招图集爆发；怪潮密集时会自动减少大招层数量、弹道拖尾数量、怪潮贴图预算、区域特效预算和月轮/旋刃视觉粒子创建频率，伤害判定不降级。主角、普通怪潮、精英和 Boss 使用 premium 系列透明图集绘制；旧的 `assets/creature-atlas-v1.png`、`assets/premium-combat-fx-atlas-v3.png` 与早期参考图只保留为历史资源，默认运行时不再加载、预加载或叠加绘制，避免粗糙旧动画压在高级贴图上。同一对象只允许一个主贴图视觉层：弹道、命中、拾取物、怪潮缓存和主角不再额外叠加旧式 canvas 径向光球，必要的亮度由同一 premium 贴图的低透明外光承担。战斗区域和命中特效现在只保留一个主视觉叠层，避免命中、屏幕冲击、英雄光环和地面贴图在同一位置重复堆叠。`assets/item-icon-atlas-v1.png` 是法宝/心法 UI 图标图集，已用于 HUD 装备栏、升级选择和图鉴条目。
 
 ## 成就与解锁
 
