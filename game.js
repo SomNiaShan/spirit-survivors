@@ -353,7 +353,7 @@
       updateQaDataset();
       render();
     };
-    arenaBackground.src = "assets/arena-bg-v3.png";
+    arenaBackground.src = "assets/arena-bg-readable-v1.png";
   }
 
   const atlasFrames = {
@@ -4826,7 +4826,7 @@
     if (!environmentPropAtlasReady()) return false;
     const spec = environmentPropSpec(id, d.r);
     const flip = hash2(Math.floor(d.x / 97), Math.floor(d.y / 103)) > 0.5 ? -1 : 1;
-    const alpha = texturedArena ? 0.86 : 0.9;
+    const alpha = texturedArena ? 0.34 : 0.72;
     ctx.save();
     ctx.globalCompositeOperation = "source-over";
     ctx.fillStyle = texturedArena ? "rgba(0, 0, 0, 0.16)" : "rgba(0, 0, 0, 0.22)";
@@ -4834,7 +4834,7 @@
     ctx.ellipse(s.x, s.y + spec.h * 0.24, spec.w * 0.31, spec.h * 0.13, d.rot, 0, TAU);
     ctx.fill();
     drawEnvironmentPropFrame(id, s.x, s.y + spec.y, spec.w, spec.h, alpha, d.rot, flip);
-    if (withGlow && spec.glowA > 0) {
+    if (withGlow && !texturedArena && spec.glowA > 0) {
       ctx.globalCompositeOperation = "lighter";
       drawGlow(s.x, s.y + spec.y, Math.max(spec.w, spec.h) * 0.44, spec.glow, spec.glowA);
     }
@@ -4980,8 +4980,8 @@
     }
 
     const compactWorld = Math.min(w, h) < 560;
-    const basePropBudget = compactWorld ? 5 : state.enemies.length >= SWARM_RENDER_LIMIT ? 48 : 86;
-    const propBudget = scaledRenderBudget(basePropBudget, compactWorld ? 3 : 24, 0.68);
+    const basePropBudget = compactWorld ? 2 : state.enemies.length >= SWARM_RENDER_LIMIT ? 8 : 18;
+    const propBudget = scaledRenderBudget(basePropBudget, compactWorld ? 1 : 5, 0.68);
     let propDraws = 0;
     for (const d of state.decorations) {
       const s = worldToScreen(d.x, d.y);
