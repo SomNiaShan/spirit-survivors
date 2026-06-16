@@ -4687,7 +4687,7 @@
     if (!spec) return false;
     if (spec.premium) {
       if (state.enemies.length < DETAIL_ENEMY_LIMIT) {
-        drawPremiumProjectileFrame(spec.id, spec.x, spec.y, spec.w * 1.08, spec.h * 1.1, spec.alpha * 0.18, spec.rotation, "lighter");
+        drawPremiumProjectileFrame(spec.id, spec.x, spec.y, spec.w * 1.16, spec.h * 1.2, spec.alpha * 0.32, spec.rotation, "lighter");
       }
       return drawPremiumProjectileFrame(spec.id, spec.x, spec.y, spec.w, spec.h, spec.alpha, spec.rotation, "source-over");
     }
@@ -5073,7 +5073,7 @@
     const frame = currentHeroFxFrame(p);
     const baseSize = p.r * (compact ? 6.2 : dense ? 6.4 : 7.2);
     const pulse = 1 + Math.sin(t * 2.4) * 0.035;
-    const alpha = compact ? 0.13 : dense ? 0.12 : 0.18;
+    const alpha = compact ? 0.15 : dense ? 0.13 : 0.24;
     drawHeroFxFrame(frame, 0, -2, baseSize * pulse, baseSize * pulse, alpha, t * 0.035, "lighter");
     if (ENABLE_SECONDARY_COMBAT_OVERLAYS && !dense && frame !== "heroMandala") {
       drawHeroFxFrame("heroMandala", 0, -4, p.r * 5.35, p.r * 5.35, compact ? 0.055 : 0.075, -t * 0.024, "lighter");
