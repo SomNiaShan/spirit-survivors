@@ -62,6 +62,8 @@
   const STORAGE_KEY = QA_MODE ? "spirit-survivors-save-qa-v1" : "spirit-survivors-save-v2";
   const SWARM_IMPOSTOR_BASE_R = 18;
   const SWARM_IMPOSTOR_CANVAS = 128;
+  const SWARM_CLUSTER_CELL = 164;
+  const SWARM_CLUSTER_LIMIT = 18;
   const ENABLE_LEGACY_RUNTIME_ART = false;
   const ENABLE_SECONDARY_COMBAT_OVERLAYS = false;
   const swarmImpostorCache = new Map();
@@ -963,7 +965,7 @@
     forceNextChestEvolution: false,
     lastResult: null,
     quality: { pressure: 0, avgWorkMs: 0 },
-    qa: { mode: null, autoChoices: false, autoMove: false, timeScale: 1, maxSteps: 1, syncRunning: false, syncSteps: 0, syncMs: 0, visualDone: false, groundDecalDraws: 0, areaEventDraws: 0, areaFxDraws: 0, environmentPropDraws: 0, atmosphereDraws: 0, swarmPressureDraws: 0, heroFxDraws: 0, screenStrikeDraws: 0, ultimateCastDraws: 0, unitAuraDraws: 0, hitAtlasDraws: 0, threatDraws: 0, hordeSpriteDraws: 0, hordeSpritesSkipped: 0, hordeRenderBudget: 0, hordeBudgetUsed: 0, projectileSpriteDraws: 0, projectilesSkipped: 0, projectileRenderBudget: 0, motionTrailDraws: 0, motionTrailRenderBudget: 0, hostileProjectileDraws: 0, hostileProjectilesSkipped: 0, hostileProjectileRenderBudget: 0, particlesRendered: 0, particlesCulled: 0, swarmImpostorDraws: 0, legacyWorldOverlays: 0, legacyVectorOverlays: 0, legacyAreaFallbackDraws: 0, legacyFallbackFx: 0, legacyCombatAtlasDraws: 0, premiumAtlasFxDraws: 0, renderDpr: 1 },
+    qa: { mode: null, autoChoices: false, autoMove: false, timeScale: 1, maxSteps: 1, syncRunning: false, syncSteps: 0, syncMs: 0, visualDone: false, groundDecalDraws: 0, areaEventDraws: 0, areaFxDraws: 0, environmentPropDraws: 0, atmosphereDraws: 0, swarmPressureDraws: 0, swarmClusterDraws: 0, swarmClusteredEnemies: 0, heroFxDraws: 0, screenStrikeDraws: 0, ultimateCastDraws: 0, unitAuraDraws: 0, hitAtlasDraws: 0, threatDraws: 0, hordeSpriteDraws: 0, hordeSpritesSkipped: 0, hordeRenderBudget: 0, hordeBudgetUsed: 0, projectileSpriteDraws: 0, projectilesSkipped: 0, projectileRenderBudget: 0, motionTrailDraws: 0, motionTrailRenderBudget: 0, hostileProjectileDraws: 0, hostileProjectilesSkipped: 0, hostileProjectileRenderBudget: 0, particlesRendered: 0, particlesCulled: 0, swarmImpostorDraws: 0, legacyWorldOverlays: 0, legacyVectorOverlays: 0, legacyAreaFallbackDraws: 0, legacyFallbackFx: 0, legacyCombatAtlasDraws: 0, premiumAtlasFxDraws: 0, renderDpr: 1 },
     wave: 1,
     spawnTimer: 0,
     eliteSchedule: [90, 180, 300, 450, 600, 760],
@@ -1435,6 +1437,8 @@
     state.qa.environmentPropDraws = 0;
     state.qa.atmosphereDraws = 0;
     state.qa.swarmPressureDraws = 0;
+    state.qa.swarmClusterDraws = 0;
+    state.qa.swarmClusteredEnemies = 0;
     state.qa.heroFxDraws = 0;
     state.qa.screenStrikeDraws = 0;
     state.qa.ultimateCastDraws = 0;
@@ -3097,6 +3101,8 @@
     document.body.dataset.qaAtmosphereDraws = String(state.qa.atmosphereDraws || 0);
     document.body.dataset.qaPremiumSwarmPressureAtlasReady = premiumSwarmPressureAtlasReady() ? "1" : "0";
     document.body.dataset.qaSwarmPressureDraws = String(state.qa.swarmPressureDraws || 0);
+    document.body.dataset.qaSwarmClusterDraws = String(state.qa.swarmClusterDraws || 0);
+    document.body.dataset.qaSwarmClusteredEnemies = String(state.qa.swarmClusteredEnemies || 0);
     document.body.dataset.qaPremiumHeroFxAtlasReady = premiumHeroFxAtlasReady() ? "1" : "0";
     document.body.dataset.qaHeroFxDraws = String(state.qa.heroFxDraws || 0);
     document.body.dataset.qaPremiumScreenStrikeAtlasReady = premiumScreenStrikeAtlasReady() ? "1" : "0";
@@ -3369,6 +3375,8 @@
     state.qa.premiumAtlasFxDraws = 0;
     state.qa.atmosphereDraws = 0;
     state.qa.swarmPressureDraws = 0;
+    state.qa.swarmClusterDraws = 0;
+    state.qa.swarmClusteredEnemies = 0;
     state.qa.heroFxDraws = 0;
     state.qa.screenStrikeDraws = 0;
     state.qa.ultimateCastDraws = 0;
@@ -5356,6 +5364,51 @@
     ctx.restore();
   }
 
+  function recordSwarmCluster(clusters, e, sx, sy, halfW, halfH) {
+    if (!clusters || e.boss || e.elite) return false;
+    if (Math.abs(sx - halfW) < 96 && Math.abs(sy - halfH) < 132) return false;
+    const key = `${Math.floor(sx / SWARM_CLUSTER_CELL)}:${Math.floor(sy / SWARM_CLUSTER_CELL)}`;
+    let cluster = clusters.get(key);
+    if (!cluster) {
+      cluster = { x: 0, y: 0, count: 0, radius: 0, heat: 0 };
+      clusters.set(key, cluster);
+    }
+    cluster.x += sx;
+    cluster.y += sy;
+    cluster.count += 1;
+    cluster.radius += e.r;
+    cluster.heat += e.flash > 0 ? 1.5 : e.type.id === "spitter" ? 0.8 : e.type.id === "wisp" ? 0.45 : 0.25;
+    return true;
+  }
+
+  function renderSwarmClusters(clusters, t, compactViewport) {
+    if (!clusters || !clusters.size || !premiumSwarmPressureAtlasReady()) return { draws: 0, clustered: 0 };
+    const pressure = renderLoadPressure();
+    const budget = scaledRenderBudget(compactViewport ? 7 : SWARM_CLUSTER_LIMIT, compactViewport ? 3 : 8, 0.58);
+    const entries = Array.from(clusters.values()).sort((a, b) => b.count - a.count).slice(0, budget);
+    let draws = 0;
+    let clustered = 0;
+    for (let i = 0; i < entries.length; i++) {
+      const cluster = entries[i];
+      const count = cluster.count;
+      const x = cluster.x / count;
+      const y = cluster.y / count;
+      const radius = cluster.radius / count;
+      const mass = clamp(count / (compactViewport ? 10 : 16), 0.34, 1.45);
+      const heat = clamp(cluster.heat / count, 0, 1);
+      const width = Math.max(96, radius * (compactViewport ? 7.2 : 8.6) * (0.78 + mass * 0.36));
+      const height = Math.max(58, width * (0.42 + mass * 0.05));
+      const alpha = (0.055 + mass * 0.052 + heat * 0.018) * (1 - pressure * 0.24);
+      const frame = heat > 0.58 ? "bloodEdge" : i % 3 === 0 ? "voidCracks" : "soulMist";
+      const blend = frame === "soulMist" ? "lighter" : "source-over";
+      if (drawSwarmPressureFrame(frame, x, y + radius * 1.1, width, height, alpha, Math.sin(t * 0.22 + x * 0.01) * 0.035, blend, i % 2 ? -1 : 1)) {
+        draws += 1;
+        clustered += count;
+      }
+    }
+    return { draws, clustered };
+  }
+
   function renderEnemies() {
     const t = performance.now() / 1000;
     const swarmMode = state.enemies.length >= SWARM_RENDER_LIMIT;
@@ -5367,6 +5420,7 @@
     const viewH = window.innerHeight;
     let swarmImpostorDraws = 0;
     let hordeSpritesSkipped = 0;
+    const swarmClusters = swarmMode && premiumSwarmPressureAtlasReady() ? new Map() : null;
     const hordeBudget = hordeSpriteRenderBudget();
     const hordeNearExtraBudget = Math.min(28, Math.max(14, Math.floor(hordeBudget * 0.1)));
     const compactViewport = Math.min(viewW, viewH) < 560;
@@ -5389,6 +5443,7 @@
           if (nearPlayer && hordeNearExtraUsed < hordeNearExtraBudget) {
             hordeNearExtraUsed += 1;
           } else {
+            recordSwarmCluster(swarmClusters, e, sx, sy, halfW, halfH);
             hordeSpritesSkipped += 1;
             continue;
           }
@@ -5562,7 +5617,12 @@
       }
       ctx.restore();
     }
-    if (QA_MODE) state.qa.swarmImpostorDraws = swarmImpostorDraws;
+    const clusterStats = renderSwarmClusters(swarmClusters, t, compactViewport);
+    if (QA_MODE) {
+      state.qa.swarmImpostorDraws = swarmImpostorDraws;
+      state.qa.swarmClusterDraws = clusterStats.draws;
+      state.qa.swarmClusteredEnemies = clusterStats.clustered;
+    }
     if (QA_MODE) {
       state.qa.hordeSpritesSkipped = hordeSpritesSkipped;
       state.qa.hordeRenderBudget = Number.isFinite(hordeBudget) ? hordeBudget : 0;
@@ -7299,6 +7359,8 @@
             atmosphereDraws: state.qa.atmosphereDraws || 0,
             swarmPressureReady: premiumSwarmPressureAtlasReady(),
             swarmPressureDraws: state.qa.swarmPressureDraws || 0,
+            swarmClusterDraws: state.qa.swarmClusterDraws || 0,
+            swarmClusteredEnemies: state.qa.swarmClusteredEnemies || 0,
             heroFxReady: premiumHeroFxAtlasReady(),
             heroFxDraws: state.qa.heroFxDraws || 0,
             screenStrikeReady: premiumScreenStrikeAtlasReady(),
@@ -7367,6 +7429,8 @@
         state.qa.environmentPropDraws = 0;
         state.qa.atmosphereDraws = 0;
         state.qa.swarmPressureDraws = 0;
+        state.qa.swarmClusterDraws = 0;
+        state.qa.swarmClusteredEnemies = 0;
         state.qa.heroFxDraws = 0;
         state.qa.screenStrikeDraws = 0;
         state.qa.ultimateCastDraws = 0;
