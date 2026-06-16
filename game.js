@@ -315,7 +315,7 @@
       updateQaDataset();
       render();
     };
-    arenaBackground.src = "assets/arena-bg-v2.png";
+    arenaBackground.src = "assets/arena-bg-v3.png";
   }
 
   const atlasFrames = {
