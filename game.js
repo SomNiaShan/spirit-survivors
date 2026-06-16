@@ -3408,6 +3408,7 @@
     renderWorld();
     if (state.player) {
       renderAtmosphereBack();
+      renderBackgroundReadabilityWash();
       renderPickups();
       renderAreas();
       renderThreatsBack();
@@ -3424,6 +3425,24 @@
     ctx.restore();
     updateQaDataset();
     updateQaVisualDataset();
+  }
+
+  function renderBackgroundReadabilityWash() {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const compact = Math.min(w, h) < 560;
+    const crowd = clamp(state.enemies.length / SWARM_RENDER_LIMIT, 0, 1);
+    const centerAlpha = compact ? 0.12 : 0.09 + crowd * 0.02;
+    const edgeAlpha = compact ? 0.24 : 0.18 + crowd * 0.05;
+    const wash = ctx.createRadialGradient(w * 0.5, h * 0.48, Math.min(w, h) * 0.18, w * 0.5, h * 0.52, Math.max(w, h) * 0.78);
+    wash.addColorStop(0, `rgba(3, 7, 10, ${centerAlpha.toFixed(3)})`);
+    wash.addColorStop(0.58, `rgba(3, 7, 10, ${((centerAlpha + edgeAlpha) * 0.5).toFixed(3)})`);
+    wash.addColorStop(1, `rgba(2, 4, 8, ${edgeAlpha.toFixed(3)})`);
+    ctx.save();
+    ctx.globalCompositeOperation = "source-over";
+    ctx.fillStyle = wash;
+    ctx.fillRect(0, 0, w, h);
+    ctx.restore();
   }
 
   function renderAttract() {
