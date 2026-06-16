@@ -31,7 +31,7 @@ python -m http.server 4173
 - 原创菜单背景图和程序化战斗视觉
 - 高品质视觉方向稿 `assets/concept-visual-target.png`
 - 战斗资源方向图 `assets/combat-asset-reference-v1.png`
-- 角色/怪物透明图集 `assets/creature-atlas-v1.png`
+- 高级主角/怪潮透明图集 `assets/premium-player-atlas-v3.png`、`assets/premium-horde-atlas-v1.png`、`assets/premium-minion-atlas-v3.png`
 - 法宝/心法 UI 图标图集 `assets/item-icon-atlas-v1.png`
 - 实战战场底图 `assets/arena-bg-v1.png`
 - 高级屏幕冲击/斩击特效图集 `assets/premium-screen-strike-atlas-v1.png`
@@ -46,7 +46,7 @@ python -m http.server 4173
 
 ## 美术方向
 
-当前目标是暗黑修仙题材的高可读 2.5D 幸存者画面：深色战场、强轮廓怪潮、中心法阵、粗亮弹道、清晰颜色分区和大面积技能领域。`assets/concept-visual-target.png` 是整体氛围方向稿，`assets/combat-asset-reference-v1.png` 是战斗资源方向图，并已作为运行时特效图集叠加到飞剑、符箓、火焰、虚空、冰霜和毒域效果中。`assets/creature-atlas-v1.png` 是角色/怪物透明图集，已用于主角、普通怪、精英和 Boss 的实战绘制，并加入基础呼吸、步态、受击斩痕和死亡残影。`assets/item-icon-atlas-v1.png` 是法宝/心法 UI 图标图集，已用于 HUD 装备栏、升级选择和图鉴条目。`assets/arena-bg-v1.png` 是实战战场底图，已作为镜像平铺的运行时背景层接入战斗画面。
+当前目标是暗黑修仙题材的高可读 2.5D 幸存者画面：深色战场、强轮廓怪潮、中心法阵、粗亮弹道、清晰颜色分区和大面积技能领域。`assets/concept-visual-target.png` 是整体氛围方向稿，`assets/premium-projectile-atlas-v1.png`、`assets/premium-hit-atlas-v1.png`、`assets/premium-screen-strike-atlas-v1.png`、`assets/premium-hero-fx-atlas-v1.png` 和 `assets/premium-unit-aura-atlas-v1.png` 是当前运行时战斗特效主资源。主角、普通怪潮、精英和 Boss 使用 premium 系列透明图集绘制；旧的 `assets/creature-atlas-v1.png` 与 `assets/premium-combat-fx-atlas-v3.png` 只保留为历史资源，默认运行时不再加载或叠加绘制，避免粗糙旧动画压在高级贴图上。`assets/item-icon-atlas-v1.png` 是法宝/心法 UI 图标图集，已用于 HUD 装备栏、升级选择和图鉴条目。`assets/arena-bg-v2.png` 是实战战场底图，已作为镜像平铺的运行时背景层接入战斗画面。
 
 ## 成就与解锁
 

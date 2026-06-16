@@ -62,6 +62,7 @@
   const STORAGE_KEY = QA_MODE ? "spirit-survivors-save-qa-v1" : "spirit-survivors-save-v2";
   const SWARM_IMPOSTOR_BASE_R = 18;
   const SWARM_IMPOSTOR_CANVAS = 128;
+  const ENABLE_LEGACY_RUNTIME_ART = false;
   const swarmImpostorCache = new Map();
 
   const colors = {
@@ -76,7 +77,7 @@
     poison: "#91d56f"
   };
 
-  const visualAtlas = typeof Image !== "undefined" ? new Image() : null;
+  const visualAtlas = ENABLE_LEGACY_RUNTIME_ART && typeof Image !== "undefined" ? new Image() : null;
   if (visualAtlas) {
     visualAtlas.decoding = "async";
     visualAtlas.onload = () => {
@@ -112,7 +113,7 @@
     hostileProjectileAtlas.src = "assets/premium-hostile-projectile-atlas-v1.png";
   }
 
-  const creatureAtlas = typeof Image !== "undefined" ? new Image() : null;
+  const creatureAtlas = ENABLE_LEGACY_RUNTIME_ART && typeof Image !== "undefined" ? new Image() : null;
   if (creatureAtlas) {
     creatureAtlas.decoding = "async";
     creatureAtlas.onload = () => {
@@ -872,7 +873,7 @@
     nextHudUpdate: 0,
     forceNextChestEvolution: false,
     lastResult: null,
-    qa: { mode: null, autoChoices: false, autoMove: false, timeScale: 1, maxSteps: 1, syncRunning: false, syncSteps: 0, syncMs: 0, visualDone: false, groundDecalDraws: 0, areaFxDraws: 0, environmentPropDraws: 0, atmosphereDraws: 0, heroFxDraws: 0, screenStrikeDraws: 0, unitAuraDraws: 0, hitAtlasDraws: 0, threatDraws: 0, hordeSpriteDraws: 0, hordeSpritesSkipped: 0, hordeRenderBudget: 0, hordeBudgetUsed: 0, projectileSpriteDraws: 0, projectilesSkipped: 0, projectileRenderBudget: 0, hostileProjectileDraws: 0, hostileProjectilesSkipped: 0, hostileProjectileRenderBudget: 0, particlesRendered: 0, particlesCulled: 0, swarmImpostorDraws: 0, legacyWorldOverlays: 0, legacyVectorOverlays: 0, legacyFallbackFx: 0, premiumAtlasFxDraws: 0, renderDpr: 1 },
+    qa: { mode: null, autoChoices: false, autoMove: false, timeScale: 1, maxSteps: 1, syncRunning: false, syncSteps: 0, syncMs: 0, visualDone: false, groundDecalDraws: 0, areaFxDraws: 0, environmentPropDraws: 0, atmosphereDraws: 0, heroFxDraws: 0, screenStrikeDraws: 0, unitAuraDraws: 0, hitAtlasDraws: 0, threatDraws: 0, hordeSpriteDraws: 0, hordeSpritesSkipped: 0, hordeRenderBudget: 0, hordeBudgetUsed: 0, projectileSpriteDraws: 0, projectilesSkipped: 0, projectileRenderBudget: 0, hostileProjectileDraws: 0, hostileProjectilesSkipped: 0, hostileProjectileRenderBudget: 0, particlesRendered: 0, particlesCulled: 0, swarmImpostorDraws: 0, legacyWorldOverlays: 0, legacyVectorOverlays: 0, legacyFallbackFx: 0, legacyCombatAtlasDraws: 0, premiumAtlasFxDraws: 0, renderDpr: 1 },
     wave: 1,
     spawnTimer: 0,
     eliteSchedule: [90, 180, 300, 450, 600, 760],
@@ -1355,6 +1356,10 @@
     state.qa.particlesRendered = 0;
     state.qa.particlesCulled = 0;
     state.qa.legacyWorldOverlays = 0;
+    state.qa.legacyVectorOverlays = 0;
+    state.qa.legacyFallbackFx = 0;
+    state.qa.legacyCombatAtlasDraws = 0;
+    state.qa.premiumAtlasFxDraws = 0;
     state.qa.swarmImpostorDraws = 0;
     state.wave = 1;
     state.spawnTimer = 0;
@@ -2933,6 +2938,7 @@
     document.body.dataset.qaLegacyWorldOverlays = String(state.qa.legacyWorldOverlays || 0);
     document.body.dataset.qaLegacyVectorOverlays = String(state.qa.legacyVectorOverlays || 0);
     document.body.dataset.qaLegacyFallbackFx = String(state.qa.legacyFallbackFx || 0);
+    document.body.dataset.qaLegacyCombatAtlasDraws = String(state.qa.legacyCombatAtlasDraws || 0);
     document.body.dataset.qaPremiumAtlasFxDraws = String(state.qa.premiumAtlasFxDraws || 0);
     document.body.dataset.qaItemAtlasReady = itemIconAtlasReady() ? "1" : "0";
     document.body.dataset.qaArenaReady = arenaBackgroundReady() ? "1" : "0";
@@ -3161,6 +3167,7 @@
     state.qa.legacyWorldOverlays = 0;
     state.qa.legacyVectorOverlays = 0;
     state.qa.legacyFallbackFx = 0;
+    state.qa.legacyCombatAtlasDraws = 0;
     state.qa.premiumAtlasFxDraws = 0;
     state.qa.atmosphereDraws = 0;
     state.qa.heroFxDraws = 0;
@@ -3514,7 +3521,7 @@
   }
 
   function allowLegacyFallbackFx() {
-    return !premiumFxAssetsLoading() && !premiumFxAssetsReady();
+    return ENABLE_LEGACY_RUNTIME_ART && !premiumFxAssetsLoading() && !premiumFxAssetsReady();
   }
 
   function allowLegacyPickupFallback() {
@@ -3522,11 +3529,11 @@
   }
 
   function allowAtlasFx() {
-    return atlasReady();
+    return ENABLE_LEGACY_RUNTIME_ART && !premiumFxAssetsLoading() && !premiumFxAssetsReady() && atlasReady();
   }
 
   function allowCreatureAtlas(unitCount = state.enemies.length) {
-    return creatureAtlasReady() && unitCount <= 150;
+    return ENABLE_LEGACY_RUNTIME_ART && creatureAtlasReady() && unitCount <= 150;
   }
 
   function drawAtlasFrame(id, x, y, w, h, alpha = 1, rotation = 0, blend = "lighter") {
@@ -3539,6 +3546,7 @@
     ctx.rotate(rotation);
     ctx.drawImage(visualAtlas, frame.x, frame.y, frame.w, frame.h, -w / 2, -h / 2, w, h);
     ctx.restore();
+    if (QA_MODE) state.qa.legacyCombatAtlasDraws = (state.qa.legacyCombatAtlasDraws || 0) + 1;
     return true;
   }
 
@@ -6798,6 +6806,7 @@
             legacyWorldOverlays: state.qa.legacyWorldOverlays || 0,
             legacyVectorOverlays: state.qa.legacyVectorOverlays || 0,
             legacyFallbackFx: state.qa.legacyFallbackFx || 0,
+            legacyCombatAtlasDraws: state.qa.legacyCombatAtlasDraws || 0,
             premiumAtlasFxDraws: state.qa.premiumAtlasFxDraws || 0,
             renderDpr: state.qa.renderDpr || 1
           },
@@ -6843,6 +6852,7 @@
         state.qa.legacyWorldOverlays = 0;
         state.qa.legacyVectorOverlays = 0;
         state.qa.legacyFallbackFx = 0;
+        state.qa.legacyCombatAtlasDraws = 0;
         state.qa.premiumAtlasFxDraws = 0;
         updateQaDataset();
         return true;
