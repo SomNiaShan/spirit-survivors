@@ -37,6 +37,7 @@ python -m http.server 4173
 - 高级屏幕冲击/斩击特效图集 `assets/premium-screen-strike-atlas-v1.png`
 - 单位脚下/移动存在感特效图集 `assets/premium-unit-aura-atlas-v1.png`
 - 进化技能释放瞬间特效图集 `assets/premium-ultimate-cast-atlas-v1.png`
+- 高级技能领域/地面事件图集 `assets/premium-area-event-atlas-v1.png`
 - 高级弹道拖尾/主角移动残影图集 `assets/premium-motion-trail-atlas-v1.png`
 - 高级怪潮压迫感屏幕叠层图集 `assets/premium-swarm-pressure-atlas-v1.png`
 - 程序化音效、氛围音和静音开关
@@ -54,6 +55,10 @@ python -m http.server 4173
 ## 成就与解锁
 
 初始只有青衣剑修可用。完成任意一局、单局击杀 500、首次胜利等目标会解锁其他角色。成就页会显示长期目标，结算页会显示本局触发的新成就和新角色。
+
+## 区域技能视觉
+
+`assets/premium-area-event-atlas-v1.png` 是当前区域技能主视觉图集，用于火海、雷阵、冰莲、虚空裂隙、金符封印和毒瘴池。运行时优先绘制这一个 premium 地面事件层；高怪量或手机视口下会降低绘制预算，避免区域技能、屏幕冲击和英雄光环重复堆叠导致画面糊成一片。
 
 ## 验证入口
 

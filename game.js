@@ -296,6 +296,18 @@
     premiumUltimateCastAtlas.src = "assets/premium-ultimate-cast-atlas-v1.png";
   }
 
+  const premiumAreaEventAtlas = typeof Image !== "undefined" ? new Image() : null;
+  if (premiumAreaEventAtlas) {
+    premiumAreaEventAtlas.decoding = "async";
+    premiumAreaEventAtlas.onload = () => {
+      if (!QA_MODE) return;
+      state.qa.visualDone = false;
+      updateQaDataset();
+      render();
+    };
+    premiumAreaEventAtlas.src = "assets/premium-area-event-atlas-v1.png";
+  }
+
   const hitAtlas = typeof Image !== "undefined" ? new Image() : null;
   if (hitAtlas) {
     hitAtlas.decoding = "async";
@@ -520,6 +532,15 @@
     moonWheelBloom: { x: 418, y: 470, w: 418, h: 471 },
     plagueDomainBloom: { x: 836, y: 470, w: 418, h: 471 },
     dragonRepeaterGear: { x: 1254, y: 470, w: 418, h: 471 }
+  };
+
+  const areaEventFrames = {
+    fireDragonField: { x: 0, y: 0, w: 768, h: 512 },
+    thunderPearlArray: { x: 768, y: 0, w: 768, h: 512 },
+    frostLotusField: { x: 0, y: 512, w: 768, h: 512 },
+    voidCrackField: { x: 768, y: 512, w: 768, h: 512 },
+    talismanSealField: { x: 0, y: 1024, w: 768, h: 512 },
+    plagueMireField: { x: 768, y: 1024, w: 768, h: 512 }
   };
 
   const hitFrames = {
@@ -942,7 +963,7 @@
     forceNextChestEvolution: false,
     lastResult: null,
     quality: { pressure: 0, avgWorkMs: 0 },
-    qa: { mode: null, autoChoices: false, autoMove: false, timeScale: 1, maxSteps: 1, syncRunning: false, syncSteps: 0, syncMs: 0, visualDone: false, groundDecalDraws: 0, areaFxDraws: 0, environmentPropDraws: 0, atmosphereDraws: 0, swarmPressureDraws: 0, heroFxDraws: 0, screenStrikeDraws: 0, ultimateCastDraws: 0, unitAuraDraws: 0, hitAtlasDraws: 0, threatDraws: 0, hordeSpriteDraws: 0, hordeSpritesSkipped: 0, hordeRenderBudget: 0, hordeBudgetUsed: 0, projectileSpriteDraws: 0, projectilesSkipped: 0, projectileRenderBudget: 0, motionTrailDraws: 0, motionTrailRenderBudget: 0, hostileProjectileDraws: 0, hostileProjectilesSkipped: 0, hostileProjectileRenderBudget: 0, particlesRendered: 0, particlesCulled: 0, swarmImpostorDraws: 0, legacyWorldOverlays: 0, legacyVectorOverlays: 0, legacyFallbackFx: 0, legacyCombatAtlasDraws: 0, premiumAtlasFxDraws: 0, renderDpr: 1 },
+    qa: { mode: null, autoChoices: false, autoMove: false, timeScale: 1, maxSteps: 1, syncRunning: false, syncSteps: 0, syncMs: 0, visualDone: false, groundDecalDraws: 0, areaEventDraws: 0, areaFxDraws: 0, environmentPropDraws: 0, atmosphereDraws: 0, swarmPressureDraws: 0, heroFxDraws: 0, screenStrikeDraws: 0, ultimateCastDraws: 0, unitAuraDraws: 0, hitAtlasDraws: 0, threatDraws: 0, hordeSpriteDraws: 0, hordeSpritesSkipped: 0, hordeRenderBudget: 0, hordeBudgetUsed: 0, projectileSpriteDraws: 0, projectilesSkipped: 0, projectileRenderBudget: 0, motionTrailDraws: 0, motionTrailRenderBudget: 0, hostileProjectileDraws: 0, hostileProjectilesSkipped: 0, hostileProjectileRenderBudget: 0, particlesRendered: 0, particlesCulled: 0, swarmImpostorDraws: 0, legacyWorldOverlays: 0, legacyVectorOverlays: 0, legacyFallbackFx: 0, legacyCombatAtlasDraws: 0, premiumAtlasFxDraws: 0, renderDpr: 1 },
     wave: 1,
     spawnTimer: 0,
     eliteSchedule: [90, 180, 300, 450, 600, 760],
@@ -1409,6 +1430,8 @@
     state.quality.pressure = 0;
     state.quality.avgWorkMs = 0;
     state.qa.groundDecalDraws = 0;
+    state.qa.areaEventDraws = 0;
+    state.qa.areaFxDraws = 0;
     state.qa.environmentPropDraws = 0;
     state.qa.atmosphereDraws = 0;
     state.qa.swarmPressureDraws = 0;
@@ -3064,6 +3087,8 @@
     document.body.dataset.qaPremiumPickupAtlasReady = premiumPickupAtlasReady() ? "1" : "0";
     document.body.dataset.qaGroundDecalAtlasReady = groundDecalAtlasReady() ? "1" : "0";
     document.body.dataset.qaGroundDecalDraws = String(state.qa.groundDecalDraws || 0);
+    document.body.dataset.qaPremiumAreaEventAtlasReady = premiumAreaEventAtlasReady() ? "1" : "0";
+    document.body.dataset.qaAreaEventDraws = String(state.qa.areaEventDraws || 0);
     document.body.dataset.qaAreaFxDraws = String(state.qa.areaFxDraws || 0);
     document.body.dataset.qaEnvironmentPropAtlasReady = environmentPropAtlasReady() ? "1" : "0";
     document.body.dataset.qaEnvironmentPropDraws = String(state.qa.environmentPropDraws || 0);
@@ -3345,6 +3370,7 @@
     state.qa.screenStrikeDraws = 0;
     state.qa.ultimateCastDraws = 0;
     state.qa.unitAuraDraws = 0;
+    state.qa.areaEventDraws = 0;
     state.qa.areaFxDraws = 0;
     state.qa.hitAtlasDraws = 0;
     state.qa.threatDraws = 0;
@@ -3703,6 +3729,10 @@
     return Boolean(premiumUltimateCastAtlas && premiumUltimateCastAtlas.complete && premiumUltimateCastAtlas.naturalWidth > 0);
   }
 
+  function premiumAreaEventAtlasReady() {
+    return Boolean(premiumAreaEventAtlas && premiumAreaEventAtlas.complete && premiumAreaEventAtlas.naturalWidth > 0);
+  }
+
   function hitAtlasReady() {
     return Boolean(hitAtlas && hitAtlas.complete && hitAtlas.naturalWidth > 0);
   }
@@ -3740,6 +3770,7 @@
       premiumHeroFxAtlas,
       premiumScreenStrikeAtlas,
       premiumUltimateCastAtlas,
+      premiumAreaEventAtlas,
       premiumUnitAuraAtlas
     ].some(imageStillLoading);
   }
@@ -3757,6 +3788,7 @@
       premiumHeroFxAtlas,
       premiumScreenStrikeAtlas,
       premiumUltimateCastAtlas,
+      premiumAreaEventAtlas,
       premiumUnitAuraAtlas
     ].some(imageReady);
   }
@@ -4025,6 +4057,21 @@
     ctx.drawImage(premiumUltimateCastAtlas, frame.x, frame.y, frame.w, frame.h, -w / 2, -h / 2, w, h);
     ctx.restore();
     if (QA_MODE) state.qa.ultimateCastDraws += 1;
+    return true;
+  }
+
+  function drawAreaEventFrame(id, x, y, w, h, alpha = 1, rotation = 0, blend = "source-over", flip = 1) {
+    const frame = areaEventFrames[id];
+    if (!frame || !premiumAreaEventAtlasReady()) return false;
+    ctx.save();
+    ctx.globalAlpha *= alpha;
+    ctx.globalCompositeOperation = blend;
+    ctx.translate(x, y);
+    ctx.rotate(rotation);
+    ctx.scale(flip, 1);
+    ctx.drawImage(premiumAreaEventAtlas, frame.x, frame.y, frame.w, frame.h, -w / 2, -h / 2, w, h);
+    ctx.restore();
+    if (QA_MODE) state.qa.areaEventDraws += 1;
     return true;
   }
 
@@ -6211,6 +6258,32 @@
     };
   }
 
+  function areaEventSpec(area, now) {
+    if (!premiumAreaEventAtlasReady()) return null;
+    let id = null;
+    if (area.kind === "voidSeal") id = "voidCrackField";
+    else if (area.kind === "plagueDomain" || area.kind === "poison") id = "plagueMireField";
+    else if (area.kind === "fireSea") id = "fireDragonField";
+    else if (area.kind === "burst") {
+      if (area.color === weapons.thunderArray.color || area.color === weapons.thunderPearl.color || area.color === colors.blue) id = "thunderPearlArray";
+      else if (area.slow || area.color === weapons.frostNeedle.color || area.color === weapons.glacierRain.color || area.color === colors.frost) id = "frostLotusField";
+      else if (area.color === weapons.spiritFire.color || area.color === weapons.fireSea.color || area.color === colors.danger) id = "fireDragonField";
+      else if (area.color === weapons.poisonMist.color || area.color === weapons.plagueDomain.color || area.color === colors.poison) id = "plagueMireField";
+      else if (area.color === weapons.talisman.color || area.color === weapons.voidSeal.color || area.color === colors.gold || area.color === colors.violet) id = "talismanSealField";
+    }
+    if (!id) return null;
+    const pulse = 1 + Math.sin(now / 360 + area.x * 0.013 + area.y * 0.007) * 0.018;
+    const wideField = id === "fireDragonField" || id === "plagueMireField" || id === "voidCrackField";
+    const base = area.kind === "burst" ? 2.05 : area.kind === "fireSea" ? 2.18 : area.kind === "voidSeal" ? 2.22 : 2.16;
+    return {
+      id,
+      w: area.r * base * (wideField ? 1.18 : 1.06) * pulse,
+      h: area.r * base * (wideField ? 0.84 : 0.94) * pulse,
+      alpha: area.kind === "burst" ? 0.78 : 0.72,
+      rotation: (area.x * 0.0011 + area.y * 0.0014) + (id === "voidCrackField" ? -now / 4200 : now / 6200)
+    };
+  }
+
   function areaGroundDecalSpec(area, now) {
     let id = null;
     if (area.kind === "voidSeal") id = "voidRift";
@@ -6241,10 +6314,12 @@
     const viewH = window.innerHeight;
     const compactViewport = Math.min(viewW, viewH) < 560;
     const groundDecalBudget = scaledRenderBudget(compactViewport ? 8 : denseAreas ? GROUND_DECAL_DENSE_LIMIT : 160, compactViewport ? 4 : denseAreas ? 9 : 42, 0.62);
+    const areaEventBudget = premiumAreaEventAtlasReady() ? scaledRenderBudget(compactViewport ? 3 : denseAreas ? 8 : 24, compactViewport ? 1 : denseAreas ? 4 : 10, 0.62) : 0;
     const heroFxAreaBudget = premiumHeroFxAtlasReady() ? scaledRenderBudget(compactViewport ? 1 : denseAreas ? 2 : 8, compactViewport ? 1 : 1, 0.68) : 0;
     const screenStrikeAreaBudget = premiumScreenStrikeAtlasReady() ? scaledRenderBudget(compactViewport ? 1 : denseAreas ? 2 : 10, compactViewport ? 1 : 1, 0.68) : 0;
     const areaFxBudget = compactViewport ? scaledRenderBudget(10, 5, 0.62) : denseAreas ? scaledRenderBudget(18, 8, 0.62) : Infinity;
     let groundDecalDraws = 0;
+    let areaEventDraws = 0;
     let heroFxAreaDraws = 0;
     let screenStrikeAreaDraws = 0;
     let areaFxDraws = 0;
@@ -6264,6 +6339,16 @@
         groundDecalDraws += 1;
       }
       let premiumAreaOverlayDrawn = false;
+      const eventSpec = areaEventDraws < areaEventBudget ? areaEventSpec(area, now) : null;
+      if (eventSpec && drawAreaEventFrame(eventSpec.id, s.x, s.y, eventSpec.w, eventSpec.h, eventSpec.alpha * alpha, eventSpec.rotation, "source-over")) {
+        areaFxDraws += 1;
+        areaEventDraws += 1;
+        premiumAreaOverlayDrawn = true;
+        if (denseAreas || !ENABLE_SECONDARY_COMBAT_OVERLAYS) {
+          ctx.restore();
+          continue;
+        }
+      }
       const strikeSpec = screenStrikeAreaDraws < screenStrikeAreaBudget ? areaScreenStrikeSpec(area, now) : null;
       if (strikeSpec && drawScreenStrikeFrame(strikeSpec.id, s.x, s.y, strikeSpec.w, strikeSpec.h, strikeSpec.alpha * alpha, strikeSpec.rotation, "lighter")) {
         areaFxDraws += 1;
@@ -6316,6 +6401,7 @@
     }
     if (QA_MODE) {
       state.qa.groundDecalDraws = groundDecalDraws;
+      state.qa.areaEventDraws = areaEventDraws;
       state.qa.areaFxDraws = areaFxDraws;
     }
   }
@@ -7209,6 +7295,8 @@
             screenStrikeDraws: state.qa.screenStrikeDraws || 0,
             ultimateCastReady: premiumUltimateCastAtlasReady(),
             ultimateCastDraws: state.qa.ultimateCastDraws || 0,
+            areaEventReady: premiumAreaEventAtlasReady(),
+            areaEventDraws: state.qa.areaEventDraws || 0,
             unitAuraReady: premiumUnitAuraAtlasReady(),
             unitAuraDraws: state.qa.unitAuraDraws || 0,
             areaFxDraws: state.qa.areaFxDraws || 0,
@@ -7263,6 +7351,7 @@
       resetPerf() {
         state.perf = { frames: 0, totalDt: 0, maxDt: 0, workFrames: 0, totalWorkMs: 0, maxWorkMs: 0 };
         state.qa.groundDecalDraws = 0;
+        state.qa.areaEventDraws = 0;
         state.qa.areaFxDraws = 0;
         state.qa.environmentPropDraws = 0;
         state.qa.atmosphereDraws = 0;
