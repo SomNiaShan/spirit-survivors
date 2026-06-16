@@ -161,7 +161,7 @@
       updateQaDataset();
       render();
     };
-    premiumHordeAtlas.src = "assets/premium-horde-atlas-v1.png";
+    premiumHordeAtlas.src = "assets/premium-horde-atlas-v2.png";
   }
 
   const premiumPlayerAtlas = typeof Image !== "undefined" ? new Image() : null;
@@ -3504,8 +3504,8 @@
 
   function hordeSpriteRenderBudget() {
     const compact = Math.min(window.innerWidth, window.innerHeight) < 560;
-    if (state.enemies.length >= SWARM_RENDER_LIMIT) return compact ? 112 : 200;
-    if (state.enemies.length > DETAIL_ENEMY_LIMIT) return compact ? 138 : 280;
+    if (state.enemies.length >= SWARM_RENDER_LIMIT) return compact ? 88 : 160;
+    if (state.enemies.length > DETAIL_ENEMY_LIMIT) return compact ? 112 : 220;
     return Infinity;
   }
 
