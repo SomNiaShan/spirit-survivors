@@ -965,7 +965,7 @@
     forceNextChestEvolution: false,
     lastResult: null,
     quality: { pressure: 0, avgWorkMs: 0 },
-    qa: { mode: null, autoChoices: false, autoMove: false, timeScale: 1, maxSteps: 1, syncRunning: false, syncSteps: 0, syncMs: 0, visualDone: false, groundDecalDraws: 0, areaEventDraws: 0, areaFxDraws: 0, environmentPropDraws: 0, atmosphereDraws: 0, swarmPressureDraws: 0, swarmClusterDraws: 0, swarmClusteredEnemies: 0, heroFxDraws: 0, screenStrikeDraws: 0, ultimateCastDraws: 0, unitAuraDraws: 0, hitAtlasDraws: 0, threatDraws: 0, hordeSpriteDraws: 0, hordeSpritesSkipped: 0, hordeRenderBudget: 0, hordeBudgetUsed: 0, projectileSpriteDraws: 0, projectilesSkipped: 0, projectileRenderBudget: 0, motionTrailDraws: 0, motionTrailRenderBudget: 0, hostileProjectileDraws: 0, hostileProjectilesSkipped: 0, hostileProjectileRenderBudget: 0, particlesRendered: 0, particlesCulled: 0, swarmImpostorDraws: 0, legacyWorldOverlays: 0, legacyVectorOverlays: 0, legacyAreaFallbackDraws: 0, legacyFallbackFx: 0, legacyCombatAtlasDraws: 0, premiumAtlasFxDraws: 0, renderDpr: 1 },
+    qa: { mode: null, autoChoices: false, autoMove: false, timeScale: 1, maxSteps: 1, syncRunning: false, syncSteps: 0, syncMs: 0, visualDone: false, groundDecalDraws: 0, areaEventDraws: 0, areaFxDraws: 0, environmentPropDraws: 0, atmosphereDraws: 0, swarmPressureDraws: 0, swarmClusterDraws: 0, swarmClusteredEnemies: 0, heroFxDraws: 0, screenStrikeDraws: 0, ultimateCastDraws: 0, unitAuraDraws: 0, hitAtlasDraws: 0, threatDraws: 0, hordeSpriteDraws: 0, hordeSpritesSkipped: 0, hordeRenderBudget: 0, hordeBudgetUsed: 0, projectileSpriteDraws: 0, projectilesSkipped: 0, projectileRenderBudget: 0, motionTrailDraws: 0, motionTrailRenderBudget: 0, hostileProjectileDraws: 0, hostileProjectilesSkipped: 0, hostileProjectileRenderBudget: 0, particlesRendered: 0, particlesCulled: 0, swarmImpostorDraws: 0, legacyWorldOverlays: 0, legacyVectorOverlays: 0, legacyAreaFallbackDraws: 0, legacyFallbackFx: 0, legacyCombatAtlasDraws: 0, premiumAtlasFxDraws: 0, impactStops: 0, maxImpactStop: 0, renderDpr: 1 },
     wave: 1,
     spawnTimer: 0,
     eliteSchedule: [90, 180, 300, 450, 600, 760],
@@ -976,6 +976,9 @@
     kills: 0,
     camera: { x: 0, y: 0 },
     shake: 0,
+    impactStop: 0,
+    impactStopCooldown: 0,
+    impactFlash: 0,
     perf: { frames: 0, totalDt: 0, maxDt: 0, workFrames: 0, totalWorkMs: 0, maxWorkMs: 0 },
     audio: { ctx: null, master: null, ambient: [], muted: false, last: {} },
     mouseWorld: { x: 0, y: 0 },
@@ -1465,6 +1468,8 @@
     state.qa.legacyFallbackFx = 0;
     state.qa.legacyCombatAtlasDraws = 0;
     state.qa.premiumAtlasFxDraws = 0;
+    state.qa.impactStops = 0;
+    state.qa.maxImpactStop = 0;
     state.qa.swarmImpostorDraws = 0;
     state.wave = 1;
     state.spawnTimer = 0;
@@ -1474,6 +1479,9 @@
     state.runCoins = 0;
     state.kills = 0;
     state.shake = 0;
+    state.impactStop = 0;
+    state.impactStopCooldown = 0;
+    state.impactFlash = 0;
     for (let i = 0; i < 260; i++) {
       state.decorations.push({
         x: rand(-2400, 2400),
@@ -2545,6 +2553,24 @@
     }
   }
 
+  function triggerImpactFeel(e, critical, dense) {
+    if (!e || state.screen !== "playing") return;
+    if (!critical && !e.elite && !e.boss) return;
+    const duration = e.boss ? 0.075 : e.elite ? 0.052 : 0.032;
+    const cooldown = e.boss ? 0.08 : e.elite ? 0.12 : dense ? 0.2 : 0.16;
+    if (state.impactStopCooldown > 0 && !e.boss) return;
+    state.impactStop = Math.max(state.impactStop, duration);
+    state.impactStopCooldown = cooldown;
+    state.impactFlash = Math.max(state.impactFlash, e.boss ? 0.58 : e.elite ? 0.4 : 0.24);
+    if (!dense || e.elite || e.boss) {
+      state.shake = Math.max(state.shake, e.boss ? 12 : e.elite ? 7 : 4.5);
+    }
+    if (QA_MODE) {
+      state.qa.impactStops = (state.qa.impactStops || 0) + 1;
+      state.qa.maxImpactStop = Math.max(state.qa.maxImpactStop || 0, duration);
+    }
+  }
+
   function damageEnemy(e, amount, color, text = true) {
     e.hp -= amount;
     e.flash = 1;
@@ -2556,9 +2582,7 @@
     const majorHit = text && (criticalDamageText || e.elite || e.boss);
     if (majorHit) {
       playSfx("hit");
-      if (!denseDamageText || e.elite || e.boss) {
-        state.shake = Math.max(state.shake, e.boss ? 10 : e.elite ? 6 : 3.5);
-      }
+      triggerImpactFeel(e, criticalDamageText, denseDamageText);
     }
     if (text && state.texts.length < damageTextLimit() && chance(criticalDamageText ? Math.min(0.72, textChance * 2.2) : textChance)) {
       floatingText(
@@ -2945,6 +2969,7 @@
       state.particles.splice(0, state.particles.length - particleLimit);
     }
     state.shake = Math.max(0, state.shake - dt * 28);
+    state.impactFlash = Math.max(0, state.impactFlash - dt * 5.2);
     if (state.player) {
       state.player.invuln = Math.max(0, state.player.invuln - dt);
       state.player.hitFlash = Math.max(0, state.player.hitFlash - dt * 5);
@@ -3123,6 +3148,10 @@
     document.body.dataset.qaUnitAuraDraws = String(state.qa.unitAuraDraws || 0);
     document.body.dataset.qaHitAtlasReady = hitAtlasReady() ? "1" : "0";
     document.body.dataset.qaHitAtlasDraws = String(state.qa.hitAtlasDraws || 0);
+    document.body.dataset.qaImpactStops = String(state.qa.impactStops || 0);
+    document.body.dataset.qaMaxImpactStop = (state.qa.maxImpactStop || 0).toFixed(3);
+    document.body.dataset.qaImpactStop = state.impactStop.toFixed(3);
+    document.body.dataset.qaImpactFlash = state.impactFlash.toFixed(3);
     document.body.dataset.qaThreatAtlasReady = threatAtlasReady() ? "1" : "0";
     document.body.dataset.qaThreatDraws = String(state.qa.threatDraws || 0);
     document.body.dataset.qaPremiumProjectileAtlasReady = premiumProjectileAtlasReady() ? "1" : "0";
@@ -3182,6 +3211,7 @@
 
   function updateQaVisualDataset() {
     if (!QA_MODE || state.qa.visualDone || state.qa.mode !== "showcase") return;
+    if (!arenaBackgroundReady() || !premiumHordeAtlasReady() || !premiumProjectileAtlasReady() || !hitAtlasReady()) return;
     try {
       const w = canvas.width;
       const h = canvas.height;
@@ -3248,6 +3278,13 @@
       return;
     }
     recordQaStep(dt);
+    const realDt = dt;
+    state.impactStopCooldown = Math.max(0, state.impactStopCooldown - realDt);
+    if (state.impactStop > 0) {
+      const freeze = clamp(state.impactStop / 0.075, 0, 1);
+      dt *= 0.18 + (1 - freeze) * 0.14;
+      state.impactStop = Math.max(0, state.impactStop - realDt);
+    }
     state.elapsed += dt;
     updateSpawn(dt);
     updateQaAutoInput(dt);
@@ -3258,8 +3295,8 @@
     updateAreas(dt);
     updateEnemies(dt);
     updatePickups(dt);
-    updateFx(dt);
-    updateCamera(dt);
+    updateFx(realDt);
+    updateCamera(realDt);
     if (state.qa.syncRunning) {
       state.qa.syncSteps += 1;
       if (state.qa.syncSteps % 10 === 0) updateHud(false);
@@ -3434,6 +3471,7 @@
       renderAttract();
     }
     ctx.restore();
+    renderImpactFlash();
     updateQaDataset();
     updateQaVisualDataset();
   }
@@ -6920,6 +6958,24 @@
     ctx.fillRect(0, 0, w, h);
   }
 
+  function renderImpactFlash() {
+    if (state.screen !== "playing" || state.impactFlash <= 0) return;
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const alpha = clamp(state.impactFlash, 0, 1);
+    const grad = ctx.createRadialGradient(w * 0.5, h * 0.46, Math.min(w, h) * 0.16, w * 0.5, h * 0.5, Math.max(w, h) * 0.72);
+    grad.addColorStop(0, `rgba(255, 248, 204, ${(0.12 * alpha).toFixed(3)})`);
+    grad.addColorStop(0.45, `rgba(124, 215, 175, ${(0.05 * alpha).toFixed(3)})`);
+    grad.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.save();
+    ctx.globalCompositeOperation = "screen";
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = `rgba(255,255,255, ${(0.022 * alpha).toFixed(3)})`;
+    ctx.fillRect(0, 0, w, h);
+    ctx.restore();
+  }
+
   function loop(now) {
     const frameStart = performance.now();
     const dt = Math.min(0.033, (now - state.lastTime) / 1000 || 0);
@@ -7377,6 +7433,10 @@
           gems: state.gems.length,
           powerups: state.powerups.length,
           chests: state.chests.length,
+          impactStop: state.impactStop,
+          impactFlash: state.impactFlash,
+          impactStops: state.qa.impactStops || 0,
+          maxImpactStop: state.qa.maxImpactStop || 0,
           particleKinds: state.particles.reduce((counts, p) => {
             const key = p.kind || "unknown";
             counts[key] = (counts[key] || 0) + 1;
@@ -7488,6 +7548,8 @@
         state.qa.legacyFallbackFx = 0;
         state.qa.legacyCombatAtlasDraws = 0;
         state.qa.premiumAtlasFxDraws = 0;
+        state.qa.impactStops = 0;
+        state.qa.maxImpactStop = 0;
         state.quality.pressure = 0;
         state.quality.avgWorkMs = 0;
         updateQaDataset();
