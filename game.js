@@ -47,7 +47,7 @@
   };
 
   const TAU = Math.PI * 2;
-  const RUN_DURATION = 15 * 60;
+  const RUN_DURATION = 12 * 60;
   const MAX_ENEMIES = 520;
   const ENEMY_GRID_CELL = 192;
   const MAX_PARTICLES = 720;
@@ -1499,7 +1499,7 @@
       maxHp: 1,
       level: 1,
       xp: 0,
-      xpNext: 10,
+      xpNext: 8,
       weapons: {},
       passives: {},
       timers: {},
@@ -1513,7 +1513,7 @@
     state.camera.x = 0;
     state.camera.y = 0;
     state.perf = { frames: 0, totalDt: 0, maxDt: 0, workFrames: 0, totalWorkMs: 0, maxWorkMs: 0 };
-    for (let i = 0; i < 16; i++) spawnEnemy(false);
+    for (let i = 0; i < 22; i++) spawnEnemy(false);
     updateHud();
     showScreen("playing");
   }
@@ -1806,10 +1806,11 @@
     while (p.xp >= p.xpNext) {
       p.xp -= p.xpNext;
       p.level += 1;
-      p.xpNext = Math.floor(12 + Math.pow(p.level, 1.42) * 7);
+      p.xpNext = Math.floor(8 + Math.pow(p.level, 1.32) * 5.8);
       state.pendingLevels += 1;
       playSfx("level");
-      burst(p.x, p.y, colors.blue, 20, 160);
+      state.shake = Math.max(state.shake, 8);
+      burst(p.x, p.y, colors.blue, 28, 190);
     }
     if (state.pendingLevels > 0 && state.screen === "playing") {
       openLevelUp();
@@ -1823,7 +1824,7 @@
     const dist = Math.max(window.innerWidth, window.innerHeight) * rand(0.68, 0.86);
     const x = state.player.x + Math.cos(angle) * dist;
     const y = state.player.y + Math.sin(angle) * dist;
-    const scale = 1 + state.elapsed / 720;
+    const scale = 1 + state.elapsed / 620;
     const eliteScale = elite || t.id === "boss" ? 1 : 0;
     state.enemies.push({
       x,
@@ -1834,7 +1835,7 @@
       name: t.name,
       hp: t.hp * (eliteScale ? 1 : scale),
       maxHp: t.hp * (eliteScale ? 1 : scale),
-      speed: t.speed * (1 + Math.min(0.45, state.elapsed / 1300)),
+      speed: t.speed * (1 + Math.min(0.52, state.elapsed / 1050)),
       damage: t.damage * (1 + state.elapsed / 1150),
       r: t.radius,
       xp: t.xp,
@@ -1868,10 +1869,10 @@
     }
     const minute = Math.floor(state.elapsed / 60);
     state.wave = minute + 1;
-    const spawnRate = clamp(0.92 - state.elapsed / 2300, 0.14, 0.92);
+    const spawnRate = clamp(0.78 - state.elapsed / 1900, 0.1, 0.78);
     state.spawnTimer -= dt;
     if (state.spawnTimer <= 0) {
-      const burstCount = 1 + Math.floor(minute * 0.75) + (state.elapsed > 600 ? 3 : 0);
+      const burstCount = 1 + Math.floor(minute * 0.9) + (state.elapsed > 420 ? 2 : 0) + (state.elapsed > 620 ? 2 : 0);
       for (let i = 0; i < burstCount; i++) spawnEnemy(false);
       state.spawnTimer = spawnRate;
     }
@@ -2552,6 +2553,13 @@
     const denseDamageText = state.enemies.length >= SWARM_RENDER_LIMIT;
     const criticalDamageText = amount > e.maxHp * 0.08;
     const textChance = e.boss ? 0.62 : e.elite ? 0.34 : denseDamageText ? 0.012 : state.enemies.length > DETAIL_ENEMY_LIMIT ? 0.045 : 0.18;
+    const majorHit = text && (criticalDamageText || e.elite || e.boss);
+    if (majorHit) {
+      playSfx("hit");
+      if (!denseDamageText || e.elite || e.boss) {
+        state.shake = Math.max(state.shake, e.boss ? 10 : e.elite ? 6 : 3.5);
+      }
+    }
     if (text && state.texts.length < damageTextLimit() && chance(criticalDamageText ? Math.min(0.72, textChance * 2.2) : textChance)) {
       floatingText(
         e.x + rand(-e.r * 0.18, e.r * 0.18),
@@ -2564,21 +2572,22 @@
     }
     if (premiumTarget && hitAtlasReady() && hasParticleRoom(14)) {
       const dense = state.enemies.length >= SWARM_RENDER_LIMIT;
-      const hitChance = e.boss ? 0.72 : e.elite ? 0.46 : dense ? 0 : state.enemies.length > DETAIL_ENEMY_LIMIT ? 0.045 : 0.18;
+      const hitChance = e.boss ? 0.88 : e.elite ? 0.62 : dense ? 0.018 : state.enemies.length > DETAIL_ENEMY_LIMIT ? 0.08 : 0.3;
       if (chance(text ? hitChance : hitChance * 0.45)) {
         const from = state.player || { x: e.x - 1, y: e.y };
         const angle = Math.atan2(e.y - from.y, e.x - from.x) + rand(-0.38, 0.38);
+        const life = e.boss ? 0.28 : criticalDamageText ? 0.22 : 0.18;
         state.particles.push({
           x: e.x + rand(-e.r * 0.24, e.r * 0.24),
           y: e.y + rand(-e.r * 0.24, e.r * 0.24),
           vx: 0,
           vy: 0,
-          life: e.boss ? 0.22 : 0.16,
-          max: e.boss ? 0.22 : 0.16,
-          r: e.r * (e.boss ? rand(0.72, 1.05) : rand(0.68, 0.96)),
+          life,
+          max: life,
+          r: e.r * (e.boss ? rand(0.92, 1.22) : criticalDamageText ? rand(0.9, 1.18) : rand(0.74, 1.04)),
           color,
           kind: "premiumHit",
-          hitFrame: amount > e.maxHp * 0.08 ? "criticalBurst" : hitFrameId(color, chance(0.32) ? "slash" : "impact"),
+          hitFrame: criticalDamageText ? "criticalBurst" : hitFrameId(color, chance(0.32) ? "slash" : "impact"),
           angle
         });
       }
@@ -2616,8 +2625,8 @@
 
   function killEnemy(e) {
     state.kills += 1;
-    const xpValue = Math.max(1, Math.round(e.xp * (e.elite ? 1.4 : 1)));
-    const gemCount = e.elite ? 5 : chance(0.12) ? 2 : 1;
+    const xpValue = Math.max(1, Math.ceil(e.xp * (e.elite ? 1.65 : 1.28)));
+    const gemCount = e.elite ? 6 : chance(0.22) ? 2 : 1;
     if (state.gems.length >= MAX_GEMS && state.gems.length) {
       const g = state.gems[Math.floor(rand(0, state.gems.length))];
       g.value += xpValue;
@@ -3046,6 +3055,7 @@
     if (!QA_MODE) return;
     document.body.dataset.qaScreen = state.screen;
     document.body.dataset.qaElapsed = state.elapsed.toFixed(2);
+    document.body.dataset.qaRunDuration = String(RUN_DURATION);
     document.body.dataset.qaBossSpawned = state.bossSpawned ? "1" : "0";
     document.body.dataset.qaBossDefeated = state.bossDefeated ? "1" : "0";
     document.body.dataset.qaBossAlive = state.enemies.some((e) => e.boss && e.hp > 0) ? "1" : "0";
@@ -3149,6 +3159,7 @@
     document.body.dataset.qaHp = String(Math.ceil(state.player?.hp || 0));
     document.body.dataset.qaMaxHp = String(Math.ceil(state.player?.maxHp || 0));
     document.body.dataset.qaLevel = String(state.player?.level || 0);
+    document.body.dataset.qaXpNext = String(state.player?.xpNext || 0);
     document.body.dataset.qaRunCoins = String(state.runCoins);
     document.body.dataset.qaEvolved = String(countEvolvedWeapons());
     document.body.dataset.qaAchievements = String(Object.values(state.save.achievements || {}).filter(Boolean).length);
@@ -6642,7 +6653,7 @@
     const renderBudget = fxParticleRenderBudget();
     const screenStrikeParticleBudget = premiumScreenStrikeAtlasReady() ? (compact ? 2 : dense ? 2 : 14) : 0;
     const ultimateCastParticleBudget = premiumUltimateCastAtlasReady() ? (compact ? 1 : dense ? 2 : 6) : 0;
-    const premiumHitParticleBudget = hitAtlasReady() ? (dense ? 0 : compact ? 5 : state.enemies.length > DETAIL_ENEMY_LIMIT ? 22 : 64) : 0;
+    const premiumHitParticleBudget = hitAtlasReady() ? (dense ? 8 : compact ? 8 : state.enemies.length > DETAIL_ENEMY_LIMIT ? 28 : 80) : 0;
     let renderedParticles = 0;
     let culledParticles = 0;
     let screenStrikeParticleDraws = 0;
@@ -6699,7 +6710,7 @@
       } else if (p.kind === "premiumHit") {
         ctx.globalCompositeOperation = "lighter";
         ctx.shadowBlur = 18;
-        const hitAlphaScale = dense ? 0.42 : compact ? 0.58 : state.enemies.length > DETAIL_ENEMY_LIMIT ? 0.66 : 1;
+        const hitAlphaScale = dense ? 0.52 : compact ? 0.66 : state.enemies.length > DETAIL_ENEMY_LIMIT ? 0.74 : 1;
         const frame = p.hitFrame || hitFrameId(p.color, "impact");
         const size = p.hitFrame === "spectralSlash" ? [p.r * 3.8, p.r * 2.0] : [p.r * 3.15, p.r * 2.65];
         const strikeId = p.hitFrame === "spectralSlash" ? "jadeCrescent" : screenStrikeFrameId(p.color, "impact");
