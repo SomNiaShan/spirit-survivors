@@ -576,6 +576,10 @@
     spinningBlade: [5, 0],
     poisonMist: [0, 1],
     crossbow: [1, 1],
+    heavySlash: [2, 1],
+    voidVortex: [3, 1],
+    swordSpirit: [0, 0],
+    thunderLotus: [3, 0],
     thousandSword: [2, 1],
     voidSeal: [3, 1],
     fireSea: [4, 1],
@@ -584,6 +588,10 @@
     moonWheel: [1, 2],
     plagueDomain: [2, 2],
     dragonRepeater: [3, 2],
+    skyRendSlash: [2, 1],
+    abyssRift: [3, 1],
+    myriadSwordSpirit: [2, 1],
+    ninefoldThunderLotus: [5, 1],
     powerCharm: [4, 2],
     cooldownJade: [5, 2],
     windBoots: [0, 3],
@@ -802,6 +810,46 @@
       evo: "dragonRepeater",
       desc: "快速发射机关弩矢。"
     },
+    heavySlash: {
+      id: "heavySlash",
+      name: "玄铁重斩",
+      type: "weapon",
+      max: 8,
+      color: "#f0d08a",
+      req: "powerCharm",
+      evo: "skyRendSlash",
+      desc: "向前方挥出高伤害扇形重斩，重击反馈强。"
+    },
+    voidVortex: {
+      id: "voidVortex",
+      name: "虚空黑洞",
+      type: "weapon",
+      max: 8,
+      color: "#a88cff",
+      req: "everlamp",
+      evo: "abyssRift",
+      desc: "在妖潮中生成吸附裂隙，持续拉拢并伤害敌人。"
+    },
+    swordSpirit: {
+      id: "swordSpirit",
+      name: "剑灵召唤",
+      type: "weapon",
+      max: 8,
+      color: "#9ff1d0",
+      req: "splitPearl",
+      evo: "myriadSwordSpirit",
+      desc: "召唤剑灵自动追击附近敌人。"
+    },
+    thunderLotus: {
+      id: "thunderLotus",
+      name: "莲花雷印",
+      type: "weapon",
+      max: 8,
+      color: "#9cbcff",
+      req: "cooldownJade",
+      evo: "ninefoldThunderLotus",
+      desc: "在敌群脚下种下雷莲，短暂延迟后爆发。"
+    },
     thousandSword: {
       id: "thousandSword",
       name: "万剑归宗",
@@ -873,6 +921,42 @@
       base: "crossbow",
       color: "#b4c4ff",
       desc: "机关弩化为游龙齐射，连续锁定敌人。"
+    },
+    skyRendSlash: {
+      id: "skyRendSlash",
+      name: "裂空天斩",
+      type: "evolved",
+      max: 1,
+      base: "heavySlash",
+      color: "#ffe3a3",
+      desc: "重斩撕开三道裂空剑气，近身爆发和远距穿透兼具。"
+    },
+    abyssRift: {
+      id: "abyssRift",
+      name: "归墟裂隙",
+      type: "evolved",
+      max: 1,
+      base: "voidVortex",
+      color: "#c6a2ff",
+      desc: "黑洞强化为归墟裂隙，吸附结束时发生塌缩爆炸。"
+    },
+    myriadSwordSpirit: {
+      id: "myriadSwordSpirit",
+      name: "万剑侍从",
+      type: "evolved",
+      max: 1,
+      base: "swordSpirit",
+      color: "#bfffe0",
+      desc: "剑灵成群护卫，自动穿透并追击妖潮。"
+    },
+    ninefoldThunderLotus: {
+      id: "ninefoldThunderLotus",
+      name: "九霄雷莲",
+      type: "evolved",
+      max: 1,
+      base: "thunderLotus",
+      color: "#b8c9ff",
+      desc: "雷莲爆发后留下雷场，连续压制大片妖潮。"
     }
   };
 
@@ -1725,7 +1809,7 @@
 
   function chooseQaLevelChoice(choices) {
     if (!choices.length) return null;
-    const weaponPriority = ["flyingSword", "talisman", "spiritFire", "thunderPearl", "spinningBlade", "crossbow", "frostNeedle", "poisonMist"];
+    const weaponPriority = ["flyingSword", "heavySlash", "voidVortex", "swordSpirit", "thunderLotus", "talisman", "spiritFire", "thunderPearl", "spinningBlade", "crossbow", "frostNeedle", "poisonMist"];
     const passivePriority = ["powerCharm", "cooldownJade", "everlamp", "windBoots", "magnetBell", "splitPearl", "lifeGourd", "goldFang"];
     const ownedWeaponIds = Object.keys(state.player.weapons);
     const neededPassives = new Set(
@@ -2037,6 +2121,30 @@
         case "dragonRepeater":
           castCrossbow(10, dt, true);
           break;
+        case "heavySlash":
+          castHeavySlash(level, dt, false);
+          break;
+        case "skyRendSlash":
+          castHeavySlash(10, dt, true);
+          break;
+        case "voidVortex":
+          castVoidVortex(level, dt, false);
+          break;
+        case "abyssRift":
+          castVoidVortex(10, dt, true);
+          break;
+        case "swordSpirit":
+          castSwordSpirit(level, dt, false);
+          break;
+        case "myriadSwordSpirit":
+          castSwordSpirit(10, dt, true);
+          break;
+        case "thunderLotus":
+          castThunderLotus(level, dt, false);
+          break;
+        case "ninefoldThunderLotus":
+          castThunderLotus(10, dt, true);
+          break;
       }
     }
   }
@@ -2078,6 +2186,14 @@
         return "plagueDomainBloom";
       case "dragonRepeater":
         return "dragonRepeaterGear";
+      case "skyRendSlash":
+        return "thousandSwordGate";
+      case "abyssRift":
+        return "voidSealDrop";
+      case "myriadSwordSpirit":
+        return "thousandSwordGate";
+      case "ninefoldThunderLotus":
+        return "thunderArrayStorm";
       default:
         return null;
     }
@@ -2336,6 +2452,159 @@
     }
   }
 
+  function angleDelta(a, b) {
+    let d = (a - b + Math.PI) % TAU - Math.PI;
+    if (d < -Math.PI) d += TAU;
+    return d;
+  }
+
+  function castHeavySlash(level, dt, evolved) {
+    const p = state.player;
+    const id = evolved ? "skyRendSlash" : "heavySlash";
+    const cd = evolved ? 0.82 : Math.max(0.78, 1.35 - level * 0.06);
+    if (!weaponTimer(id, cd, dt)) return;
+    const target = nearestEnemy(evolved ? 440 : 310);
+    const base = target ? Math.atan2(target.y - p.y, target.x - p.x) : Math.atan2(p.lastDir.y, p.lastDir.x);
+    const range = (evolved ? 230 : 138 + level * 10) * p.areaMult;
+    const arc = evolved ? 1.58 : 1.08 + level * 0.035;
+    const damage = (evolved ? 78 : 28 + level * 7.2) * p.damageMult;
+    let hits = 0;
+    if (evolved) emitUltimateCastFx("thousandSwordGate", p.x + Math.cos(base) * 76, p.y + Math.sin(base) * 76, 138 * p.areaMult, weapons.skyRendSlash.color, 0.5, 1.42, 0.82);
+    forEnemiesNear(p.x, p.y, range + 120, (e) => {
+      if (e.hp <= 0) return;
+      const dx = e.x - p.x;
+      const dy = e.y - p.y;
+      const d = Math.hypot(dx, dy) || 1;
+      if (d > range + e.r) return;
+      if (Math.abs(angleDelta(Math.atan2(dy, dx), base)) > arc * 0.5) return;
+      damageEnemy(e, damage, evolved ? weapons.skyRendSlash.color : weapons.heavySlash.color);
+      const shove = evolved ? 34 : 22;
+      e.x += (dx / d) * shove;
+      e.y += (dy / d) * shove;
+      e.slow = Math.max(e.slow, evolved ? 0.34 : 0.18);
+      hits += 1;
+    });
+    const color = evolved ? weapons.skyRendSlash.color : weapons.heavySlash.color;
+    const slashCount = evolved ? 5 : 3;
+    for (let i = 0; i < slashCount; i++) {
+      const offset = (i - (slashCount - 1) / 2) * (range * 0.22);
+      const along = range * (0.44 + i * 0.04);
+      state.particles.push({
+        x: p.x + Math.cos(base) * along + Math.cos(base + Math.PI / 2) * offset,
+        y: p.y + Math.sin(base) * along + Math.sin(base + Math.PI / 2) * offset,
+        vx: 0,
+        vy: 0,
+        life: evolved ? 0.22 : 0.18,
+        max: evolved ? 0.22 : 0.18,
+        r: (evolved ? 34 : 24) * p.areaMult,
+        color,
+        kind: "slash",
+        angle: base
+      });
+    }
+    if (evolved) {
+      for (let i = 0; i < 3; i++) {
+        const a = base + (i - 1) * 0.18;
+        projectile(p.x + Math.cos(a) * 46, p.y + Math.sin(a) * 46, Math.cos(a) * 720, Math.sin(a) * 720, {
+          r: 13 * p.areaMult,
+          damage: 34 * p.damageMult,
+          pierce: 10,
+          life: 0.76,
+          color,
+          kind: "riftSlash",
+          slow: 0.2
+        });
+      }
+    }
+    if (hits > 0) {
+      playSfx("hit");
+      state.shake = Math.max(state.shake, evolved ? 13 : 8);
+      triggerImpactFeel({ boss: evolved && hits >= 4, elite: hits >= 2 }, true, state.enemies.length >= SWARM_RENDER_LIMIT);
+    }
+  }
+
+  function castVoidVortex(level, dt, evolved) {
+    const p = state.player;
+    const id = evolved ? "abyssRift" : "voidVortex";
+    const cd = evolved ? 1.55 : Math.max(1.35, 2.75 - level * 0.12);
+    if (!weaponTimer(id, cd, dt)) return;
+    const target = randomEnemyOnScreen() || nearestEnemy(900);
+    if (!target) return;
+    const color = evolved ? weapons.abyssRift.color : weapons.voidVortex.color;
+    const radius = (evolved ? 132 : 72 + level * 6) * p.areaMult;
+    if (evolved) emitUltimateCastFx("voidSealDrop", target.x, target.y, radius * 1.08, color, 0.62, 1.28, 1.08);
+    addArea(target.x + rand(-34, 34), target.y + rand(-34, 34), {
+      r: radius,
+      life: (evolved ? 2.35 : 1.65 + level * 0.08) * p.durationMult,
+      tick: 0.06,
+      damage: (evolved ? 10.5 : 4.8 + level * 0.85) * p.damageMult,
+      color,
+      kind: evolved ? "abyssRift" : "voidVortex",
+      slow: evolved ? 0.48 : 0.3,
+      pull: evolved ? 520 : 260 + level * 18,
+      implodeDamage: evolved ? 88 * p.damageMult : 0,
+      implodeRadius: evolved ? radius * 1.22 : 0
+    });
+  }
+
+  function castSwordSpirit(level, dt, evolved) {
+    const p = state.player;
+    const id = evolved ? "myriadSwordSpirit" : "swordSpirit";
+    const cd = evolved ? 0.58 : Math.max(0.68, 1.48 - level * 0.065);
+    if (!weaponTimer(id, cd, dt)) return;
+    const color = evolved ? weapons.myriadSwordSpirit.color : weapons.swordSpirit.color;
+    const count = (evolved ? 5 : 1 + Math.floor(level / 2)) + p.amountBonus;
+    if (evolved) emitUltimateCastFx("thousandSwordGate", p.x, p.y, 124 * p.areaMult, color, 0.56, 1.28, 1.0);
+    for (let i = 0; i < count; i++) {
+      const orbit = (TAU / count) * i + state.elapsed * 1.7;
+      const sx = p.x + Math.cos(orbit) * (evolved ? 62 : 42);
+      const sy = p.y + Math.sin(orbit) * (evolved ? 62 : 42);
+      const target = nearestEnemy(evolved ? 980 : 780, { x: sx, y: sy });
+      const a = target ? Math.atan2(target.y - sy, target.x - sx) : orbit;
+      projectile(sx, sy, Math.cos(a) * (evolved ? 760 : 640), Math.sin(a) * (evolved ? 760 : 640), {
+        r: evolved ? 7.5 : 6,
+        damage: (evolved ? 24 : 11 + level * 2.8) * p.damageMult,
+        pierce: evolved ? 7 : 1 + Math.floor(level / 3),
+        life: evolved ? 1.55 : 1.25,
+        color,
+        kind: evolved ? "myriadSwordSpirit" : "spiritBlade",
+        homing: evolved ? 3.6 : 2.4
+      });
+    }
+  }
+
+  function castThunderLotus(level, dt, evolved) {
+    const p = state.player;
+    const id = evolved ? "ninefoldThunderLotus" : "thunderLotus";
+    const cd = evolved ? 1.18 : Math.max(1.05, 2.05 - level * 0.09);
+    if (!weaponTimer(id, cd, dt)) return;
+    const color = evolved ? weapons.ninefoldThunderLotus.color : weapons.thunderLotus.color;
+    const count = (evolved ? 3 : 1 + Math.floor(level / 4)) + Math.floor(p.amountBonus / 2);
+    for (let i = 0; i < count; i++) {
+      const target = randomEnemyOnScreen() || nearestEnemy(900);
+      if (!target) return;
+      const x = target.x + rand(-48, 48);
+      const y = target.y + rand(-48, 48);
+      const radius = (evolved ? 104 : 58 + level * 5) * p.areaMult;
+      if (evolved && i === 0) emitUltimateCastFx("thunderArrayStorm", x, y, radius * 1.15, color, 0.62, 1.12, 1.12);
+      addArea(x, y, {
+        r: radius * 0.72,
+        life: evolved ? 1.95 * p.durationMult : 1.16 * p.durationMult,
+        tick: 0.2,
+        damage: 0,
+        color,
+        kind: evolved ? "ninefoldThunderLotus" : "thunderLotus",
+        slow: 0.2,
+        delay: evolved ? 0.42 : 0.54,
+        armedR: radius,
+        armedLife: evolved ? 1.28 * p.durationMult : 0.42,
+        armedTick: evolved ? 0.16 : 0.08,
+        armedDamage: (evolved ? 30 : 34 + level * 5.8) * p.damageMult,
+        armedKind: evolved ? "thunderLotusField" : "thunderLotusBurst"
+      });
+    }
+  }
+
   function addArea(x, y, options) {
     state.areas.push({
       x,
@@ -2348,7 +2617,17 @@
       damage: options.damage,
       color: options.color,
       kind: options.kind,
-      slow: options.slow || 0
+      slow: options.slow || 0,
+      pull: options.pull || 0,
+      delay: options.delay || 0,
+      armedR: options.armedR || 0,
+      armedLife: options.armedLife || 0,
+      armedTick: options.armedTick || 0,
+      armedDamage: options.armedDamage || 0,
+      armedKind: options.armedKind || "",
+      implodeDamage: options.implodeDamage || 0,
+      implodeRadius: options.implodeRadius || 0,
+      imploded: false
     });
   }
 
@@ -2446,6 +2725,38 @@
     for (let i = state.areas.length - 1; i >= 0; i--) {
       const area = state.areas[i];
       area.life -= dt;
+      if (area.delay > 0) {
+        area.delay -= dt;
+        if (area.delay > 0) {
+          if (area.life <= 0) state.areas.splice(i, 1);
+          continue;
+        }
+        if (area.armedLife > 0) {
+          area.r = area.armedR || area.r;
+          area.life = area.armedLife;
+          area.maxLife = area.armedLife;
+          area.tick = area.armedTick || area.tick;
+          area.damage = area.armedDamage || area.damage;
+          area.kind = area.armedKind || area.kind;
+          area.tickLeft = 0;
+          state.shake = Math.max(state.shake, area.kind === "thunderLotusField" ? 12 : 8);
+          if (hasParticleRoom(8)) {
+            state.particles.push({
+              x: area.x,
+              y: area.y,
+              vx: 0,
+              vy: 0,
+              life: 0.22,
+              max: 0.22,
+              r: area.r * 0.75,
+              color: area.color,
+              kind: "premiumHit",
+              hitFrame: "lightningImpact",
+              angle: rand(-0.2, 0.2)
+            });
+          }
+        }
+      }
       area.tickLeft -= dt;
       if (area.tickLeft <= 0) {
         area.tickLeft = area.tick;
@@ -2455,12 +2766,47 @@
           const dx = e.x - area.x;
           const dy = e.y - area.y;
           if (dx * dx + dy * dy <= r2) {
-            damageEnemy(e, area.damage, area.color, false);
+            if (area.pull) {
+              const d = Math.hypot(dx, dy) || 1;
+              const pullStep = Math.min(area.pull * area.tick, area.r * 0.18);
+              e.x -= (dx / d) * pullStep;
+              e.y -= (dy / d) * pullStep;
+            }
+            if (area.damage > 0) damageEnemy(e, area.damage, area.color, false);
             if (area.slow) e.slow = Math.max(e.slow, area.slow);
           }
         });
       }
-      if (area.life <= 0) state.areas.splice(i, 1);
+      if (area.life <= 0) {
+        if (area.implodeDamage > 0 && !area.imploded) {
+          area.imploded = true;
+          const radius = area.implodeRadius || area.r;
+          const r2 = radius * radius;
+          forEnemiesNear(area.x, area.y, radius + 96, (e) => {
+            if (e.hp <= 0) return;
+            const dx = e.x - area.x;
+            const dy = e.y - area.y;
+            if (dx * dx + dy * dy <= r2) damageEnemy(e, area.implodeDamage, area.color);
+          });
+          state.shake = Math.max(state.shake, 14);
+          if (hasParticleRoom(8)) {
+            state.particles.push({
+              x: area.x,
+              y: area.y,
+              vx: 0,
+              vy: 0,
+              life: 0.34,
+              max: 0.34,
+              r: radius * 0.92,
+              color: area.color,
+              kind: "premiumHit",
+              hitFrame: "soulRupture",
+              angle: rand(-0.25, 0.25)
+            });
+          }
+        }
+        state.areas.splice(i, 1);
+      }
     }
   }
 
@@ -3189,6 +3535,7 @@
     document.body.dataset.qaMaxHp = String(Math.ceil(state.player?.maxHp || 0));
     document.body.dataset.qaLevel = String(state.player?.level || 0);
     document.body.dataset.qaXpNext = String(state.player?.xpNext || 0);
+    document.body.dataset.qaWeapons = state.player ? Object.keys(state.player.weapons || {}).sort().join(",") : "";
     document.body.dataset.qaRunCoins = String(state.runCoins);
     document.body.dataset.qaEvolved = String(countEvolvedWeapons());
     document.body.dataset.qaAchievements = String(Object.values(state.save.achievements || {}).filter(Boolean).length);
@@ -4669,12 +5016,15 @@
     if (!id) return null;
     switch (pr.kind) {
       case "sword":
+      case "spiritBlade":
         return { id, x: -pr.r * 0.15, y: 0, w: pr.r * 6.2, h: pr.r * 3.0, alpha: 0.72, rotation: 0 };
       case "needle":
         return { id, x: 0, y: 0, w: pr.r * 4.8, h: pr.r * 2.4, alpha: 0.6, rotation: 0 };
       case "bolt":
         return { id, x: pr.r * 0.08, y: 0, w: pr.r * 6.6, h: pr.r * 3.3, alpha: 0.62, rotation: 0 };
       case "thousandSword":
+      case "myriadSwordSpirit":
+      case "riftSlash":
         return { id, x: -pr.r * 0.55, y: 0, w: pr.r * 10.8, h: pr.r * 7.4, alpha: 0.8, rotation: 0 };
       case "glacierNeedle":
         return { id, x: 0, y: 0, w: pr.r * 6.2, h: pr.r * 4.6, alpha: 0.76, rotation: 0 };
@@ -4695,6 +5045,9 @@
     switch (kind) {
       case "thousandSword":
       case "sword":
+      case "spiritBlade":
+      case "myriadSwordSpirit":
+      case "riftSlash":
         return "swordLance";
       case "talisman":
         return "talismanDart";
@@ -4717,6 +5070,9 @@
       case "thousandSword":
       case "sword":
       case "slash":
+      case "spiritBlade":
+      case "myriadSwordSpirit":
+      case "riftSlash":
         return "jadeSwordWake";
       case "talisman":
         return "talismanWake";
@@ -4747,8 +5103,11 @@
     const alphaScale = dense ? 0.72 : state.enemies.length > DETAIL_ENEMY_LIMIT ? 0.84 : 1;
     switch (pr.kind) {
       case "thousandSword":
+      case "myriadSwordSpirit":
+      case "riftSlash":
         return { id, x: -pr.r * 2.1, y: 0, w: pr.r * 15.8, h: pr.r * 7.4, alpha: 0.24 * alphaScale, rotation: 0, flip: -1 };
       case "sword":
+      case "spiritBlade":
         return { id, x: -pr.r * 1.65, y: 0, w: pr.r * 11.5, h: pr.r * 5.5, alpha: 0.2 * alphaScale, rotation: 0, flip: -1 };
       case "talisman":
         return { id, x: -pr.r * 1.25, y: 0, w: pr.r * 9.2, h: pr.r * 5.9, alpha: 0.17 * alphaScale, rotation: 0, flip: -1 };
@@ -4788,12 +5147,15 @@
     if (!id) return null;
     switch (pr.kind) {
       case "sword":
+      case "spiritBlade":
         return { id, premium: true, x: pr.r * 0.2, y: 0, w: pr.r * 8.9, h: pr.r * 4.35, alpha: 0.86, rotation: 0 };
       case "needle":
         return { id, premium: true, x: pr.r * 0.16, y: 0, w: pr.r * 8.4, h: pr.r * 4.25, alpha: 0.78, rotation: 0 };
       case "bolt":
         return { id, premium: true, x: pr.r * 0.1, y: 0, w: pr.r * 8.8, h: pr.r * 4.55, alpha: 0.78, rotation: 0 };
       case "thousandSword":
+      case "myriadSwordSpirit":
+      case "riftSlash":
         return { id, premium: true, x: pr.r * 0.15, y: 0, w: pr.r * 13.8, h: pr.r * 6.8, alpha: 0.9, rotation: 0 };
       case "glacierNeedle":
         return { id, premium: true, x: pr.r * 0.12, y: 0, w: pr.r * 10.4, h: pr.r * 5.3, alpha: 0.86, rotation: 0 };
@@ -6178,7 +6540,7 @@
       ctx.translate(s.x, s.y);
       ctx.rotate(Math.atan2(pr.vy, pr.vx) + pr.spin * 0.05);
       ctx.shadowColor = pr.color;
-      ctx.shadowBlur = ["fire", "fireSea", "dragonBolt", "thousandSword", "glacierNeedle"].includes(pr.kind) ? 22 : 12;
+      ctx.shadowBlur = ["fire", "fireSea", "dragonBolt", "thousandSword", "glacierNeedle", "myriadSwordSpirit", "riftSlash"].includes(pr.kind) ? 22 : 12;
       ctx.fillStyle = pr.color;
       if (!projectileSpec) drawProjectileTrail(pr);
       else if (!hasPremiumProjectileArt) {
@@ -6192,7 +6554,7 @@
           motionTrailDraws += 1;
         }
       }
-      if (pr.kind === "thousandSword") {
+      if (pr.kind === "thousandSword" || pr.kind === "myriadSwordSpirit" || pr.kind === "riftSlash") {
         ctx.globalCompositeOperation = "lighter";
         if (!hasPremiumProjectileArt) drawGlow(pr.r * 0.8, 0, pr.r * 4.5, pr.color, 0.18);
         const drewAtlas = drawProjectileSpec(projectileSpec);
@@ -6213,7 +6575,7 @@
         if (drewAtlas) state.qa.premiumAtlasFxDraws += 1;
         ctx.globalCompositeOperation = "source-over";
         if (!drewAtlas) drawSoftProjectileFallback(pr, highFx ? 0.2 : 0.13);
-      } else if (pr.kind === "sword" || pr.kind === "needle" || pr.kind === "bolt") {
+      } else if (pr.kind === "sword" || pr.kind === "spiritBlade" || pr.kind === "needle" || pr.kind === "bolt") {
         const drewAtlas = drawProjectileSpec(projectileSpec);
         if (drewAtlas) state.qa.premiumAtlasFxDraws += 1;
         if (!drewAtlas) drawSoftProjectileFallback(pr, 0.13);
@@ -6315,7 +6677,14 @@
   function areaHeroFxSpec(area, now) {
     switch (area.kind) {
       case "voidSeal":
+      case "voidVortex":
+      case "abyssRift":
         return { id: "voidBlossom", w: area.r * 2.45, h: area.r * 2.25, alpha: 0.52, rotation: -now / 2600 };
+      case "thunderLotus":
+      case "thunderLotusBurst":
+      case "thunderLotusField":
+      case "ninefoldThunderLotus":
+        return { id: "thunderRune", w: area.r * 2.08, h: area.r * 2.08, alpha: 0.48, rotation: now / 1800 };
       case "fireSea":
         return { id: "fireDragon", w: area.r * 2.9, h: area.r * 2.05, alpha: 0.46, rotation: now / 3600 };
       case "plagueDomain":
@@ -6341,10 +6710,10 @@
   }
 
   function impactAtlasFrameId(color) {
-    if (color === weapons.thunderArray.color || color === weapons.thunderPearl.color) return "thunderSigil";
+    if (color === weapons.thunderArray.color || color === weapons.thunderPearl.color || color === weapons.thunderLotus.color || color === weapons.ninefoldThunderLotus.color) return "thunderSigil";
     if (color === weapons.frostNeedle.color || color === weapons.glacierRain.color || color === colors.frost) return "frostBurst";
     if (color === weapons.poisonMist.color || color === weapons.plagueDomain.color || color === colors.poison) return "plaguePool";
-    if (color === weapons.talisman.color || color === weapons.voidSeal.color || color === colors.gold || color === colors.violet) return "talismanWheel";
+    if (color === weapons.talisman.color || color === weapons.voidSeal.color || color === weapons.voidVortex.color || color === weapons.abyssRift.color || color === colors.gold || color === colors.violet) return "talismanWheel";
     if (color === weapons.spiritFire.color || color === weapons.fireSea.color || color === colors.danger) return "spiritFire";
     return "swordFan";
   }
@@ -6352,31 +6721,32 @@
   function hitFrameId(color, kind = "impact") {
     if (kind === "slash") return "spectralSlash";
     if (kind === "death") return color === colors.gold ? "lootPop" : "soulRupture";
-    if (color === weapons.thunderArray.color || color === weapons.thunderPearl.color || color === colors.blue) return "lightningImpact";
+    if (color === weapons.thunderArray.color || color === weapons.thunderPearl.color || color === weapons.thunderLotus.color || color === weapons.ninefoldThunderLotus.color || color === colors.blue) return "lightningImpact";
     if (color === weapons.frostNeedle.color || color === weapons.glacierRain.color || color === colors.frost) return "iceFracture";
     if (color === weapons.poisonMist.color || color === weapons.plagueDomain.color || color === colors.poison) return "poisonSplash";
     if (color === weapons.spiritFire.color || color === weapons.fireSea.color || color === colors.danger) return "criticalBurst";
-    if (color === weapons.talisman.color || color === weapons.voidSeal.color || color === colors.violet) return "soulRupture";
+    if (color === weapons.talisman.color || color === weapons.voidSeal.color || color === weapons.voidVortex.color || color === weapons.abyssRift.color || color === colors.violet) return "soulRupture";
     return kind === "spark" ? "hitSpark" : "criticalBurst";
   }
 
   function screenStrikeFrameId(color, kind = "impact") {
-    if (kind === "slash" || color === weapons.flyingSword.color || color === weapons.thousandSword.color) return "jadeCrescent";
-    if (color === weapons.thunderArray.color || color === weapons.thunderPearl.color || color === colors.blue) return "lightningBurst";
+    if (kind === "slash" || color === weapons.flyingSword.color || color === weapons.thousandSword.color || color === weapons.heavySlash.color || color === weapons.skyRendSlash.color || color === weapons.swordSpirit.color || color === weapons.myriadSwordSpirit.color) return "jadeCrescent";
+    if (color === weapons.thunderArray.color || color === weapons.thunderPearl.color || color === weapons.thunderLotus.color || color === weapons.ninefoldThunderLotus.color || color === colors.blue) return "lightningBurst";
     if (color === weapons.frostNeedle.color || color === weapons.glacierRain.color || color === colors.frost) return "frostNova";
     if (color === weapons.poisonMist.color || color === weapons.plagueDomain.color || color === colors.poison) return "plagueSplash";
     if (color === weapons.spiritFire.color || color === weapons.fireSea.color || color === colors.danger) return kind === "boss" ? "bloodMoonShock" : "flameRing";
     if (color === weapons.talisman.color || color === weapons.voidSeal.color || color === colors.gold) return "talismanBurst";
-    if (color === colors.violet) return "voidRupture";
+    if (color === weapons.voidVortex.color || color === weapons.abyssRift.color || color === colors.violet) return "voidRupture";
     return "jadeCrescent";
   }
 
   function areaScreenStrikeSpec(area, now) {
     if (!premiumScreenStrikeAtlasReady()) return null;
     let id = null;
-    if (area.kind === "voidSeal") id = "voidRupture";
+    if (area.kind === "voidSeal" || area.kind === "voidVortex" || area.kind === "abyssRift") id = "voidRupture";
     else if (area.kind === "plagueDomain" || area.kind === "poison") id = "plagueSplash";
     else if (area.kind === "fireSea") id = "flameRing";
+    else if (area.kind === "thunderLotus" || area.kind === "thunderLotusBurst" || area.kind === "thunderLotusField" || area.kind === "ninefoldThunderLotus") id = "lightningBurst";
     else if (area.kind === "burst") id = screenStrikeFrameId(area.color, area.slow ? "frost" : "impact");
     if (!id) return null;
     const pulse = 1 + Math.sin(now / 260 + area.x * 0.01) * 0.025;
@@ -6392,9 +6762,10 @@
 
   function areaEventFrameId(area) {
     let id = null;
-    if (area.kind === "voidSeal") id = "voidCrackField";
+    if (area.kind === "voidSeal" || area.kind === "voidVortex" || area.kind === "abyssRift") id = "voidCrackField";
     else if (area.kind === "plagueDomain" || area.kind === "poison") id = "plagueMireField";
     else if (area.kind === "fireSea") id = "fireDragonField";
+    else if (area.kind === "thunderLotus" || area.kind === "thunderLotusBurst" || area.kind === "thunderLotusField" || area.kind === "ninefoldThunderLotus") id = "thunderPearlArray";
     else if (area.kind === "burst") {
       if (area.color === weapons.thunderArray.color || area.color === weapons.thunderPearl.color || area.color === colors.blue) id = "thunderPearlArray";
       else if (area.slow || area.color === weapons.frostNeedle.color || area.color === weapons.glacierRain.color || area.color === colors.frost) id = "frostLotusField";
@@ -6422,9 +6793,10 @@
 
   function areaGroundDecalSpec(area, now) {
     let id = null;
-    if (area.kind === "voidSeal") id = "voidRift";
+    if (area.kind === "voidSeal" || area.kind === "voidVortex" || area.kind === "abyssRift") id = "voidRift";
     else if (area.kind === "plagueDomain" || area.kind === "poison") id = "plagueMiasma";
     else if (area.kind === "fireSea") id = "infernoScorch";
+    else if (area.kind === "thunderLotus" || area.kind === "thunderLotusBurst" || area.kind === "thunderLotusField" || area.kind === "ninefoldThunderLotus") id = "lightningSigil";
     else if (area.kind === "burst") {
       if (area.color === weapons.talisman.color || area.color === weapons.voidSeal.color || area.color === colors.gold) id = "talismanSeal";
       else if (area.color === weapons.thunderArray.color || area.color === weapons.thunderPearl.color) id = "lightningSigil";
@@ -7162,7 +7534,11 @@
       fireSea: { level: 1, evolved: true },
       thunderArray: { level: 1, evolved: true },
       moonWheel: { level: 1, evolved: true },
-      dragonRepeater: { level: 1, evolved: true }
+      dragonRepeater: { level: 1, evolved: true },
+      skyRendSlash: { level: 1, evolved: true },
+      abyssRift: { level: 1, evolved: true },
+      myriadSwordSpirit: { level: 1, evolved: true },
+      ninefoldThunderLotus: { level: 1, evolved: true }
     };
     p.passives = {
       powerCharm: { level: 5 },
