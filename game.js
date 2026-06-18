@@ -1521,7 +1521,7 @@
     forceNextChestEvolution: false,
     lastResult: null,
     quality: { pressure: 0, avgWorkMs: 0 },
-    qa: { mode: null, autoChoices: false, autoMove: false, timeScale: 1, maxSteps: 1, syncRunning: false, syncSteps: 0, syncMs: 0, visualDone: false, groundDecalDraws: 0, areaEventDraws: 0, areaFxDraws: 0, environmentPropDraws: 0, atmosphereDraws: 0, swarmPressureDraws: 0, swarmClusterDraws: 0, swarmClusteredEnemies: 0, heroFxDraws: 0, screenStrikeDraws: 0, ultimateCastDraws: 0, unitAuraDraws: 0, hitAtlasDraws: 0, threatDraws: 0, hordeSpriteDraws: 0, hordeSpritesSkipped: 0, hordeRenderBudget: 0, hordeBudgetUsed: 0, projectileSpriteDraws: 0, projectilesSkipped: 0, projectileRenderBudget: 0, motionTrailDraws: 0, motionTrailRenderBudget: 0, hostileProjectileDraws: 0, hostileProjectilesSkipped: 0, hostileProjectileRenderBudget: 0, particlesRendered: 0, particlesCulled: 0, swarmImpostorDraws: 0, legacyWorldOverlays: 0, legacyVectorOverlays: 0, legacyAreaFallbackDraws: 0, legacyFallbackFx: 0, legacyCombatAtlasDraws: 0, premiumAtlasFxDraws: 0, impactStops: 0, maxImpactStop: 0, renderDpr: 1, magnetActivations: 0, magnetGems: 0, magnetCoins: 0, magnetXp: 0, magnetCoinValue: 0, stagesSeen: "" },
+    qa: { mode: null, autoChoices: false, autoMove: false, timeScale: 1, maxSteps: 1, syncRunning: false, syncSteps: 0, syncMs: 0, visualDone: false, groundDecalDraws: 0, areaEventDraws: 0, areaFxDraws: 0, environmentPropDraws: 0, atmosphereDraws: 0, swarmPressureDraws: 0, swarmClusterDraws: 0, swarmClusteredEnemies: 0, heroFxDraws: 0, screenStrikeDraws: 0, ultimateCastDraws: 0, unitAuraDraws: 0, hitAtlasDraws: 0, threatDraws: 0, hordeSpriteDraws: 0, hordeSpritesSkipped: 0, hordeRenderBudget: 0, hordeBudgetUsed: 0, projectileSpriteDraws: 0, projectilesSkipped: 0, projectileRenderBudget: 0, motionTrailDraws: 0, motionTrailRenderBudget: 0, hostileProjectileDraws: 0, hostileProjectilesSkipped: 0, hostileProjectileRenderBudget: 0, particlesRendered: 0, particlesCulled: 0, swarmImpostorDraws: 0, legacyWorldOverlays: 0, legacyVectorOverlays: 0, legacyAreaFallbackDraws: 0, legacyFallbackFx: 0, legacyCombatAtlasDraws: 0, premiumAtlasFxDraws: 0, impactStops: 0, maxImpactStop: 0, renderDpr: 1, magnetActivations: 0, magnetGems: 0, magnetCoins: 0, magnetPowerups: 0, magnetChests: 0, magnetXp: 0, magnetCoinValue: 0, stagesSeen: "" },
     wave: 1,
     stageIndex: -1,
     stageSeen: {},
@@ -2145,6 +2145,8 @@
     state.qa.magnetActivations = 0;
     state.qa.magnetGems = 0;
     state.qa.magnetCoins = 0;
+    state.qa.magnetPowerups = 0;
+    state.qa.magnetChests = 0;
     state.qa.magnetXp = 0;
     state.qa.magnetCoinValue = 0;
     state.qa.stagesSeen = "";
@@ -3797,6 +3799,7 @@
 
     for (let i = state.powerups.length - 1; i >= 0; i--) {
       const item = state.powerups[i];
+      if (!item) continue;
       item.pulse += dt * 5;
       item.x += item.vx * dt;
       item.y += item.vy * dt;
@@ -3811,8 +3814,10 @@
         item.y += (dy / (d || 1)) * speed * dt;
       }
       if (d < p.r + item.r + 8) {
-        applyPowerup(item.type);
+        const pickedType = item.type;
         state.powerups.splice(i, 1);
+        applyPowerup(pickedType);
+        if (pickedType === "magnet") break;
       }
     }
 
@@ -3827,11 +3832,15 @@
 
   function collectAllLooseLoot(info) {
     const p = state.player;
-    if (!p) return { xpTotal: 0, coinTotal: 0, gemCount: 0, coinCount: 0 };
+    if (!p) return { xpTotal: 0, coinTotal: 0, gemCount: 0, coinCount: 0, powerupCount: 0, chestCount: 0 };
     let xpTotal = 0;
     let coinTotal = 0;
     const gemCount = state.gems.length;
     const coinCount = state.coins.length;
+    const chainedPowerups = state.powerups.filter((item) => item.type !== "magnet");
+    const powerupCount = chainedPowerups.length;
+    const chestCount = state.chests.length;
+    const pulledChests = state.chests.slice();
     const visualBudget = 42;
     let visualCount = 0;
     const streakLoot = (item, color) => {
@@ -3859,17 +3868,44 @@
     }
     state.gems = [];
     state.coins = [];
+    if (state.powerups.length) {
+      for (const item of state.powerups) streakLoot(item, powerupTypes[item.type]?.color || info.color);
+      state.powerups = [];
+    }
+    if (state.chests.length) {
+      for (let i = 0; i < state.chests.length; i++) {
+        const chest = state.chests[i];
+        streakLoot(chest, colors.gold);
+        chest.x = p.x + Math.cos((i / Math.max(1, state.chests.length)) * TAU) * (p.r + 16);
+        chest.y = p.y + Math.sin((i / Math.max(1, state.chests.length)) * TAU) * (p.r + 16);
+        chest.pulse = Math.max(chest.pulse || 0, 1.6);
+      }
+    }
     if (xpTotal > 0) gainXp(xpTotal);
     if (coinTotal > 0) state.runCoins += coinTotal;
+    for (const item of chainedPowerups) applyPowerup(item.type);
+    if (pulledChests.length && state.screen === "playing") {
+      if (state.qa.autoChoices) {
+        for (const chest of pulledChests) {
+          if (state.screen !== "playing" || !state.chests.includes(chest)) continue;
+          openChest(chest);
+        }
+      } else {
+        const chest = pulledChests.find((candidate) => state.chests.includes(candidate));
+        if (chest) openChest(chest);
+      }
+    }
     state.qa.magnetActivations = (state.qa.magnetActivations || 0) + 1;
     state.qa.magnetGems = (state.qa.magnetGems || 0) + gemCount;
     state.qa.magnetCoins = (state.qa.magnetCoins || 0) + coinCount;
+    state.qa.magnetPowerups = (state.qa.magnetPowerups || 0) + powerupCount;
+    state.qa.magnetChests = (state.qa.magnetChests || 0) + chestCount;
     state.qa.magnetXp = (state.qa.magnetXp || 0) + xpTotal;
     state.qa.magnetCoinValue = (state.qa.magnetCoinValue || 0) + coinTotal;
-    floatingText(p.x, p.y - 54, `${t("ui.magnet")} ${gemCount + coinCount}`, info.color, 20);
+    floatingText(p.x, p.y - 54, `${t("ui.magnet")} ${gemCount + coinCount + powerupCount + chestCount}`, info.color, 20);
     burst(p.x, p.y, info.color, 36, 240);
     state.shake = Math.max(state.shake, 10);
-    return { xpTotal, coinTotal, gemCount, coinCount };
+    return { xpTotal, coinTotal, gemCount, coinCount, powerupCount, chestCount };
   }
 
   function applyPowerup(type) {
@@ -4119,6 +4155,8 @@
     document.body.dataset.qaMagnetActivations = String(state.qa.magnetActivations || 0);
     document.body.dataset.qaMagnetGems = String(state.qa.magnetGems || 0);
     document.body.dataset.qaMagnetCoins = String(state.qa.magnetCoins || 0);
+    document.body.dataset.qaMagnetPowerups = String(state.qa.magnetPowerups || 0);
+    document.body.dataset.qaMagnetChests = String(state.qa.magnetChests || 0);
     document.body.dataset.qaMagnetXp = String(state.qa.magnetXp || 0);
     document.body.dataset.qaMagnetCoinValue = String(state.qa.magnetCoinValue || 0);
     document.body.dataset.qaBossSpawned = state.bossSpawned ? "1" : "0";
@@ -4240,6 +4278,9 @@
     document.body.dataset.qaVictory = state.lastResult ? (state.lastResult.victory ? "1" : "0") : "";
     document.body.dataset.qaResultCoins = state.lastResult ? String(state.lastResult.total) : "";
     document.body.dataset.qaSyncSteps = String(state.qa.syncSteps || 0);
+    document.body.dataset.qaSyncGuard = String(state.qa.syncGuard || 0);
+    document.body.dataset.qaSyncLimitHit = state.qa.syncLimitHit ? "1" : "0";
+    document.body.dataset.qaSyncError = state.qa.syncError || "";
     document.body.dataset.qaSyncMs = String(state.qa.syncMs || 0);
     document.body.dataset.qaAvgFrameMs = state.perf.frames ? ((state.perf.totalDt / state.perf.frames) * 1000).toFixed(2) : "0";
     document.body.dataset.qaMaxFrameMs = (state.perf.maxDt * 1000).toFixed(2);
@@ -8384,6 +8425,9 @@
       const d = 780 + i * 135;
       state.coins.push({ x: p.x + Math.cos(a) * d, y: p.y + Math.sin(a) * d, value: 3 + i, r: 6, vx: 0, vy: 0 });
     }
+    state.chests.push({ x: p.x + 980, y: p.y - 520, r: 17, pulse: 0 });
+    state.powerups.push({ x: p.x - 860, y: p.y + 460, type: "heal", r: 12, vx: 0, vy: 0, pulse: 1.2 });
+    state.powerups.push({ x: p.x + 920, y: p.y + 380, type: "bomb", r: 12, vx: 0, vy: 0, pulse: 2.1 });
     state.powerups.push({ x: p.x, y: p.y, type: "magnet", r: 12, vx: 0, vy: 0, pulse: 0 });
     updatePickups(1 / 30);
     updateFx(1 / 30);
@@ -8457,6 +8501,9 @@
     state.qa.timeScale = mode === "soak" ? clamp(Number(params.get("speed")) || 40, 1, 80) : 1;
     state.qa.maxSteps = mode === "soak" ? clamp(Math.ceil(state.qa.timeScale), 1, 80) : 1;
     state.qa.syncSteps = 0;
+    state.qa.syncGuard = 0;
+    state.qa.syncLimitHit = 0;
+    state.qa.syncError = "";
     state.qa.syncMs = 0;
     state.qa.visualDone = false;
     startRun(params.get("character") || "sword");
@@ -8603,11 +8650,17 @@
   function runQaSoakSync() {
     const started = Date.now();
     const maxSteps = 36000;
+    let guard = 0;
     state.qa.syncRunning = true;
     try {
-      while (state.screen !== "result" && state.qa.syncSteps < maxSteps) {
+      while (state.screen !== "result" && guard < maxSteps) {
         update(1 / 30);
+        guard += 1;
       }
+      state.qa.syncGuard = guard;
+      state.qa.syncLimitHit = state.screen !== "result" ? 1 : 0;
+    } catch (err) {
+      state.qa.syncError = err?.message || String(err);
     } finally {
       state.qa.syncRunning = false;
       state.qa.syncMs = Date.now() - started;
@@ -8642,6 +8695,8 @@
             activations: state.qa.magnetActivations || 0,
             gems: state.qa.magnetGems || 0,
             coins: state.qa.magnetCoins || 0,
+            powerups: state.qa.magnetPowerups || 0,
+            chests: state.qa.magnetChests || 0,
             xp: state.qa.magnetXp || 0,
             coinValue: state.qa.magnetCoinValue || 0
           },
@@ -8765,6 +8820,8 @@
         state.qa.magnetActivations = 0;
         state.qa.magnetGems = 0;
         state.qa.magnetCoins = 0;
+        state.qa.magnetPowerups = 0;
+        state.qa.magnetChests = 0;
         state.qa.magnetXp = 0;
         state.qa.magnetCoinValue = 0;
         state.quality.pressure = 0;

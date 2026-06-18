@@ -42,7 +42,7 @@ python -m http.server 4173
 - 高级怪潮压迫感屏幕叠层图集 `assets/premium-swarm-pressure-atlas-v1.png`
 - 程序化音效、氛围音和静音开关
 - 成就系统和角色解锁
-- 回血、全图吸附、清屏三类场上道具；摄灵阵会随机掉落，拾取后瞬间吸收全场经验和灵石
+- 回血、全图吸附、清屏三类场上道具；摄灵阵会随机掉落，拾取后瞬间吸收全场经验、灵石，并把宝箱和其他道具拉到身边
 - 新增玄铁重斩、虚空黑洞、剑灵召唤、莲花雷印四条技能线，对应裂空天斩、归墟裂隙、万剑侍从、九霄雷莲四种进化
 - 菜单内置语言选择，支持中文、英文、日文和法文核心界面文本
 
@@ -72,7 +72,7 @@ python -m http.server 4173
 
 - `http://localhost:4173/?qa=evolution`：快速验证宝箱和武器进化。
 - `http://localhost:4173/?qa=powerups`：分阶段验证回血、吸附和清屏道具。
-- `http://localhost:4173/?qa=magnet`：验证全图吸附道具会瞬间收走远处经验和灵石。
+- `http://localhost:4173/?qa=magnet`：验证全图吸附道具会瞬间收走远处经验、灵石，并处理宝箱和其他道具。
 - `http://localhost:4173/?qa=stages`：验证 5 个关卡配置、关卡名和不同怪物池。
 - `http://localhost:4173/?qa=boss`：快速进入最终 Boss 阶段。
 - `http://localhost:4173/?qa=levelup`：直接打开升级三选一界面，验证升级卡片和图标布局。
