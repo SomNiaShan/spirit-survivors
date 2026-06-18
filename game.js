@@ -42,12 +42,15 @@
     resultStats: $("resultStats"),
     soundBtn: $("soundBtn"),
     menuSoundBtn: $("menuSoundBtn"),
+    languageSelect: $("languageSelect"),
     touchPad: $("touchPad"),
     touchStick: $("touchStick")
   };
 
   const TAU = Math.PI * 2;
   const RUN_DURATION = 12 * 60;
+  const STAGE_COUNT = 5;
+  const STAGE_DURATION = RUN_DURATION / STAGE_COUNT;
   const MAX_ENEMIES = 520;
   const ENEMY_GRID_CELL = 192;
   const MAX_PARTICLES = 720;
@@ -79,6 +82,391 @@
     frost: "#9ee7ff",
     poison: "#91d56f"
   };
+
+  const LANG_STORAGE_KEY = "spirit-survivors-language-v1";
+  const LANG_OPTIONS = ["zh", "en", "ja", "fr"];
+  const LANG_META = {
+    zh: { html: "zh-CN", title: "灵潮幸存者" },
+    en: { html: "en", title: "Spirit Survivors" },
+    ja: { html: "ja", title: "霊潮サバイバー" },
+    fr: { html: "fr", title: "Survivants de la Marée Spirituelle" }
+  };
+  const I18N = {
+    zh: {
+      ui: {
+        title: "灵潮幸存者",
+        subtitle: "自动施法，万妖围城，活到天明。",
+        language: "语言",
+        start: "开始修行",
+        upgrades: "永久升级",
+        achievements: "成就",
+        codex: "图鉴",
+        totalCoins: "总灵石",
+        reset: "重置存档",
+        characterTitle: "选择角色",
+        back: "返回",
+        level: "Lv",
+        stage: "妖潮",
+        coins: "灵石",
+        soundOn: "声音：开",
+        soundOff: "声音：关",
+        soundEnable: "开启声音",
+        soundDisable: "关闭声音",
+        pause: "暂停",
+        weapons: "法宝",
+        passives: "心法",
+        levelTitle: "灵气涌动",
+        levelSubtitle: "选择一项强化。",
+        chestTitle: "妖丹宝箱",
+        continue: "继续",
+        resume: "继续",
+        quit: "结束本局",
+        retry: "再来一局",
+        menu: "回到主菜单",
+        locked: "未解锁",
+        lockedTag: "锁定",
+        completed: "已完成",
+        incomplete: "未完成",
+        life: "生命",
+        speed: "速度",
+        maxed: "已满",
+        reward: "奖励",
+        weapon: "法宝",
+        passive: "心法",
+        evolved: "进化",
+        evolvedWeapon: "进化法宝",
+        evolutionRecipe: "进化配方：{name}",
+        reqEvolution: "进化：{name}",
+        evolvedFrom: "由 {name} 进化",
+        coinBag: "灵石袋",
+        coinBagDesc: "所有法宝和心法已接近圆满，转化为额外灵石。",
+        newAchievement: "新成就",
+        newCharacter: "新角色",
+        victoryTitle: "妖君伏诛",
+        defeatTitle: "修行终止",
+        survivalTime: "存活时间",
+        kills: "击杀",
+        resultLevel: "等级",
+        resultEvolved: "进化法宝",
+        resultCoins: "本局灵石",
+        confirmReset: "确认清空本地存档？",
+        chestEvolved: "{name} 已进化。",
+        weaponLevelUp: "法宝提升到 Lv {level}。",
+        passiveLevelUp: "心法提升到 Lv {level}。",
+        chestCoinsDesc: "法宝已满，宝箱转化为灵石。",
+        magnet: "摄灵",
+        bomb: "镇妖雷",
+        eliteWarning: "精英妖将来袭",
+        bossWarning: "灵潮妖君降临",
+        bossDefeated: "妖君伏诛"
+      },
+      stages: {
+        gate: ["青岚山门", "第一关：青岚山门"],
+        marsh: ["幽沼毒径", "第二关：幽沼毒径"],
+        crypt: ["寒骨地宫", "第三关：寒骨地宫"],
+        rift: ["虚空裂坛", "第四关：虚空裂坛"],
+        bloodmoon: ["血月妖城", "第五关：血月妖城"]
+      },
+      enemies: {
+        boss: "灵潮妖君",
+        mireling: "瘴沼爬妖",
+        charger: "血蹄冲妖",
+        lantern: "魂灯怪",
+        reaver: "裂隙影刃",
+        warden: "玄甲守卫"
+      }
+    },
+    en: {
+      ui: {
+        title: "Spirit Survivors",
+        subtitle: "Auto-cast through a demon tide and survive until dawn.",
+        language: "Language",
+        start: "Start Run",
+        upgrades: "Permanent Upgrades",
+        achievements: "Achievements",
+        codex: "Codex",
+        totalCoins: "Total Spirit Stones",
+        reset: "Reset Save",
+        characterTitle: "Choose Character",
+        back: "Back",
+        level: "Lv",
+        stage: "Stage",
+        coins: "Stones",
+        soundOn: "Sound: On",
+        soundOff: "Sound: Off",
+        soundEnable: "Enable sound",
+        soundDisable: "Disable sound",
+        pause: "Pause",
+        weapons: "Artifacts",
+        passives: "Talents",
+        levelTitle: "Spiritual Surge",
+        levelSubtitle: "Choose one upgrade.",
+        chestTitle: "Demon Core Chest",
+        continue: "Continue",
+        resume: "Resume",
+        quit: "End Run",
+        retry: "Try Again",
+        menu: "Main Menu",
+        locked: "Locked",
+        lockedTag: "Locked",
+        completed: "Completed",
+        incomplete: "Incomplete",
+        life: "HP",
+        speed: "Speed",
+        maxed: "Maxed",
+        reward: "Reward",
+        weapon: "Artifact",
+        passive: "Talent",
+        evolved: "Evolved",
+        evolvedWeapon: "Evolved Artifact",
+        evolutionRecipe: "Evolution recipe: {name}",
+        reqEvolution: "Evolution: {name}",
+        evolvedFrom: "Evolved from {name}",
+        coinBag: "Stone Pouch",
+        coinBagDesc: "All artifacts and talents are nearly complete. Converted into extra stones.",
+        newAchievement: "New achievement",
+        newCharacter: "New character",
+        victoryTitle: "Demon Lord Defeated",
+        defeatTitle: "Run Ended",
+        survivalTime: "Survival Time",
+        kills: "Kills",
+        resultLevel: "Level",
+        resultEvolved: "Evolved Artifacts",
+        resultCoins: "Run Stones",
+        confirmReset: "Clear the local save?",
+        chestEvolved: "{name} evolved.",
+        weaponLevelUp: "Artifact raised to Lv {level}.",
+        passiveLevelUp: "Talent raised to Lv {level}.",
+        chestCoinsDesc: "Artifacts are full. The chest became spirit stones.",
+        magnet: "Vacuum",
+        bomb: "Thunder Bomb",
+        eliteWarning: "Elite demon incoming",
+        bossWarning: "The Tide Demon Lord descends",
+        bossDefeated: "Demon Lord defeated"
+      },
+      stages: {
+        gate: ["Verdant Gate", "Stage 1: Verdant Gate"],
+        marsh: ["Toxic Marsh Path", "Stage 2: Toxic Marsh Path"],
+        crypt: ["Frostbone Crypt", "Stage 3: Frostbone Crypt"],
+        rift: ["Void Rift Altar", "Stage 4: Void Rift Altar"],
+        bloodmoon: ["Blood Moon Citadel", "Stage 5: Blood Moon Citadel"]
+      },
+      enemies: {
+        boss: "Tide Demon Lord",
+        mireling: "Mire Crawler",
+        charger: "Bloodhoof Charger",
+        lantern: "Soul Lantern",
+        reaver: "Rift Reaver",
+        warden: "Blackguard Warden"
+      }
+    },
+    ja: {
+      ui: {
+        title: "霊潮サバイバー",
+        subtitle: "自動詠唱で妖の群れを突破し、夜明けまで生き残れ。",
+        language: "言語",
+        start: "修行開始",
+        upgrades: "恒久強化",
+        achievements: "実績",
+        codex: "図鑑",
+        totalCoins: "霊石合計",
+        reset: "セーブ初期化",
+        characterTitle: "キャラクター選択",
+        back: "戻る",
+        level: "Lv",
+        stage: "ステージ",
+        coins: "霊石",
+        soundOn: "音声：オン",
+        soundOff: "音声：オフ",
+        soundEnable: "音声をオン",
+        soundDisable: "音声をオフ",
+        pause: "一時停止",
+        weapons: "法宝",
+        passives: "心法",
+        levelTitle: "霊気奔流",
+        levelSubtitle: "強化を1つ選択。",
+        chestTitle: "妖丹宝箱",
+        continue: "続ける",
+        resume: "再開",
+        quit: "この回を終了",
+        retry: "もう一度",
+        menu: "メインメニュー",
+        locked: "未解放",
+        lockedTag: "ロック",
+        completed: "達成済み",
+        incomplete: "未達成",
+        life: "生命",
+        speed: "速度",
+        maxed: "最大",
+        reward: "報酬",
+        weapon: "法宝",
+        passive: "心法",
+        evolved: "進化",
+        evolvedWeapon: "進化法宝",
+        evolutionRecipe: "進化条件：{name}",
+        reqEvolution: "進化：{name}",
+        evolvedFrom: "{name} から進化",
+        coinBag: "霊石袋",
+        coinBagDesc: "法宝と心法がほぼ完成したため、霊石に変換。",
+        newAchievement: "新実績",
+        newCharacter: "新キャラ",
+        victoryTitle: "妖君討伐",
+        defeatTitle: "修行終了",
+        survivalTime: "生存時間",
+        kills: "撃破",
+        resultLevel: "レベル",
+        resultEvolved: "進化法宝",
+        resultCoins: "今回の霊石",
+        confirmReset: "ローカルセーブを消去しますか？",
+        chestEvolved: "{name} が進化した。",
+        weaponLevelUp: "法宝が Lv {level} に上昇。",
+        passiveLevelUp: "心法が Lv {level} に上昇。",
+        chestCoinsDesc: "法宝は満了。宝箱は霊石に変換。",
+        magnet: "吸霊",
+        bomb: "鎮妖雷",
+        eliteWarning: "精鋭妖将襲来",
+        bossWarning: "霊潮妖君降臨",
+        bossDefeated: "妖君討伐"
+      },
+      stages: {
+        gate: ["青嵐山門", "第1関：青嵐山門"],
+        marsh: ["幽沼毒路", "第2関：幽沼毒路"],
+        crypt: ["寒骨地宮", "第3関：寒骨地宮"],
+        rift: ["虚空裂壇", "第4関：虚空裂壇"],
+        bloodmoon: ["血月妖城", "第5関：血月妖城"]
+      },
+      enemies: {
+        boss: "霊潮妖君",
+        mireling: "瘴沼這妖",
+        charger: "血蹄突妖",
+        lantern: "魂灯怪",
+        reaver: "裂隙影刃",
+        warden: "玄甲守衛"
+      }
+    },
+    fr: {
+      ui: {
+        title: "Survivants de la Marée Spirituelle",
+        subtitle: "Lancez des sorts automatiquement et survivez à la horde jusqu'à l'aube.",
+        language: "Langue",
+        start: "Commencer",
+        upgrades: "Améliorations permanentes",
+        achievements: "Succès",
+        codex: "Codex",
+        totalCoins: "Pierres spirituelles",
+        reset: "Réinitialiser",
+        characterTitle: "Choisir un personnage",
+        back: "Retour",
+        level: "Nv",
+        stage: "Étape",
+        coins: "Pierres",
+        soundOn: "Son : oui",
+        soundOff: "Son : non",
+        soundEnable: "Activer le son",
+        soundDisable: "Couper le son",
+        pause: "Pause",
+        weapons: "Artefacts",
+        passives: "Talents",
+        levelTitle: "Afflux spirituel",
+        levelSubtitle: "Choisissez une amélioration.",
+        chestTitle: "Coffre du noyau démon",
+        continue: "Continuer",
+        resume: "Reprendre",
+        quit: "Terminer la partie",
+        retry: "Rejouer",
+        menu: "Menu principal",
+        locked: "Verrouillé",
+        lockedTag: "Verrouillé",
+        completed: "Terminé",
+        incomplete: "Incomplet",
+        life: "Vie",
+        speed: "Vitesse",
+        maxed: "Max",
+        reward: "Récompense",
+        weapon: "Artefact",
+        passive: "Talent",
+        evolved: "Évolué",
+        evolvedWeapon: "Artefact évolué",
+        evolutionRecipe: "Recette d'évolution : {name}",
+        reqEvolution: "Évolution : {name}",
+        evolvedFrom: "Évolué depuis {name}",
+        coinBag: "Bourse de pierres",
+        coinBagDesc: "Tous les artefacts et talents sont presque complets. Converti en pierres.",
+        newAchievement: "Nouveau succès",
+        newCharacter: "Nouveau personnage",
+        victoryTitle: "Seigneur démon vaincu",
+        defeatTitle: "Partie terminée",
+        survivalTime: "Temps de survie",
+        kills: "Éliminations",
+        resultLevel: "Niveau",
+        resultEvolved: "Artefacts évolués",
+        resultCoins: "Pierres gagnées",
+        confirmReset: "Effacer la sauvegarde locale ?",
+        chestEvolved: "{name} a évolué.",
+        weaponLevelUp: "Artefact amélioré au Nv {level}.",
+        passiveLevelUp: "Talent amélioré au Nv {level}.",
+        chestCoinsDesc: "Les artefacts sont complets. Le coffre devient des pierres.",
+        magnet: "Aspiration",
+        bomb: "Bombe de foudre",
+        eliteWarning: "Démon d'élite en approche",
+        bossWarning: "Le seigneur de la marée descend",
+        bossDefeated: "Seigneur démon vaincu"
+      },
+      stages: {
+        gate: ["Porte verdoyante", "Étape 1 : Porte verdoyante"],
+        marsh: ["Marais toxique", "Étape 2 : Marais toxique"],
+        crypt: ["Crypte d'os gelés", "Étape 3 : Crypte d'os gelés"],
+        rift: ["Autel de la faille", "Étape 4 : Autel de la faille"],
+        bloodmoon: ["Citadelle de la lune sanglante", "Étape 5 : Citadelle de la lune sanglante"]
+      },
+      enemies: {
+        boss: "Seigneur démon de la marée",
+        mireling: "Rampant du marais",
+        charger: "Chargeur sabot-sang",
+        lantern: "Lanterne d'âme",
+        reaver: "Faucheur de faille",
+        warden: "Gardien noir"
+      }
+    }
+  };
+
+  function normalizeLanguage(lang) {
+    const short = String(lang || "").toLowerCase().slice(0, 2);
+    return LANG_OPTIONS.includes(short) ? short : "zh";
+  }
+
+  function initialLanguage() {
+    const params = new URLSearchParams(window.location.search);
+    return normalizeLanguage(params.get("lang") || localStorage.getItem(LANG_STORAGE_KEY) || navigator.language || "zh");
+  }
+
+  let activeLanguage = initialLanguage();
+
+  function t(path, vars = {}, fallback = "") {
+    const parts = path.split(".");
+    let value = I18N[activeLanguage];
+    for (const part of parts) value = value?.[part];
+    if (value === undefined) {
+      value = I18N.zh;
+      for (const part of parts) value = value?.[part];
+    }
+    if (Array.isArray(value)) value = value[0];
+    if (value === undefined) value = fallback || path;
+    return String(value).replace(/\{(\w+)\}/g, (_, key) => vars[key] ?? "");
+  }
+
+  function stageName(stage) {
+    return t(`stages.${stage.id}`, {}, stage.name);
+  }
+
+  function stageAnnouncement(stage) {
+    const entry = I18N[activeLanguage]?.stages?.[stage.id] || I18N.zh.stages[stage.id];
+    return entry?.[1] || stage.announce;
+  }
+
+  function enemyDisplayName(type) {
+    return t(`enemies.${type.id}`, {}, type.name);
+  }
 
   const visualAtlas = ENABLE_LEGACY_RUNTIME_ART && typeof Image !== "undefined" ? new Image() : null;
   if (visualAtlas) {
@@ -970,7 +1358,12 @@
     { id: "spitter", name: "吐火妖", hp: 44, speed: 72, damage: 12, radius: 15, xp: 3, color: "#be6a45", weight: 3 },
     { id: "summoner", name: "唤妖师", hp: 70, speed: 60, damage: 10, radius: 18, xp: 5, color: "#8e72c5", weight: 2 },
     { id: "shadow", name: "影妖", hp: 46, speed: 144, damage: 16, radius: 14, xp: 4, color: "#565c75", weight: 3 },
-    { id: "stone", name: "石灵", hp: 150, speed: 44, damage: 24, radius: 24, xp: 7, color: "#9c8d80", weight: 2 }
+    { id: "stone", name: "石灵", hp: 150, speed: 44, damage: 24, radius: 24, xp: 7, color: "#9c8d80", weight: 2 },
+    { id: "mireling", name: "瘴沼爬妖", hp: 38, speed: 102, damage: 13, radius: 14, xp: 3, color: "#91d56f", weight: 5 },
+    { id: "charger", name: "血蹄冲妖", hp: 62, speed: 118, damage: 20, radius: 17, xp: 4, color: "#da5d50", weight: 4 },
+    { id: "lantern", name: "魂灯怪", hp: 42, speed: 86, damage: 14, radius: 13, xp: 4, color: "#7fe0d0", weight: 4 },
+    { id: "reaver", name: "裂隙影刃", hp: 72, speed: 156, damage: 19, radius: 15, xp: 5, color: "#a88cff", weight: 3 },
+    { id: "warden", name: "玄甲守卫", hp: 190, speed: 50, damage: 27, radius: 25, xp: 8, color: "#c6a2ff", weight: 2 }
   ];
 
   const eliteTypes = [
@@ -989,6 +1382,84 @@
     xp: 120,
     color: "#e45b55"
   };
+
+  const stageConfigs = [
+    {
+      id: "gate",
+      index: 1,
+      name: "青岚山门",
+      announce: "第一关：青岚山门",
+      color: colors.jade,
+      enemyWeights: [["imp", 10], ["wolf", 7], ["bug", 5], ["runner", 2]],
+      eliteIds: ["eliteBrute"],
+      spawnRate: 0.78,
+      minRate: 0.42,
+      burst: 1,
+      hpMult: 0.86,
+      speedMult: 0.94,
+      damageMult: 0.82
+    },
+    {
+      id: "marsh",
+      index: 2,
+      name: "幽沼毒径",
+      announce: "第二关：幽沼毒径",
+      color: colors.poison,
+      enemyWeights: [["mireling", 9], ["spitter", 5], ["bug", 5], ["wisp", 4], ["brute", 2]],
+      eliteIds: ["eliteWisp", "eliteBrute"],
+      spawnRate: 0.66,
+      minRate: 0.32,
+      burst: 2,
+      hpMult: 1.02,
+      speedMult: 1,
+      damageMult: 0.94
+    },
+    {
+      id: "crypt",
+      index: 3,
+      name: "寒骨地宫",
+      announce: "第三关：寒骨地宫",
+      color: colors.frost,
+      enemyWeights: [["stone", 5], ["brute", 6], ["lantern", 7], ["wisp", 5], ["summoner", 2]],
+      eliteIds: ["eliteWisp", "eliteSummoner"],
+      spawnRate: 0.58,
+      minRate: 0.25,
+      burst: 3,
+      hpMult: 1.18,
+      speedMult: 0.96,
+      damageMult: 1.05
+    },
+    {
+      id: "rift",
+      index: 4,
+      name: "虚空裂坛",
+      announce: "第四关：虚空裂坛",
+      color: colors.violet,
+      enemyWeights: [["reaver", 7], ["shadow", 7], ["summoner", 4], ["charger", 5], ["spitter", 3]],
+      eliteIds: ["eliteSummoner", "eliteBrute"],
+      spawnRate: 0.5,
+      minRate: 0.18,
+      burst: 4,
+      hpMult: 1.36,
+      speedMult: 1.08,
+      damageMult: 1.16
+    },
+    {
+      id: "bloodmoon",
+      index: 5,
+      name: "血月妖城",
+      announce: "第五关：血月妖城",
+      color: colors.danger,
+      enemyWeights: [["warden", 5], ["charger", 6], ["reaver", 5], ["runner", 5], ["stone", 4], ["summoner", 3], ["mireling", 3]],
+      eliteIds: ["eliteBrute", "eliteWisp", "eliteSummoner"],
+      spawnRate: 0.42,
+      minRate: 0.12,
+      burst: 6,
+      hpMult: 1.62,
+      speedMult: 1.14,
+      damageMult: 1.28
+    }
+  ];
 
   const metaUpgrades = [
     { id: "might", name: "剑意", max: 10, stat: "伤害", desc: "每级提高 4% 全局伤害。", cost: (lv) => 80 + lv * 55 },
@@ -1023,6 +1494,7 @@
   const state = {
     screen: "menu",
     save: loadSave(),
+    language: activeLanguage,
     selectedCharacter: characters[0].id,
     lastTime: 0,
     dt: 0,
@@ -1049,8 +1521,11 @@
     forceNextChestEvolution: false,
     lastResult: null,
     quality: { pressure: 0, avgWorkMs: 0 },
-    qa: { mode: null, autoChoices: false, autoMove: false, timeScale: 1, maxSteps: 1, syncRunning: false, syncSteps: 0, syncMs: 0, visualDone: false, groundDecalDraws: 0, areaEventDraws: 0, areaFxDraws: 0, environmentPropDraws: 0, atmosphereDraws: 0, swarmPressureDraws: 0, swarmClusterDraws: 0, swarmClusteredEnemies: 0, heroFxDraws: 0, screenStrikeDraws: 0, ultimateCastDraws: 0, unitAuraDraws: 0, hitAtlasDraws: 0, threatDraws: 0, hordeSpriteDraws: 0, hordeSpritesSkipped: 0, hordeRenderBudget: 0, hordeBudgetUsed: 0, projectileSpriteDraws: 0, projectilesSkipped: 0, projectileRenderBudget: 0, motionTrailDraws: 0, motionTrailRenderBudget: 0, hostileProjectileDraws: 0, hostileProjectilesSkipped: 0, hostileProjectileRenderBudget: 0, particlesRendered: 0, particlesCulled: 0, swarmImpostorDraws: 0, legacyWorldOverlays: 0, legacyVectorOverlays: 0, legacyAreaFallbackDraws: 0, legacyFallbackFx: 0, legacyCombatAtlasDraws: 0, premiumAtlasFxDraws: 0, impactStops: 0, maxImpactStop: 0, renderDpr: 1 },
+    qa: { mode: null, autoChoices: false, autoMove: false, timeScale: 1, maxSteps: 1, syncRunning: false, syncSteps: 0, syncMs: 0, visualDone: false, groundDecalDraws: 0, areaEventDraws: 0, areaFxDraws: 0, environmentPropDraws: 0, atmosphereDraws: 0, swarmPressureDraws: 0, swarmClusterDraws: 0, swarmClusteredEnemies: 0, heroFxDraws: 0, screenStrikeDraws: 0, ultimateCastDraws: 0, unitAuraDraws: 0, hitAtlasDraws: 0, threatDraws: 0, hordeSpriteDraws: 0, hordeSpritesSkipped: 0, hordeRenderBudget: 0, hordeBudgetUsed: 0, projectileSpriteDraws: 0, projectilesSkipped: 0, projectileRenderBudget: 0, motionTrailDraws: 0, motionTrailRenderBudget: 0, hostileProjectileDraws: 0, hostileProjectilesSkipped: 0, hostileProjectileRenderBudget: 0, particlesRendered: 0, particlesCulled: 0, swarmImpostorDraws: 0, legacyWorldOverlays: 0, legacyVectorOverlays: 0, legacyAreaFallbackDraws: 0, legacyFallbackFx: 0, legacyCombatAtlasDraws: 0, premiumAtlasFxDraws: 0, impactStops: 0, maxImpactStop: 0, renderDpr: 1, magnetActivations: 0, magnetGems: 0, magnetCoins: 0, magnetXp: 0, magnetCoinValue: 0, stagesSeen: "" },
     wave: 1,
+    stageIndex: -1,
+    stageSeen: {},
+    stageKills: {},
     spawnTimer: 0,
     eliteSchedule: [90, 180, 300, 450, 600, 760],
     eliteIndex: 0,
@@ -1119,14 +1594,69 @@
     ui.totalCoins.textContent = state.save.coins;
   }
 
+  function setText(id, value) {
+    const el = $(id);
+    if (el) el.textContent = value;
+  }
+
+  function applyLanguage(lang = activeLanguage, persist = false) {
+    activeLanguage = normalizeLanguage(lang);
+    state.language = activeLanguage;
+    if (persist) localStorage.setItem(LANG_STORAGE_KEY, activeLanguage);
+    if (ui.languageSelect) ui.languageSelect.value = activeLanguage;
+    document.documentElement.lang = LANG_META[activeLanguage]?.html || "zh-CN";
+    document.title = LANG_META[activeLanguage]?.title || t("ui.title");
+    setText("brandTitle", t("ui.title"));
+    setText("brandSubtitle", t("ui.subtitle"));
+    setText("languageLabel", t("ui.language"));
+    setText("startBtn", t("ui.start"));
+    setText("upgradeBtn", t("ui.upgrades"));
+    setText("achievementBtn", t("ui.achievements"));
+    setText("codexBtn", t("ui.codex"));
+    setText("totalCoinsLabel", t("ui.totalCoins"));
+    setText("resetBtn", t("ui.reset"));
+    setText("characterTitle", t("ui.characterTitle"));
+    setText("upgradeTitle", t("ui.upgrades"));
+    setText("codexTitle", t("ui.codex"));
+    setText("achievementTitle", t("ui.achievements"));
+    setText("backToMenuBtn", t("ui.back"));
+    setText("backFromUpgradeBtn", t("ui.back"));
+    setText("backFromCodexBtn", t("ui.back"));
+    setText("backFromAchievementBtn", t("ui.back"));
+    setText("levelTitle", t("ui.levelTitle"));
+    setText("levelSubtitle", t("ui.levelSubtitle"));
+    setText("chestTitle", t("ui.chestTitle"));
+    setText("chestContinueBtn", t("ui.continue"));
+    setText("pauseTitle", t("ui.pause"));
+    setText("resumeBtn", t("ui.resume"));
+    setText("quitBtn", t("ui.quit"));
+    setText("retryBtn", t("ui.retry"));
+    setText("menuBtn", t("ui.menu"));
+    setText("hudLevelLabel", t("ui.level"));
+    setText("hudStageLabel", t("ui.stage"));
+    setText("hudCoinsLabel", t("ui.coins"));
+    setText("weaponTitle", t("ui.weapons"));
+    setText("passiveTitle", t("ui.passives"));
+    if (ui.languageSelect) ui.languageSelect.setAttribute("aria-label", t("ui.language"));
+    syncAudioButtons();
+    buildCharacterCards();
+    if (!ui.upgrade.classList.contains("hidden")) buildMetaGrid();
+    if (!ui.achievement.classList.contains("hidden")) buildAchievementGrid();
+    if (!ui.codex.classList.contains("hidden")) buildCodex();
+    if (state.player) {
+      state.hudSignature = "";
+      updateHud(true);
+    }
+  }
+
   function syncAudioButtons() {
     const muted = state.audio.muted;
     if (ui.soundBtn) {
       ui.soundBtn.textContent = muted ? "×" : "♪";
-      ui.soundBtn.title = muted ? "开启声音" : "关闭声音";
+      ui.soundBtn.title = muted ? t("ui.soundEnable") : t("ui.soundDisable");
     }
     if (ui.menuSoundBtn) {
-      ui.menuSoundBtn.textContent = muted ? "声音：关" : "声音：开";
+      ui.menuSoundBtn.textContent = muted ? t("ui.soundOff") : t("ui.soundOn");
     }
   }
 
@@ -1379,6 +1909,64 @@
     return Object.keys(player.weapons).filter((id) => weapons[id]?.type === "evolved").length;
   }
 
+  function stageAtElapsed(elapsed = state.elapsed) {
+    const index = clamp(Math.floor(elapsed / STAGE_DURATION), 0, stageConfigs.length - 1);
+    return stageConfigs[index];
+  }
+
+  function currentStage() {
+    return stageAtElapsed(state.elapsed);
+  }
+
+  function stageProgress(stage = currentStage()) {
+    const start = (stage.index - 1) * STAGE_DURATION;
+    return clamp((state.elapsed - start) / STAGE_DURATION, 0, 1);
+  }
+
+  function pickWeightedType(weightPairs, fallbackList) {
+    const pool = [];
+    for (const [id, weight] of weightPairs || []) {
+      const type = fallbackList.find((candidate) => candidate.id === id);
+      if (type && weight > 0) pool.push({ type, weight });
+    }
+    if (!pool.length) return fallbackList[0];
+    const total = pool.reduce((sum, entry) => sum + entry.weight, 0);
+    let roll = rand(0, total);
+    for (const entry of pool) {
+      roll -= entry.weight;
+      if (roll <= 0) return entry.type;
+    }
+    return pool[0].type;
+  }
+
+  function pickStageEliteType() {
+    const stage = currentStage();
+    const pool = (stage.eliteIds || [])
+      .map((id) => eliteTypes.find((type) => type.id === id))
+      .filter(Boolean);
+    return pool.length ? pool[Math.floor(rand(0, pool.length))] : eliteTypes[Math.floor(rand(0, eliteTypes.length))];
+  }
+
+  function stageHudLabel() {
+    const stage = currentStage();
+    return `${stage.index}/${stageConfigs.length} ${stageName(stage)}`;
+  }
+
+  function announceStageIfNeeded() {
+    const stage = currentStage();
+    if (!stage || state.stageIndex === stage.index) return;
+    state.stageIndex = stage.index;
+    state.stageSeen[stage.id] = true;
+    state.qa.stagesSeen = Object.keys(state.stageSeen).join(",");
+    state.spawnTimer = Math.min(state.spawnTimer, 0.08);
+    if (state.player && state.elapsed > 0.15) {
+      floatingText(state.player.x, state.player.y - 92, stageAnnouncement(stage), stage.color, 24);
+      burst(state.player.x, state.player.y, stage.color, 24, 190, { life: 0.48 });
+      state.shake = Math.max(state.shake, 12);
+      playSfx("level");
+    }
+  }
+
   function refreshAchievements() {
     const newlyCompleted = [];
     const newlyUnlocked = [];
@@ -1403,12 +1991,12 @@
       const card = document.createElement("div");
       card.className = `card${unlocked ? "" : " locked"}`;
       card.innerHTML = `
-        <h3>${unlocked ? character.name : "未解锁"}</h3>
+        <h3>${unlocked ? character.name : t("ui.locked")}</h3>
         <p>${unlocked ? character.desc : characterUnlockText[character.id]}</p>
         <div class="tag-row">
           <span class="tag">${character.title}</span>
-          <span class="tag">${unlocked ? `生命 ${character.hp}` : "锁定"}</span>
-          <span class="tag">${unlocked ? `速度 ${character.speed}` : characterUnlockText[character.id]}</span>
+          <span class="tag">${unlocked ? `${t("ui.life")} ${character.hp}` : t("ui.lockedTag")}</span>
+          <span class="tag">${unlocked ? `${t("ui.speed")} ${character.speed}` : characterUnlockText[character.id]}</span>
         </div>
       `;
       card.addEventListener("click", () => {
@@ -1436,7 +2024,7 @@
         <p>${up.desc}</p>
         <div class="save-row">
           <span>${up.stat}</span>
-          <strong>${maxed ? "已满" : `${cost} 灵石`}</strong>
+          <strong>${maxed ? t("ui.maxed") : `${cost} ${t("ui.coins")}`}</strong>
         </div>
       `;
       div.addEventListener("click", () => {
@@ -1462,13 +2050,13 @@
     for (const item of all) {
       const div = document.createElement("div");
       div.className = "codex";
-      const req = item.req ? `<span class="tag">进化：${passives[item.req].name}</span>` : "";
-      const base = item.base ? `<span class="tag">由 ${weapons[item.base].name} 进化</span>` : "";
+      const req = item.req ? `<span class="tag">${t("ui.reqEvolution", { name: passives[item.req].name })}</span>` : "";
+      const base = item.base ? `<span class="tag">${t("ui.evolvedFrom", { name: weapons[item.base].name })}</span>` : "";
       div.innerHTML = `
         <div class="entry-head">${itemIconMarkup(item.id, item)}<h3>${item.name}</h3></div>
         <p>${item.desc}</p>
         <div class="tag-row">
-          <span class="tag">${item.type === "evolved" ? "进化法宝" : item.type === "weapon" ? "法宝" : "心法"}</span>
+          <span class="tag">${item.type === "evolved" ? t("ui.evolvedWeapon") : item.type === "weapon" ? t("ui.weapon") : t("ui.passive")}</span>
           ${req}
           ${base}
         </div>
@@ -1488,7 +2076,7 @@
         <h3>${achievement.name}</h3>
         <p>${achievement.desc}</p>
         <div class="tag-row">
-          <span class="tag">${done ? "已完成" : "未完成"}</span>
+          <span class="tag">${done ? t("ui.completed", {}, "已完成") : t("ui.incomplete", {}, "未完成")}</span>
           <span class="tag">${achievement.reward}</span>
         </div>
       `;
@@ -1554,8 +2142,17 @@
     state.qa.premiumAtlasFxDraws = 0;
     state.qa.impactStops = 0;
     state.qa.maxImpactStop = 0;
+    state.qa.magnetActivations = 0;
+    state.qa.magnetGems = 0;
+    state.qa.magnetCoins = 0;
+    state.qa.magnetXp = 0;
+    state.qa.magnetCoinValue = 0;
+    state.qa.stagesSeen = "";
     state.qa.swarmImpostorDraws = 0;
     state.wave = 1;
+    state.stageIndex = -1;
+    state.stageSeen = {};
+    state.stageKills = {};
     state.spawnTimer = 0;
     state.eliteIndex = 0;
     state.bossSpawned = false;
@@ -1605,6 +2202,7 @@
     state.camera.x = 0;
     state.camera.y = 0;
     state.perf = { frames: 0, totalDt: 0, maxDt: 0, workFrames: 0, totalWorkMs: 0, maxWorkMs: 0 };
+    announceStageIfNeeded();
     for (let i = 0; i < 22; i++) spawnEnemy(false);
     updateHud();
     showScreen("playing");
@@ -1769,9 +2367,9 @@
         <div class="entry-head">${itemIconMarkup(choice.id, item, choice.kind === "coins" ? "coin-icon" : "")}<h3>${item.name}</h3></div>
         <p>${item.desc}</p>
         <div class="tag-row">
-          <span class="tag">${choice.kind === "coins" ? "灵石" : isWeapon ? "法宝" : "心法"}</span>
-          <span class="tag">${choice.kind === "coins" ? "奖励" : `Lv ${choice.level}`}</span>
-          ${isWeapon && item.req ? `<span class="tag">进化配方：${passives[item.req].name}</span>` : ""}
+          <span class="tag">${choice.kind === "coins" ? t("ui.coins") : isWeapon ? t("ui.weapon") : t("ui.passive")}</span>
+          <span class="tag">${choice.kind === "coins" ? t("ui.reward") : `Lv ${choice.level}`}</span>
+          ${isWeapon && item.req ? `<span class="tag">${t("ui.evolutionRecipe", { name: passives[item.req].name })}</span>` : ""}
         </div>
       `;
       div.addEventListener("click", () => {
@@ -1789,8 +2387,8 @@
     if (choice.kind === "weapon") return weapons[choice.id];
     if (choice.kind === "passive") return passives[choice.id];
     return {
-      name: "灵石袋",
-      desc: "所有法宝和心法已接近圆满，转化为额外灵石。",
+      name: t("ui.coinBag"),
+      desc: t("ui.coinBagDesc"),
       color: colors.gold
     };
   }
@@ -1802,7 +2400,7 @@
     else if (choice.kind === "coins") {
       const value = Math.floor(55 * (state.player?.greedy || 1));
       state.runCoins += value;
-      floatingText(state.player.x, state.player.y - 42, `+${value} 灵石`, colors.gold, 16);
+      floatingText(state.player.x, state.player.y - 42, `+${value} ${t("ui.coins")}`, colors.gold, 16);
     }
     playSfx("select");
   }
@@ -1846,7 +2444,7 @@
       evolveWeapon(base);
       reward = {
         title: weapons[weapons[base].evo].name,
-        desc: `${weapons[base].name} 已进化。`,
+        desc: t("ui.chestEvolved", { name: weapons[base].name }),
         color: weapons[weapons[base].evo].color
       };
     } else {
@@ -1859,7 +2457,7 @@
         owned.level += 1;
         reward = {
           title: weapons[id].name,
-          desc: `法宝提升到 Lv ${owned.level}。`,
+          desc: t("ui.weaponLevelUp", { level: owned.level }),
           color: weapons[id].color
         };
       } else if (upgradablePassives.length) {
@@ -1868,15 +2466,15 @@
         applyStats(true);
         reward = {
           title: passives[id].name,
-          desc: `心法提升到 Lv ${owned.level}。`,
+          desc: t("ui.passiveLevelUp", { level: owned.level }),
           color: passives[id].color
         };
       } else {
         const coins = Math.floor(45 * state.player.greedy);
         state.runCoins += coins;
         reward = {
-          title: `${coins} 灵石`,
-          desc: "法宝已满，宝箱转化为灵石。",
+          title: `${coins} ${t("ui.coins")}`,
+          desc: t("ui.chestCoinsDesc"),
           color: colors.gold
         };
       }
@@ -1911,12 +2509,13 @@
 
   function spawnEnemy(elite = false, typeOverride = null) {
     if (!state.player || state.enemies.length >= MAX_ENEMIES) return;
-    const t = typeOverride || (elite ? eliteTypes[Math.floor(rand(0, eliteTypes.length))] : pickEnemyType());
+    const stage = currentStage();
+    const t = typeOverride || (elite ? pickStageEliteType() : pickEnemyType());
     const angle = rand(0, TAU);
     const dist = Math.max(window.innerWidth, window.innerHeight) * rand(0.68, 0.86);
     const x = state.player.x + Math.cos(angle) * dist;
     const y = state.player.y + Math.sin(angle) * dist;
-    const scale = 1 + state.elapsed / 620;
+    const scale = (1 + state.elapsed / 760) * (stage?.hpMult || 1);
     const eliteScale = elite || t.id === "boss" ? 1 : 0;
     state.enemies.push({
       x,
@@ -1925,10 +2524,10 @@
       vy: 0,
       type: t,
       name: t.name,
-      hp: t.hp * (eliteScale ? 1 : scale),
-      maxHp: t.hp * (eliteScale ? 1 : scale),
-      speed: t.speed * (1 + Math.min(0.52, state.elapsed / 1050)),
-      damage: t.damage * (1 + state.elapsed / 1150),
+      hp: t.hp * (eliteScale ? stage?.hpMult || 1 : scale),
+      maxHp: t.hp * (eliteScale ? stage?.hpMult || 1 : scale),
+      speed: t.speed * (stage?.speedMult || 1) * (1 + Math.min(0.52, state.elapsed / 1050)),
+      damage: t.damage * (stage?.damageMult || 1) * (1 + state.elapsed / 1150),
       r: t.radius,
       xp: t.xp,
       color: t.color,
@@ -1936,6 +2535,9 @@
       boss: t.id === "boss",
       hit: {},
       attackTimer: rand(0.5, 2),
+      chargeTime: 0,
+      chargeVx: 0,
+      chargeVy: 0,
       summonTimer: rand(2, 5),
       slow: 0,
       flash: 0
@@ -1943,15 +2545,11 @@
   }
 
   function pickEnemyType() {
+    const stage = currentStage();
+    if (stage?.enemyWeights) return pickWeightedType(stage.enemyWeights, enemyTypes);
     const minute = Math.floor(state.elapsed / 60);
     const pool = enemyTypes.filter((_, i) => i <= clamp(2 + minute, 3, enemyTypes.length - 1));
-    const total = pool.reduce((sum, e) => sum + e.weight, 0);
-    let roll = rand(0, total);
-    for (const e of pool) {
-      roll -= e.weight;
-      if (roll <= 0) return e;
-    }
-    return pool[0];
+    return pickWeightedType(pool.map((e) => [e.id, e.weight]), enemyTypes);
   }
 
   function updateSpawn(dt) {
@@ -1959,12 +2557,15 @@
       state.wave = 1;
       return;
     }
+    announceStageIfNeeded();
+    const stage = currentStage();
+    const progress = stageProgress(stage);
     const minute = Math.floor(state.elapsed / 60);
-    state.wave = minute + 1;
-    const spawnRate = clamp(0.78 - state.elapsed / 1900, 0.1, 0.78);
+    state.wave = stage.index;
+    const spawnRate = clamp((stage.spawnRate || 0.72) - progress * 0.16 - state.elapsed / 2600, stage.minRate || 0.12, stage.spawnRate || 0.72);
     state.spawnTimer -= dt;
     if (state.spawnTimer <= 0) {
-      const burstCount = 1 + Math.floor(minute * 0.9) + (state.elapsed > 420 ? 2 : 0) + (state.elapsed > 620 ? 2 : 0);
+      const burstCount = (stage.burst || 1) + Math.floor(progress * 3) + Math.floor(minute * 0.18) + (state.elapsed > 620 ? 2 : 0);
       for (let i = 0; i < burstCount; i++) spawnEnemy(false);
       state.spawnTimer = spawnRate;
     }
@@ -1972,13 +2573,13 @@
     if (state.eliteIndex < state.eliteSchedule.length && state.elapsed >= state.eliteSchedule[state.eliteIndex]) {
       spawnEnemy(true);
       state.eliteIndex += 1;
-      floatingText(state.player.x, state.player.y - 80, "精英妖将来袭", colors.gold, 22);
+      floatingText(state.player.x, state.player.y - 80, t("ui.eliteWarning"), colors.gold, 22);
     }
 
     if (!state.bossSpawned && state.elapsed >= RUN_DURATION - 60) {
       state.bossSpawned = true;
       spawnEnemy(true, bossType);
-      floatingText(state.player.x, state.player.y - 100, "灵潮妖君降临", colors.danger, 26);
+      floatingText(state.player.x, state.player.y - 100, t("ui.bossWarning"), colors.danger, 26);
       state.shake = 18;
     }
   }
@@ -2826,26 +3427,56 @@
       const d = Math.sqrt(d2) || 1;
       const invD = 1 / d;
       const slowMult = e.slow > 0 ? 0.52 : 1;
-      e.vx = dx * invD * e.speed * slowMult;
-      e.vy = dy * invD * e.speed * slowMult;
+      if (e.type.id === "charger") {
+        e.attackTimer -= dt;
+        if (e.attackTimer <= 0 && e.chargeTime <= 0 && d > 110 && d < 680) {
+          e.chargeTime = 0.42;
+          e.chargeVx = dx * invD * e.speed * 2.85;
+          e.chargeVy = dy * invD * e.speed * 2.85;
+          e.attackTimer = rand(2.1, 3.2);
+          if (hasParticleRoom(3)) {
+            state.particles.push({ x: e.x, y: e.y, vx: 0, vy: 0, life: 0.16, max: 0.16, r: e.r * 1.2, color: e.color, kind: "premiumHit", hitFrame: "criticalBurst", angle: Math.atan2(dy, dx) });
+          }
+        }
+      }
+      if (e.type.id === "reaver") {
+        e.attackTimer -= dt;
+        if (e.attackTimer <= 0 && d > 180 && d < 760) {
+          e.attackTimer = rand(2.7, 4.1);
+          e.x = p.x - dx * invD * rand(120, 190) + rand(-40, 40);
+          e.y = p.y - dy * invD * rand(120, 190) + rand(-40, 40);
+          e.slow = 0;
+          if (hasParticleRoom(4)) {
+            state.particles.push({ x: e.x, y: e.y, vx: 0, vy: 0, life: 0.2, max: 0.2, r: e.r * 1.45, color: e.color, kind: "premiumHit", hitFrame: "soulRupture", angle: rand(-0.2, 0.2) });
+          }
+        }
+      }
+      if (e.chargeTime > 0) {
+        e.chargeTime -= dt;
+        e.vx = e.chargeVx * slowMult;
+        e.vy = e.chargeVy * slowMult;
+      } else {
+        e.vx = dx * invD * e.speed * slowMult;
+        e.vy = dy * invD * e.speed * slowMult;
+      }
       e.x += e.vx * dt;
       e.y += e.vy * dt;
 
-      if (e.type.id === "spitter") {
+      if (e.type.id === "spitter" || e.type.id === "lantern") {
         e.attackTimer -= dt;
         if (e.attackTimer <= 0 && d < 560) {
-          e.attackTimer = rand(2.4, 3.6);
+          e.attackTimer = e.type.id === "lantern" ? rand(1.8, 2.8) : rand(2.4, 3.6);
           const n = normalize(dx, dy);
           state.enemyProjectiles.push({
             x: e.x,
             y: e.y,
-            vx: n.x * 255,
-            vy: n.y * 255,
-            r: 7,
+            vx: n.x * (e.type.id === "lantern" ? 215 : 255),
+            vy: n.y * (e.type.id === "lantern" ? 215 : 255),
+            r: e.type.id === "lantern" ? 6 : 7,
             damage: e.damage,
-            life: 3,
-            color: "#e88a5d",
-            kind: "emberBile"
+            life: e.type.id === "lantern" ? 3.6 : 3,
+            color: e.type.id === "lantern" ? "#7fe0d0" : "#e88a5d",
+            kind: e.type.id === "lantern" ? "soulOrb" : "emberBile"
           });
         }
       }
@@ -2995,6 +3626,8 @@
 
   function killEnemy(e) {
     state.kills += 1;
+    const stage = currentStage();
+    state.stageKills[stage.id] = (state.stageKills[stage.id] || 0) + 1;
     const xpValue = Math.max(1, Math.ceil(e.xp * (e.elite ? 1.65 : 1.28)));
     const gemCount = e.elite ? 6 : chance(0.22) ? 2 : 1;
     if (state.gems.length >= MAX_GEMS && state.gems.length) {
@@ -3026,6 +3659,17 @@
       }
     }
     maybeDropPowerup(e);
+    if (e.type.id === "mireling") {
+      addArea(e.x, e.y, {
+        r: 46,
+        life: 1.8,
+        tick: 0.34,
+        damage: Math.max(3, e.damage * 0.18),
+        color: colors.poison,
+        kind: "poison",
+        slow: 0.12
+      });
+    }
     if (e.elite) {
       state.chests.push({ x: e.x, y: e.y, r: 17, pulse: 0 });
       floatingText(e.x, e.y - 44, "宝箱", colors.gold, 18);
@@ -3036,7 +3680,7 @@
     if (e.boss) {
       state.bossDefeated = true;
       state.runCoins += Math.floor(180 * state.player.greedy);
-      floatingText(e.x, e.y - 62, "妖君伏诛", colors.gold, 24);
+      floatingText(e.x, e.y - 62, t("ui.bossDefeated"), colors.gold, 24);
       state.shake = Math.max(state.shake, 20);
     }
     const premiumDeath = hasPremiumEnemyArt(e);
@@ -3071,10 +3715,10 @@
     if (e.boss) return;
     const roll = Math.random();
     let type = null;
-    if (e.elite && roll < 0.45) {
-      type = roll < 0.14 ? "bomb" : roll < 0.3 ? "magnet" : "heal";
-    } else if (!e.elite && roll < 0.0035) {
-      type = roll < 0.0008 ? "bomb" : roll < 0.002 ? "magnet" : "heal";
+    if (e.elite && roll < 0.5) {
+      type = roll < 0.13 ? "bomb" : roll < 0.33 ? "magnet" : "heal";
+    } else if (!e.elite && roll < 0.0048) {
+      type = roll < 0.001 ? "bomb" : roll < 0.0029 ? "magnet" : "heal";
     }
     if (!type) return;
     state.powerups.push({
@@ -3181,6 +3825,53 @@
     }
   }
 
+  function collectAllLooseLoot(info) {
+    const p = state.player;
+    if (!p) return { xpTotal: 0, coinTotal: 0, gemCount: 0, coinCount: 0 };
+    let xpTotal = 0;
+    let coinTotal = 0;
+    const gemCount = state.gems.length;
+    const coinCount = state.coins.length;
+    const visualBudget = 42;
+    let visualCount = 0;
+    const streakLoot = (item, color) => {
+      if (visualCount >= visualBudget || !hasParticleRoom(1)) return;
+      visualCount += 1;
+      state.particles.push({
+        x: item.x,
+        y: item.y,
+        vx: (p.x - item.x) * rand(4.4, 6.2),
+        vy: (p.y - item.y) * rand(4.4, 6.2),
+        life: 0.24,
+        max: 0.24,
+        r: Math.max(2.5, item.r * 0.72),
+        color,
+        kind: "streak"
+      });
+    };
+    for (const g of state.gems) {
+      xpTotal += g.value;
+      streakLoot(g, g.color || colors.blue);
+    }
+    for (const c of state.coins) {
+      coinTotal += Math.max(1, Math.round(c.value * p.greedy));
+      streakLoot(c, colors.gold);
+    }
+    state.gems = [];
+    state.coins = [];
+    if (xpTotal > 0) gainXp(xpTotal);
+    if (coinTotal > 0) state.runCoins += coinTotal;
+    state.qa.magnetActivations = (state.qa.magnetActivations || 0) + 1;
+    state.qa.magnetGems = (state.qa.magnetGems || 0) + gemCount;
+    state.qa.magnetCoins = (state.qa.magnetCoins || 0) + coinCount;
+    state.qa.magnetXp = (state.qa.magnetXp || 0) + xpTotal;
+    state.qa.magnetCoinValue = (state.qa.magnetCoinValue || 0) + coinTotal;
+    floatingText(p.x, p.y - 54, `${t("ui.magnet")} ${gemCount + coinCount}`, info.color, 20);
+    burst(p.x, p.y, info.color, 36, 240);
+    state.shake = Math.max(state.shake, 10);
+    return { xpTotal, coinTotal, gemCount, coinCount };
+  }
+
   function applyPowerup(type) {
     const p = state.player;
     if (!p) return;
@@ -3194,16 +3885,7 @@
       return;
     }
     if (type === "magnet") {
-      let xpTotal = 0;
-      for (const g of state.gems) xpTotal += g.value;
-      let coinTotal = 0;
-      for (const c of state.coins) coinTotal += Math.max(1, Math.round(c.value * p.greedy));
-      state.gems = [];
-      state.coins = [];
-      if (xpTotal > 0) gainXp(xpTotal);
-      if (coinTotal > 0) state.runCoins += coinTotal;
-      floatingText(p.x, p.y - 54, "摄灵", info.color, 20);
-      burst(p.x, p.y, info.color, 36, 240);
+      collectAllLooseLoot(info);
       playSfx("chest");
       return;
     }
@@ -3227,7 +3909,7 @@
         color: info.color,
         kind: "burst"
       });
-      floatingText(p.x, p.y - 58, `镇妖雷 ${hit}`, info.color, 20);
+      floatingText(p.x, p.y - 58, `${t("ui.bomb")} ${hit}`, info.color, 20);
       state.shake = Math.max(state.shake, 24);
       playSfx("evolve");
     }
@@ -3349,17 +4031,17 @@
     buildCharacterCards();
     buildAchievementGrid();
     const unlockRows = [
-      ...unlockResult.newlyCompleted.map((a) => `<div class="stat-row"><span>新成就</span><strong>${a.name}</strong></div>`),
-      ...unlockResult.newlyUnlocked.map((id) => `<div class="stat-row"><span>新角色</span><strong>${characters.find((c) => c.id === id)?.name || id}</strong></div>`)
+      ...unlockResult.newlyCompleted.map((a) => `<div class="stat-row"><span>${t("ui.newAchievement")}</span><strong>${a.name}</strong></div>`),
+      ...unlockResult.newlyUnlocked.map((id) => `<div class="stat-row"><span>${t("ui.newCharacter")}</span><strong>${characters.find((c) => c.id === id)?.name || id}</strong></div>`)
     ].join("");
-    ui.resultTitle.textContent = victory ? "妖君伏诛" : "修行终止";
+    ui.resultTitle.textContent = victory ? t("ui.victoryTitle") : t("ui.defeatTitle");
     ui.resultStats.innerHTML = `
-      <div class="stat-row"><span>存活时间</span><strong>${Math.floor(state.elapsed / 60)}:${String(Math.floor(state.elapsed % 60)).padStart(2, "0")}</strong></div>
-      <div class="stat-row"><span>击杀</span><strong>${state.kills}</strong></div>
-      <div class="stat-row"><span>等级</span><strong>${state.player?.level || 1}</strong></div>
-      <div class="stat-row"><span>进化法宝</span><strong>${countEvolvedWeapons()}</strong></div>
-      <div class="stat-row"><span>本局灵石</span><strong>${total}</strong></div>
-      <div class="stat-row"><span>总灵石</span><strong>${state.save.coins}</strong></div>
+      <div class="stat-row"><span>${t("ui.survivalTime")}</span><strong>${Math.floor(state.elapsed / 60)}:${String(Math.floor(state.elapsed % 60)).padStart(2, "0")}</strong></div>
+      <div class="stat-row"><span>${t("ui.kills")}</span><strong>${state.kills}</strong></div>
+      <div class="stat-row"><span>${t("ui.resultLevel")}</span><strong>${state.player?.level || 1}</strong></div>
+      <div class="stat-row"><span>${t("ui.resultEvolved")}</span><strong>${countEvolvedWeapons()}</strong></div>
+      <div class="stat-row"><span>${t("ui.resultCoins")}</span><strong>${total}</strong></div>
+      <div class="stat-row"><span>${t("ui.totalCoins")}</span><strong>${state.save.coins}</strong></div>
       ${unlockRows}
     `;
     showScreen("result");
@@ -3378,7 +4060,7 @@
     state.nextHudUpdate = state.elapsed + hudStep;
     ui.timer.textContent = formatTime(state.elapsed);
     ui.levelText.textContent = p.level;
-    ui.wave.textContent = state.wave;
+    ui.wave.textContent = stageHudLabel();
     ui.runCoins.textContent = state.runCoins;
     ui.hpFill.style.width = `${clamp((p.hp / p.maxHp) * 100, 0, 100)}%`;
     ui.hpText.textContent = `${Math.ceil(p.hp)} / ${Math.ceil(p.maxHp)}`;
@@ -3389,7 +4071,7 @@
     ui.bossBar.classList.toggle("hidden", !boss);
     if (boss) {
       const pct = clamp(boss.hp / boss.maxHp, 0, 1);
-      ui.bossName.textContent = boss.name;
+      ui.bossName.textContent = enemyDisplayName(boss.type);
       ui.bossText.textContent = `${Math.ceil(pct * 100)}%`;
       ui.bossFill.style.width = `${pct * 100}%`;
     }
@@ -3406,7 +4088,7 @@
         const item = weapons[id];
         const div = document.createElement("div");
         div.className = "slot";
-        div.innerHTML = `${itemIconMarkup(id, item, "small")}<div class="slot-copy"><strong style="color:${item.color}">${item.name}</strong><span>${item.type === "evolved" ? "进化" : `Lv ${owned.level}/${item.max}`}</span></div>`;
+        div.innerHTML = `${itemIconMarkup(id, item, "small")}<div class="slot-copy"><strong style="color:${item.color}">${item.name}</strong><span>${item.type === "evolved" ? t("ui.evolved") : `Lv ${owned.level}/${item.max}`}</span></div>`;
         ui.weaponList.appendChild(div);
       }
 
@@ -3427,6 +4109,18 @@
     document.body.dataset.qaScreen = state.screen;
     document.body.dataset.qaElapsed = state.elapsed.toFixed(2);
     document.body.dataset.qaRunDuration = String(RUN_DURATION);
+    const stage = currentStage();
+    document.body.dataset.qaStage = String(stage.index);
+    document.body.dataset.qaStageId = stage.id;
+    document.body.dataset.qaStageName = stageName(stage);
+    document.body.dataset.qaStageEnemyPool = (stage.enemyWeights || []).map(([id]) => id).join(",");
+    document.body.dataset.qaStagesSeen = Object.keys(state.stageSeen || {}).join(",");
+    document.body.dataset.qaStageKills = JSON.stringify(state.stageKills || {});
+    document.body.dataset.qaMagnetActivations = String(state.qa.magnetActivations || 0);
+    document.body.dataset.qaMagnetGems = String(state.qa.magnetGems || 0);
+    document.body.dataset.qaMagnetCoins = String(state.qa.magnetCoins || 0);
+    document.body.dataset.qaMagnetXp = String(state.qa.magnetXp || 0);
+    document.body.dataset.qaMagnetCoinValue = String(state.qa.magnetCoinValue || 0);
     document.body.dataset.qaBossSpawned = state.bossSpawned ? "1" : "0";
     document.body.dataset.qaBossDefeated = state.bossDefeated ? "1" : "0";
     document.body.dataset.qaBossAlive = state.enemies.some((e) => e.boss && e.hp > 0) ? "1" : "0";
@@ -3541,6 +4235,7 @@
     document.body.dataset.qaAchievements = String(Object.values(state.save.achievements || {}).filter(Boolean).length);
     document.body.dataset.qaUnlocked = Object.keys(state.save.unlockedCharacters || {}).filter((id) => state.save.unlockedCharacters[id]).join(",");
     document.body.dataset.qaMode = state.qa.mode || "";
+    document.body.dataset.qaLanguage = activeLanguage;
     document.body.dataset.qaTimeScale = String(state.qa.timeScale || 1);
     document.body.dataset.qaVictory = state.lastResult ? (state.lastResult.victory ? "1" : "0") : "";
     document.body.dataset.qaResultCoins = state.lastResult ? String(state.lastResult.total) : "";
@@ -4630,16 +5325,21 @@
       case "runner":
       case "spitter":
       case "bug":
+      case "mireling":
+      case "charger":
         return "imp";
       case "wolf":
         return "wolf";
       case "wisp":
+      case "lantern":
         return "wisp";
       case "brute":
       case "stone":
+      case "warden":
         return "stone";
       case "summoner":
       case "shadow":
+      case "reaver":
         return "summoner";
       default:
         return null;
@@ -4668,15 +5368,22 @@
         return "frostWisp";
       case "bug":
       case "spitter":
+      case "mireling":
         return "plagueCrawler";
       case "brute":
       case "eliteBrute":
       case "stone":
+      case "warden":
         return "stoneBrute";
       case "summoner":
       case "eliteSummoner":
       case "shadow":
+      case "reaver":
         return "voidSummoner";
+      case "charger":
+        return "lavaWolf";
+      case "lantern":
+        return "frostWisp";
       default:
         return null;
     }
@@ -4692,16 +5399,21 @@
       case "wisp":
         return "spectralWisp";
       case "bug":
+      case "mireling":
         return "goldScarab";
       case "brute":
       case "stone":
+      case "warden":
         return "boneShieldBrute";
       case "runner":
+      case "charger":
         return "clawRunner";
       case "spitter":
+      case "lantern":
         return "emberSpitter";
       case "summoner":
       case "shadow":
+      case "reaver":
         return "shadowCultist";
       default:
         return null;
@@ -4711,10 +5423,10 @@
   function enemyUnitAuraFrame(e, premiumHordeId = null, premiumMinionId = null) {
     if (e.boss || e.elite) return "bloodMoonPressure";
     const id = premiumHordeId || premiumMinionId;
-    if (id === "armoredWolf" || id === "lavaWolf" || id === "clawRunner" || e.type.id === "wolf" || e.type.id === "runner") return "emberFootprints";
-    if (id === "spectralWisp" || id === "frostWisp" || e.type.id === "wisp") return "spectralMistBase";
-    if (id === "emberSpitter" || e.type.id === "spitter") return "foxFireCrescent";
-    if (id === "shadowCultist" || id === "voidSummoner" || e.type.id === "summoner" || e.type.id === "shadow") return "talismanOrbitBase";
+    if (id === "armoredWolf" || id === "lavaWolf" || id === "clawRunner" || e.type.id === "wolf" || e.type.id === "runner" || e.type.id === "charger") return "emberFootprints";
+    if (id === "spectralWisp" || id === "frostWisp" || e.type.id === "wisp" || e.type.id === "lantern") return "spectralMistBase";
+    if (id === "emberSpitter" || e.type.id === "spitter" || e.type.id === "mireling") return "foxFireCrescent";
+    if (id === "shadowCultist" || id === "voidSummoner" || e.type.id === "summoner" || e.type.id === "shadow" || e.type.id === "reaver") return "talismanOrbitBase";
     return "demonClawShadow";
   }
 
@@ -4741,6 +5453,11 @@
       case "eliteWisp":
       case "bug":
       case "spitter":
+      case "mireling":
+      case "charger":
+      case "lantern":
+      case "reaver":
+      case "warden":
       case "brute":
       case "eliteBrute":
       case "stone":
@@ -7489,8 +8206,14 @@
     });
     $("soundBtn").addEventListener("click", toggleAudio);
     $("menuSoundBtn").addEventListener("click", toggleAudio);
+    if (ui.languageSelect) {
+      ui.languageSelect.addEventListener("change", () => {
+        playSfx("select");
+        applyLanguage(ui.languageSelect.value, true);
+      });
+    }
     $("resetBtn").addEventListener("click", () => {
-      if (!confirm("确认清空本地存档？")) return;
+      if (!confirm(t("ui.confirmReset"))) return;
       state.save = defaultSave();
       state.audio.muted = state.save.muted;
       saveGame();
@@ -7631,12 +8354,105 @@
     render();
   }
 
+  function setupQaMagnet() {
+    const p = state.player;
+    if (!p) return;
+    p.weapons = {};
+    p.passives = {};
+    applyStats(false);
+    p.hp = p.maxHp;
+    state.elapsed = 80;
+    state.enemies = [];
+    state.enemyGrid.clear();
+    state.projectiles = [];
+    state.enemyProjectiles = [];
+    state.areas = [];
+    state.particles = [];
+    state.texts = [];
+    state.gems = [];
+    state.coins = [];
+    state.powerups = [];
+    state.chests = [];
+    state.spawnTimer = 9999;
+    for (let i = 0; i < 9; i++) {
+      const a = (i / 9) * TAU;
+      const d = 620 + i * 120;
+      state.gems.push({ x: p.x + Math.cos(a) * d, y: p.y + Math.sin(a) * d, value: 8 + i, r: 6, color: i % 3 === 0 ? colors.gold : colors.blue, vx: 0, vy: 0 });
+    }
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * TAU + 0.32;
+      const d = 780 + i * 135;
+      state.coins.push({ x: p.x + Math.cos(a) * d, y: p.y + Math.sin(a) * d, value: 3 + i, r: 6, vx: 0, vy: 0 });
+    }
+    state.powerups.push({ x: p.x, y: p.y, type: "magnet", r: 12, vx: 0, vy: 0, pulse: 0 });
+    updatePickups(1 / 30);
+    updateFx(1 / 30);
+    state.qa.syncSteps = 1;
+    updateHud();
+    updateQaDataset();
+    render();
+  }
+
+  function setupQaStages() {
+    const p = state.player;
+    if (!p) return;
+    p.weapons = {};
+    p.passives = {};
+    applyStats(false);
+    p.hp = p.maxHp;
+    state.enemies = [];
+    state.enemyGrid.clear();
+    state.projectiles = [];
+    state.enemyProjectiles = [];
+    state.areas = [];
+    state.particles = [];
+    state.gems = [];
+    state.coins = [];
+    state.powerups = [];
+    state.chests = [];
+    state.spawnTimer = 9999;
+    const used = new Set();
+    for (const stage of stageConfigs) {
+      state.elapsed = (stage.index - 1) * STAGE_DURATION + 8;
+      announceStageIfNeeded();
+      for (const [id] of stage.enemyWeights.slice(0, 4)) {
+        if (used.has(`${stage.id}:${id}`)) continue;
+        const type = enemyTypes.find((candidate) => candidate.id === id);
+        if (!type) continue;
+        used.add(`${stage.id}:${id}`);
+        spawnEnemy(false, type);
+        const e = state.enemies[state.enemies.length - 1];
+        if (!e) continue;
+        const slot = state.enemies.length - 1;
+        const col = slot % 5;
+        const row = Math.floor(slot / 5);
+        e.x = p.x - 420 + col * 210;
+        e.y = p.y - 220 + row * 160;
+        e.hp = type.hp * 24;
+        e.maxHp = e.hp;
+        e.speed = 0;
+        e.damage = 0;
+        e.attackTimer = 9999;
+        e.summonTimer = 9999;
+        e.chargeTime = 0;
+      }
+    }
+    state.elapsed = RUN_DURATION - 32;
+    state.wave = currentStage().index;
+    state.spawnTimer = 9999;
+    rebuildEnemyGrid();
+    state.qa.syncSteps = stageConfigs.length;
+    updateHud();
+    updateQaDataset();
+    render();
+  }
+
   function startQaMode() {
     const params = new URLSearchParams(window.location.search);
     const mode = params.get("qa");
     if (!mode) return;
     state.qa.mode = mode;
-    state.qa.autoChoices = mode === "soak" || mode === "powerups" || mode === "evolution" || mode === "stress";
+    state.qa.autoChoices = mode === "soak" || mode === "powerups" || mode === "evolution" || mode === "stress" || mode === "magnet";
     state.qa.autoMove = mode === "soak";
     state.qa.timeScale = mode === "soak" ? clamp(Number(params.get("speed")) || 40, 1, 80) : 1;
     state.qa.maxSteps = mode === "soak" ? clamp(Math.ceil(state.qa.timeScale), 1, 80) : 1;
@@ -7667,6 +8483,14 @@
     }
     if (mode === "loot") {
       setupQaLootGallery();
+      return;
+    }
+    if (mode === "magnet") {
+      setupQaMagnet();
+      return;
+    }
+    if (mode === "stages") {
+      setupQaStages();
       return;
     }
     grantQaBuild();
@@ -7798,8 +8622,13 @@
       snapshot() {
         return {
           screen: state.screen,
+          language: activeLanguage,
           elapsed: state.elapsed,
           wave: state.wave,
+          stage: currentStage().index,
+          stageId: currentStage().id,
+          stagesSeen: Object.keys(state.stageSeen || {}),
+          stageKills: { ...state.stageKills },
           bossSpawned: state.bossSpawned,
           bossAlive: state.enemies.some((e) => e.boss && e.hp > 0),
           enemies: state.enemies.length,
@@ -7809,6 +8638,13 @@
           gems: state.gems.length,
           powerups: state.powerups.length,
           chests: state.chests.length,
+          magnet: {
+            activations: state.qa.magnetActivations || 0,
+            gems: state.qa.magnetGems || 0,
+            coins: state.qa.magnetCoins || 0,
+            xp: state.qa.magnetXp || 0,
+            coinValue: state.qa.magnetCoinValue || 0
+          },
           impactStop: state.impactStop,
           impactFlash: state.impactFlash,
           impactStops: state.qa.impactStops || 0,
@@ -7926,6 +8762,11 @@
         state.qa.premiumAtlasFxDraws = 0;
         state.qa.impactStops = 0;
         state.qa.maxImpactStop = 0;
+        state.qa.magnetActivations = 0;
+        state.qa.magnetGems = 0;
+        state.qa.magnetCoins = 0;
+        state.qa.magnetXp = 0;
+        state.qa.magnetCoinValue = 0;
         state.quality.pressure = 0;
         state.quality.avgWorkMs = 0;
         updateQaDataset();
@@ -7944,6 +8785,7 @@
     buildMetaGrid();
     buildAchievementGrid();
     buildCodex();
+    applyLanguage(activeLanguage, false);
     saveGame();
     exposeQaHooks();
     showScreen("menu");

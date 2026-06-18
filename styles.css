@@ -112,6 +112,17 @@ button.subtle::before {
   opacity: 0.12;
 }
 
+select {
+  min-height: 34px;
+  border: 1px solid rgba(241, 198, 106, 0.24);
+  border-radius: 8px;
+  padding: 0 34px 0 12px;
+  background: rgba(8, 10, 12, 0.72);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+}
+
 canvas {
   display: block;
   width: 100vw;
@@ -548,6 +559,19 @@ h2 {
 .menu-actions {
   display: grid;
   gap: 10px;
+}
+
+.language-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.language-row select {
+  min-width: 150px;
 }
 
 .save-row,

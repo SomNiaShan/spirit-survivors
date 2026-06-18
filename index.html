@@ -31,9 +31,9 @@
   <div id="hud" class="hud hidden">
     <div class="hud-top">
       <div class="pill"><span id="timer">15:00</span></div>
-      <div class="pill">Lv <span id="level">1</span></div>
-      <div class="pill">妖潮 <span id="wave">1</span></div>
-      <div class="pill">灵石 <span id="runCoins">0</span></div>
+      <div class="pill"><span id="hudLevelLabel">Lv</span> <span id="level">1</span></div>
+      <div class="pill"><span id="hudStageLabel">妖潮</span> <span id="wave">1</span></div>
+      <div class="pill"><span id="hudCoinsLabel">灵石</span> <span id="runCoins">0</span></div>
       <button id="soundBtn" class="icon-btn" title="声音">♪</button>
       <button id="pauseBtn" class="icon-btn" title="暂停">II</button>
     </div>
@@ -47,11 +47,11 @@
     </div>
     <div class="loadout">
       <div>
-        <div class="loadout-title">法宝</div>
+        <div id="weaponTitle" class="loadout-title">法宝</div>
         <div id="weaponList" class="slots"></div>
       </div>
       <div>
-        <div class="loadout-title">心法</div>
+        <div id="passiveTitle" class="loadout-title">心法</div>
         <div id="passiveList" class="slots"></div>
       </div>
     </div>
@@ -62,10 +62,19 @@
       <div class="brand">
         <div class="sigil"></div>
         <div>
-          <h1>灵潮幸存者</h1>
-          <p>自动施法，万妖围城，活到天明。</p>
+          <h1 id="brandTitle">灵潮幸存者</h1>
+          <p id="brandSubtitle">自动施法，万妖围城，活到天明。</p>
         </div>
       </div>
+      <label class="language-row" for="languageSelect">
+        <span id="languageLabel">语言</span>
+        <select id="languageSelect" aria-label="语言">
+          <option value="zh">中文</option>
+          <option value="en">English</option>
+          <option value="ja">日本語</option>
+          <option value="fr">Français</option>
+        </select>
+      </label>
       <div class="menu-actions">
         <button id="startBtn" class="primary">开始修行</button>
         <button id="upgradeBtn">永久升级</button>
@@ -74,14 +83,14 @@
         <button id="menuSoundBtn">声音：开</button>
       </div>
       <div class="save-row">
-        <span>总灵石 <strong id="totalCoins">0</strong></span>
+        <span><span id="totalCoinsLabel">总灵石</span> <strong id="totalCoins">0</strong></span>
         <button id="resetBtn" class="subtle">重置存档</button>
       </div>
     </section>
 
     <section id="characterScreen" class="panel wide-panel hidden">
       <div class="screen-head">
-        <h2>选择角色</h2>
+        <h2 id="characterTitle">选择角色</h2>
         <button id="backToMenuBtn" class="subtle">返回</button>
       </div>
       <div id="characterGrid" class="card-grid"></div>
@@ -89,7 +98,7 @@
 
     <section id="upgradeScreen" class="panel wide-panel hidden">
       <div class="screen-head">
-        <h2>永久升级</h2>
+        <h2 id="upgradeTitle">永久升级</h2>
         <button id="backFromUpgradeBtn" class="subtle">返回</button>
       </div>
       <div id="metaGrid" class="upgrade-grid"></div>
@@ -97,7 +106,7 @@
 
     <section id="codexScreen" class="panel wide-panel hidden">
       <div class="screen-head">
-        <h2>图鉴</h2>
+        <h2 id="codexTitle">图鉴</h2>
         <button id="backFromCodexBtn" class="subtle">返回</button>
       </div>
       <div id="codexGrid" class="codex-grid"></div>
@@ -105,26 +114,26 @@
 
     <section id="achievementScreen" class="panel wide-panel hidden">
       <div class="screen-head">
-        <h2>成就</h2>
+        <h2 id="achievementTitle">成就</h2>
         <button id="backFromAchievementBtn" class="subtle">返回</button>
       </div>
       <div id="achievementGrid" class="achievement-grid"></div>
     </section>
 
     <section id="levelScreen" class="panel wide-panel hidden">
-      <h2>灵气涌动</h2>
-      <p class="muted">选择一项强化。</p>
+      <h2 id="levelTitle">灵气涌动</h2>
+      <p id="levelSubtitle" class="muted">选择一项强化。</p>
       <div id="choiceGrid" class="choice-grid"></div>
     </section>
 
     <section id="chestScreen" class="panel main-panel hidden">
-      <h2>妖丹宝箱</h2>
+      <h2 id="chestTitle">妖丹宝箱</h2>
       <div id="chestReward" class="reward-card"></div>
       <button id="chestContinueBtn" class="primary">继续</button>
     </section>
 
     <section id="pauseScreen" class="panel main-panel hidden">
-      <h2>暂停</h2>
+      <h2 id="pauseTitle">暂停</h2>
       <div class="menu-actions">
         <button id="resumeBtn" class="primary">继续</button>
         <button id="quitBtn">结束本局</button>
@@ -145,6 +154,6 @@
     <div id="touchStick"></div>
   </div>
 
-  <script src="game.js?v=skills-v2"></script>
+  <script src="game.js?v=stages-lang-v1"></script>
 </body>
 </html>
