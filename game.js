@@ -465,7 +465,7 @@
   }
 
   function enemyDisplayName(type) {
-    return t(`enemies.${type.id}`, {}, type.name);
+    return localizedEnemyName(type);
   }
 
   const visualAtlas = ENABLE_LEGACY_RUNTIME_ART && typeof Image !== "undefined" ? new Image() : null;
@@ -1491,6 +1491,349 @@
     bomb: { id: "bomb", name: "镇妖雷", color: "#f1c66a", desc: "轰击屏幕内妖潮" }
   };
 
+  const DATA_I18N = {
+    en: {
+      ui: {
+        chestDrop: "Chest"
+      },
+      characters: {
+        sword: {
+          name: "Azure Sword Adept",
+          title: "Flying Sword Start",
+          desc: "A balanced starter with strong piercing blades. Good for learning the run rhythm.",
+          unlock: "Starting character"
+        },
+        talisman: {
+          name: "Talisman Mystic",
+          title: "Seal Start",
+          desc: "Lower cooldowns and steady crowd control through repeated sealing attacks.",
+          unlock: "Finish any run to unlock"
+        },
+        fox: {
+          name: "Spirit Fox Adept",
+          title: "Spirit Flame Start",
+          desc: "Higher speed and pickup range. Rewards movement and fast snowballing.",
+          unlock: "Kill 500 enemies in one run"
+        },
+        mechanist: {
+          name: "Arcane Mechanist",
+          title: "Repeater Start",
+          desc: "Begins with one extra projectile for stable early damage.",
+          unlock: "Win once to unlock"
+        }
+      },
+      passives: {
+        powerCharm: {
+          name: "Warbreaker Jade",
+          stat: "Damage",
+          desc: "Raises damage by 12% per level."
+        },
+        cooldownJade: {
+          name: "Still-Time Jade",
+          stat: "Cooldown",
+          desc: "Reduces cooldowns by 7% per level."
+        },
+        windBoots: {
+          name: "Windstep Boots",
+          stat: "Move Speed",
+          desc: "Raises movement speed by 8% per level."
+        },
+        lifeGourd: {
+          name: "Longevity Gourd",
+          stat: "Health",
+          desc: "Adds 24 max health per level and heals a small amount."
+        },
+        magnetBell: {
+          name: "Soul-Gathering Bell",
+          stat: "Pickup",
+          desc: "Raises XP pickup range by 24% per level."
+        },
+        splitPearl: {
+          name: "Splitting Pearl",
+          stat: "Projectiles",
+          desc: "Adds one extra projectile every two levels."
+        },
+        everlamp: {
+          name: "Everlasting Lamp",
+          stat: "Area",
+          desc: "Raises duration and area by 10% per level."
+        },
+        goldFang: {
+          name: "Fortune Fang",
+          stat: "Stones",
+          desc: "Raises spirit stone income by 18% per level."
+        }
+      },
+      weapons: {
+        flyingSword: {
+          name: "Flying Sword",
+          desc: "Fires piercing blades at the nearest enemy."
+        },
+        talisman: {
+          name: "Demon-Sealing Talisman",
+          desc: "Fires tracking seals that burst in a small area on impact."
+        },
+        spiritFire: {
+          name: "Spirit Flame",
+          desc: "Releases flames that burn along their path."
+        },
+        thunderPearl: {
+          name: "Thunder Pearl",
+          desc: "Calls random lightning strikes on nearby enemies."
+        },
+        frostNeedle: {
+          name: "Frost Needles",
+          desc: "Fires a fan of icy needles that slow enemies."
+        },
+        spinningBlade: {
+          name: "Spinning Blades",
+          desc: "Orbit around the character and cut through enemies."
+        },
+        poisonMist: {
+          name: "Venom Mist",
+          desc: "Creates poison clouds that deal damage over time."
+        },
+        crossbow: {
+          name: "Clockwork Repeater",
+          desc: "Rapidly fires mechanical bolts."
+        },
+        heavySlash: {
+          name: "Black-Iron Cleave",
+          desc: "Swings a high-damage cone slash forward with heavy impact."
+        },
+        voidVortex: {
+          name: "Void Vortex",
+          desc: "Opens a pulling rift that drags in enemies and damages them over time."
+        },
+        swordSpirit: {
+          name: "Sword Spirit",
+          desc: "Summons a spirit blade that automatically hunts nearby enemies."
+        },
+        thunderLotus: {
+          name: "Thunder Lotus Seal",
+          desc: "Plants thunder lotuses under enemy packs that erupt after a short delay."
+        },
+        thousandSword: {
+          name: "Ten Thousand Swords",
+          desc: "Flying Sword becomes a surging blade tide that pierces huge packs."
+        },
+        voidSeal: {
+          name: "Great Void Seal",
+          desc: "A heavenly seal falls and locks down wide areas of the demon tide."
+        },
+        fireSea: {
+          name: "Skyfire Sea",
+          desc: "Spirit Flame spreads into a sea of fire around your path."
+        },
+        thunderArray: {
+          name: "Ninefold Thunder Array",
+          desc: "Lightning chains repeatedly across enemies on screen."
+        },
+        glacierRain: {
+          name: "Glacier Needle Rain",
+          desc: "Icy needles fall from every direction and keep enemies slowed."
+        },
+        moonWheel: {
+          name: "Full Moon Wheel",
+          desc: "A large moon wheel orbits at high speed and carves through enemies."
+        },
+        plagueDomain: {
+          name: "Plague Domain",
+          desc: "Venom Mist follows you and leaves a corrosive domain behind."
+        },
+        dragonRepeater: {
+          name: "Coiling Dragon Repeater",
+          desc: "The repeater becomes a dragon volley that continuously locks onto enemies."
+        },
+        skyRendSlash: {
+          name: "Sky-Rending Cleave",
+          desc: "The cleave tears open three sword arcs with both close burst and long pierce."
+        },
+        abyssRift: {
+          name: "Abyss Rift",
+          desc: "The vortex becomes an abyssal rift that collapses into an explosion."
+        },
+        myriadSwordSpirit: {
+          name: "Myriad Sword Spirits",
+          desc: "Spirit blades form a guard that pierces and pursues the demon tide."
+        },
+        ninefoldThunderLotus: {
+          name: "Ninefold Thunder Lotus",
+          desc: "Thunder lotuses leave a storm field that suppresses large enemy packs."
+        }
+      },
+      enemies: {
+        imp: { name: "Lesser Demon" },
+        wolf: { name: "Wolf Demon" },
+        wisp: { name: "Ghostfire" },
+        bug: { name: "Winged Bug" },
+        brute: { name: "Shield Brute" },
+        runner: { name: "Swift Demon" },
+        spitter: { name: "Flame Spitter" },
+        summoner: { name: "Demon Caller" },
+        shadow: { name: "Shadow Demon" },
+        stone: { name: "Stone Spirit" },
+        mireling: { name: "Mire Crawler" },
+        charger: { name: "Bloodhoof Charger" },
+        lantern: { name: "Soul Lantern" },
+        reaver: { name: "Rift Reaver" },
+        warden: { name: "Blackguard Warden" },
+        eliteBrute: { name: "Red-Horn Warlord" },
+        eliteWisp: { name: "Azure Ghost King" },
+        eliteSummoner: { name: "Myriad-Soul Priest" },
+        boss: { name: "Tide Demon Lord" }
+      },
+      meta: {
+        might: {
+          name: "Sword Intent",
+          stat: "Damage",
+          desc: "Raises global damage by 4% per level."
+        },
+        vitality: {
+          name: "Root Constitution",
+          stat: "Health",
+          desc: "Raises max health by 10 per level."
+        },
+        haste: {
+          name: "Footwork",
+          stat: "Move Speed",
+          desc: "Raises movement speed by 3% per level."
+        },
+        magnet: {
+          name: "Spirit Scent",
+          stat: "Pickup",
+          desc: "Raises pickup range by 6% per level."
+        },
+        fortune: {
+          name: "Fortune",
+          stat: "Stones",
+          desc: "Raises spirit stone income by 5% per level."
+        }
+      },
+      achievements: {
+        firstRun: {
+          name: "First Tide",
+          desc: "Finish any run.",
+          reward: "Unlock Talisman Mystic"
+        },
+        hunter500: {
+          name: "Demon Hunter 500",
+          desc: "Kill 500 enemies in one run.",
+          reward: "Unlock Spirit Fox Adept"
+        },
+        firstVictory: {
+          name: "Demon Lord Down",
+          desc: "Win once.",
+          reward: "Unlock Arcane Mechanist"
+        },
+        level30: {
+          name: "Spiritual Pressure",
+          desc: "Reach level 30 in one run.",
+          reward: "Permanent upgrade goal"
+        },
+        sixEvolved: {
+          name: "Six True Artifacts",
+          desc: "Own 6 evolved artifacts in one run.",
+          reward: "Advanced build goal"
+        },
+        rich3000: {
+          name: "Stones Like Rain",
+          desc: "Earn 3000 spirit stones in one run.",
+          reward: "Fortune challenge goal"
+        }
+      },
+      powerups: {
+        heal: {
+          name: "Spring Pill",
+          desc: "Restores health."
+        },
+        magnet: {
+          name: "Soul-Gathering Field",
+          desc: "Collects all XP and spirit stones on the field."
+        },
+        bomb: {
+          name: "Demon-Quelling Thunder",
+          desc: "Strikes the demon tide across the screen."
+        }
+      }
+    }
+  };
+
+  function localizedField(section, id, field, fallback = "") {
+    const value = DATA_I18N[activeLanguage]?.[section]?.[id]?.[field];
+    return value === undefined ? fallback : value;
+  }
+
+  function localizedUi(key, fallback = "") {
+    return DATA_I18N[activeLanguage]?.ui?.[key] ?? fallback;
+  }
+
+  function localizedCharacterName(character) {
+    return localizedField("characters", character.id, "name", character.name);
+  }
+
+  function localizedCharacterTitle(character) {
+    return localizedField("characters", character.id, "title", character.title);
+  }
+
+  function localizedCharacterDesc(character) {
+    return localizedField("characters", character.id, "desc", character.desc);
+  }
+
+  function localizedCharacterUnlock(id) {
+    return localizedField("characters", id, "unlock", characterUnlockText[id] || "");
+  }
+
+  function localizedItemSection(item) {
+    if (!item?.id) return "";
+    if (weapons[item.id]) return "weapons";
+    if (passives[item.id]) return "passives";
+    return "";
+  }
+
+  function localizedItemName(item) {
+    const section = localizedItemSection(item);
+    return section ? localizedField(section, item.id, "name", item.name) : item?.name || "";
+  }
+
+  function localizedItemDesc(item) {
+    const section = localizedItemSection(item);
+    return section ? localizedField(section, item.id, "desc", item.desc) : item?.desc || "";
+  }
+
+  function localizedItemStat(item) {
+    const section = localizedItemSection(item);
+    return section ? localizedField(section, item.id, "stat", item.stat) : item?.stat || "";
+  }
+
+  function localizedMetaName(upgrade) {
+    return localizedField("meta", upgrade.id, "name", upgrade.name);
+  }
+
+  function localizedMetaDesc(upgrade) {
+    return localizedField("meta", upgrade.id, "desc", upgrade.desc);
+  }
+
+  function localizedMetaStat(upgrade) {
+    return localizedField("meta", upgrade.id, "stat", upgrade.stat);
+  }
+
+  function localizedAchievementName(achievement) {
+    return localizedField("achievements", achievement.id, "name", achievement.name);
+  }
+
+  function localizedAchievementDesc(achievement) {
+    return localizedField("achievements", achievement.id, "desc", achievement.desc);
+  }
+
+  function localizedAchievementReward(achievement) {
+    return localizedField("achievements", achievement.id, "reward", achievement.reward);
+  }
+
+  function localizedEnemyName(type) {
+    return localizedField("enemies", type.id, "name", t(`enemies.${type.id}`, {}, type.name));
+  }
+
   const state = {
     screen: "menu",
     save: loadSave(),
@@ -1988,15 +2331,16 @@
     ui.characterGrid.innerHTML = "";
     for (const character of characters) {
       const unlocked = isCharacterUnlocked(character.id);
+      const unlockText = localizedCharacterUnlock(character.id);
       const card = document.createElement("div");
       card.className = `card${unlocked ? "" : " locked"}`;
       card.innerHTML = `
-        <h3>${unlocked ? character.name : t("ui.locked")}</h3>
-        <p>${unlocked ? character.desc : characterUnlockText[character.id]}</p>
+        <h3>${unlocked ? localizedCharacterName(character) : t("ui.locked")}</h3>
+        <p>${unlocked ? localizedCharacterDesc(character) : unlockText}</p>
         <div class="tag-row">
-          <span class="tag">${character.title}</span>
+          <span class="tag">${localizedCharacterTitle(character)}</span>
           <span class="tag">${unlocked ? `${t("ui.life")} ${character.hp}` : t("ui.lockedTag")}</span>
-          <span class="tag">${unlocked ? `${t("ui.speed")} ${character.speed}` : characterUnlockText[character.id]}</span>
+          <span class="tag">${unlocked ? `${t("ui.speed")} ${character.speed}` : unlockText}</span>
         </div>
       `;
       card.addEventListener("click", () => {
@@ -2020,10 +2364,10 @@
       const div = document.createElement("div");
       div.className = "upgrade";
       div.innerHTML = `
-        <h3>${up.name} <span class="tag">Lv ${lv}/${up.max}</span></h3>
-        <p>${up.desc}</p>
+        <h3>${localizedMetaName(up)} <span class="tag">Lv ${lv}/${up.max}</span></h3>
+        <p>${localizedMetaDesc(up)}</p>
         <div class="save-row">
-          <span>${up.stat}</span>
+          <span>${localizedMetaStat(up)}</span>
           <strong>${maxed ? t("ui.maxed") : `${cost} ${t("ui.coins")}`}</strong>
         </div>
       `;
@@ -2050,11 +2394,11 @@
     for (const item of all) {
       const div = document.createElement("div");
       div.className = "codex";
-      const req = item.req ? `<span class="tag">${t("ui.reqEvolution", { name: passives[item.req].name })}</span>` : "";
-      const base = item.base ? `<span class="tag">${t("ui.evolvedFrom", { name: weapons[item.base].name })}</span>` : "";
+      const req = item.req ? `<span class="tag">${t("ui.reqEvolution", { name: localizedItemName(passives[item.req]) })}</span>` : "";
+      const base = item.base ? `<span class="tag">${t("ui.evolvedFrom", { name: localizedItemName(weapons[item.base]) })}</span>` : "";
       div.innerHTML = `
-        <div class="entry-head">${itemIconMarkup(item.id, item)}<h3>${item.name}</h3></div>
-        <p>${item.desc}</p>
+        <div class="entry-head">${itemIconMarkup(item.id, item)}<h3>${localizedItemName(item)}</h3></div>
+        <p>${localizedItemDesc(item)}</p>
         <div class="tag-row">
           <span class="tag">${item.type === "evolved" ? t("ui.evolvedWeapon") : item.type === "weapon" ? t("ui.weapon") : t("ui.passive")}</span>
           ${req}
@@ -2073,11 +2417,11 @@
       const div = document.createElement("div");
       div.className = `achievement ${done ? "done" : "locked"}`;
       div.innerHTML = `
-        <h3>${achievement.name}</h3>
-        <p>${achievement.desc}</p>
+        <h3>${localizedAchievementName(achievement)}</h3>
+        <p>${localizedAchievementDesc(achievement)}</p>
         <div class="tag-row">
           <span class="tag">${done ? t("ui.completed", {}, "已完成") : t("ui.incomplete", {}, "未完成")}</span>
-          <span class="tag">${achievement.reward}</span>
+          <span class="tag">${localizedAchievementReward(achievement)}</span>
         </div>
       `;
       ui.achievementGrid.appendChild(div);
@@ -2278,7 +2622,7 @@
     playSfx("evolve");
     burst(state.player.x, state.player.y, weapons[evoId].color, 48, 260);
     emitUltimateCastFx(evolvedCastFrame(evoId), state.player.x, state.player.y, 145, weapons[evoId].color, 0.1, 1.3, 1.2);
-    floatingText(state.player.x, state.player.y - 42, weapons[evoId].name, weapons[evoId].color, 22);
+    floatingText(state.player.x, state.player.y - 42, localizedItemName(weapons[evoId]), weapons[evoId].color, 22);
     return true;
   }
 
@@ -2366,12 +2710,12 @@
       const div = document.createElement("div");
       div.className = `choice ${choice.kind === "coins" ? "passive" : isWeapon ? "weapon" : "passive"}`;
       div.innerHTML = `
-        <div class="entry-head">${itemIconMarkup(choice.id, item, choice.kind === "coins" ? "coin-icon" : "")}<h3>${item.name}</h3></div>
-        <p>${item.desc}</p>
+        <div class="entry-head">${itemIconMarkup(choice.id, item, choice.kind === "coins" ? "coin-icon" : "")}<h3>${localizedItemName(item)}</h3></div>
+        <p>${localizedItemDesc(item)}</p>
         <div class="tag-row">
           <span class="tag">${choice.kind === "coins" ? t("ui.coins") : isWeapon ? t("ui.weapon") : t("ui.passive")}</span>
           <span class="tag">${choice.kind === "coins" ? t("ui.reward") : `Lv ${choice.level}`}</span>
-          ${isWeapon && item.req ? `<span class="tag">${t("ui.evolutionRecipe", { name: passives[item.req].name })}</span>` : ""}
+          ${isWeapon && item.req ? `<span class="tag">${t("ui.evolutionRecipe", { name: localizedItemName(passives[item.req]) })}</span>` : ""}
         </div>
       `;
       div.addEventListener("click", () => {
@@ -2445,8 +2789,8 @@
       const base = eligible[Math.floor(rand(0, eligible.length))];
       evolveWeapon(base);
       reward = {
-        title: weapons[weapons[base].evo].name,
-        desc: t("ui.chestEvolved", { name: weapons[base].name }),
+        title: localizedItemName(weapons[weapons[base].evo]),
+        desc: t("ui.chestEvolved", { name: localizedItemName(weapons[base]) }),
         color: weapons[weapons[base].evo].color
       };
     } else {
@@ -2458,7 +2802,7 @@
         const [id, owned] = upgradableWeapons[Math.floor(rand(0, upgradableWeapons.length))];
         owned.level += 1;
         reward = {
-          title: weapons[id].name,
+          title: localizedItemName(weapons[id]),
           desc: t("ui.weaponLevelUp", { level: owned.level }),
           color: weapons[id].color
         };
@@ -2467,7 +2811,7 @@
         owned.level += 1;
         applyStats(true);
         reward = {
-          title: passives[id].name,
+          title: localizedItemName(passives[id]),
           desc: t("ui.passiveLevelUp", { level: owned.level }),
           color: passives[id].color
         };
@@ -3674,7 +4018,7 @@
     }
     if (e.elite) {
       state.chests.push({ x: e.x, y: e.y, r: 17, pulse: 0 });
-      floatingText(e.x, e.y - 44, "宝箱", colors.gold, 18);
+      floatingText(e.x, e.y - 44, localizedUi("chestDrop", "宝箱"), colors.gold, 18);
       playSfx("elite");
     } else {
       playSfx("kill");
@@ -4067,8 +4411,11 @@
     buildCharacterCards();
     buildAchievementGrid();
     const unlockRows = [
-      ...unlockResult.newlyCompleted.map((a) => `<div class="stat-row"><span>${t("ui.newAchievement")}</span><strong>${a.name}</strong></div>`),
-      ...unlockResult.newlyUnlocked.map((id) => `<div class="stat-row"><span>${t("ui.newCharacter")}</span><strong>${characters.find((c) => c.id === id)?.name || id}</strong></div>`)
+      ...unlockResult.newlyCompleted.map((a) => `<div class="stat-row"><span>${t("ui.newAchievement")}</span><strong>${localizedAchievementName(a)}</strong></div>`),
+      ...unlockResult.newlyUnlocked.map((id) => {
+        const character = characters.find((c) => c.id === id);
+        return `<div class="stat-row"><span>${t("ui.newCharacter")}</span><strong>${character ? localizedCharacterName(character) : id}</strong></div>`;
+      })
     ].join("");
     ui.resultTitle.textContent = victory ? t("ui.victoryTitle") : t("ui.defeatTitle");
     ui.resultStats.innerHTML = `
@@ -4124,7 +4471,7 @@
         const item = weapons[id];
         const div = document.createElement("div");
         div.className = "slot";
-        div.innerHTML = `${itemIconMarkup(id, item, "small")}<div class="slot-copy"><strong style="color:${item.color}">${item.name}</strong><span>${item.type === "evolved" ? t("ui.evolved") : `Lv ${owned.level}/${item.max}`}</span></div>`;
+        div.innerHTML = `${itemIconMarkup(id, item, "small")}<div class="slot-copy"><strong style="color:${item.color}">${localizedItemName(item)}</strong><span>${item.type === "evolved" ? t("ui.evolved") : `Lv ${owned.level}/${item.max}`}</span></div>`;
         ui.weaponList.appendChild(div);
       }
 
@@ -4133,7 +4480,7 @@
         const item = passives[id];
         const div = document.createElement("div");
         div.className = "slot";
-        div.innerHTML = `${itemIconMarkup(id, item, "small")}<div class="slot-copy"><strong style="color:${item.color}">${item.name}</strong><span>Lv ${owned.level}/${item.max}</span></div>`;
+        div.innerHTML = `${itemIconMarkup(id, item, "small")}<div class="slot-copy"><strong style="color:${item.color}">${localizedItemName(item)}</strong><span>Lv ${owned.level}/${item.max}</span></div>`;
         ui.passiveList.appendChild(div);
       }
     }
@@ -8495,8 +8842,9 @@
     const params = new URLSearchParams(window.location.search);
     const mode = params.get("qa");
     if (!mode) return;
+    const showQaModal = params.get("modal") === "1";
     state.qa.mode = mode;
-    state.qa.autoChoices = mode === "soak" || mode === "powerups" || mode === "evolution" || mode === "stress" || mode === "magnet";
+    state.qa.autoChoices = !showQaModal && (mode === "soak" || mode === "powerups" || mode === "evolution" || mode === "stress" || mode === "magnet");
     state.qa.autoMove = mode === "soak";
     state.qa.timeScale = mode === "soak" ? clamp(Number(params.get("speed")) || 40, 1, 80) : 1;
     state.qa.maxSteps = mode === "soak" ? clamp(Math.ceil(state.qa.timeScale), 1, 80) : 1;
@@ -8591,8 +8939,15 @@
       return;
     }
     if (mode === "victory") {
+      state.qa.autoChoices = true;
       state.elapsed = RUN_DURATION - 2;
+      const started = Date.now();
+      state.qa.syncRunning = true;
+      for (let i = 0; i < 90 && state.screen !== "result"; i++) update(1 / 30);
+      state.qa.syncRunning = false;
+      state.qa.syncMs = Date.now() - started;
       updateHud();
+      updateQaDataset();
       return;
     }
     if (mode === "showcase") {
