@@ -192,15 +192,15 @@
         characterTitle: "Choose Character",
         back: "Back",
         level: "Lv",
-        stage: "Stage",
-        coins: "Stones",
+        stage: "Tide",
+        coins: "Spirit Stones",
         soundOn: "Sound: On",
         soundOff: "Sound: Off",
         soundEnable: "Enable sound",
         soundDisable: "Disable sound",
         pause: "Pause",
         weapons: "Artifacts",
-        passives: "Talents",
+        passives: "Mind Arts",
         levelTitle: "Spiritual Surge",
         levelSubtitle: "Choose one upgrade.",
         chestTitle: "Demon Core Chest",
@@ -219,14 +219,14 @@
         maxed: "Maxed",
         reward: "Reward",
         weapon: "Artifact",
-        passive: "Talent",
+        passive: "Mind Art",
         evolved: "Evolved",
         evolvedWeapon: "Evolved Artifact",
         evolutionRecipe: "Evolution recipe: {name}",
         reqEvolution: "Evolution: {name}",
         evolvedFrom: "Evolved from {name}",
-        coinBag: "Stone Pouch",
-        coinBagDesc: "All artifacts and talents are nearly complete. Converted into extra stones.",
+        coinBag: "Spirit Stone Pouch",
+        coinBagDesc: "All artifacts and mind arts are nearly complete. Converted into extra spirit stones.",
         newAchievement: "New achievement",
         newCharacter: "New character",
         victoryTitle: "Demon Lord Defeated",
@@ -235,24 +235,24 @@
         kills: "Kills",
         resultLevel: "Level",
         resultEvolved: "Evolved Artifacts",
-        resultCoins: "Run Stones",
+        resultCoins: "Run Spirit Stones",
         confirmReset: "Clear the local save?",
         chestEvolved: "{name} evolved.",
         weaponLevelUp: "Artifact raised to Lv {level}.",
-        passiveLevelUp: "Talent raised to Lv {level}.",
+        passiveLevelUp: "Mind Art raised to Lv {level}.",
         chestCoinsDesc: "Artifacts are full. The chest became spirit stones.",
-        magnet: "Vacuum",
-        bomb: "Thunder Bomb",
+        magnet: "Soul-Gathering",
+        bomb: "Demon-Quelling Thunder",
         eliteWarning: "Elite demon incoming",
         bossWarning: "The Tide Demon Lord descends",
         bossDefeated: "Demon Lord defeated"
       },
       stages: {
-        gate: ["Verdant Gate", "Stage 1: Verdant Gate"],
-        marsh: ["Toxic Marsh Path", "Stage 2: Toxic Marsh Path"],
-        crypt: ["Frostbone Crypt", "Stage 3: Frostbone Crypt"],
-        rift: ["Void Rift Altar", "Stage 4: Void Rift Altar"],
-        bloodmoon: ["Blood Moon Citadel", "Stage 5: Blood Moon Citadel"]
+        gate: ["Verdant Gate", "Tide 1: Verdant Gate"],
+        marsh: ["Toxic Marsh Path", "Tide 2: Toxic Marsh Path"],
+        crypt: ["Frostbone Crypt", "Tide 3: Frostbone Crypt"],
+        rift: ["Void Rift Altar", "Tide 4: Void Rift Altar"],
+        bloodmoon: ["Blood Moon Citadel", "Tide 5: Blood Moon Citadel"]
       },
       enemies: {
         boss: "Tide Demon Lord",
@@ -277,7 +277,7 @@
         characterTitle: "キャラクター選択",
         back: "戻る",
         level: "Lv",
-        stage: "ステージ",
+        stage: "妖潮",
         coins: "霊石",
         soundOn: "音声：オン",
         soundOff: "音声：オフ",
@@ -333,11 +333,11 @@
         bossDefeated: "妖君討伐"
       },
       stages: {
-        gate: ["青嵐の山門", "第1幕：青嵐の山門"],
-        marsh: ["幽沼の毒路", "第2幕：幽沼の毒路"],
-        crypt: ["寒骨の地宮", "第3幕：寒骨の地宮"],
-        rift: ["虚空の裂壇", "第4幕：虚空の裂壇"],
-        bloodmoon: ["血月の妖城", "第5幕：血月の妖城"]
+        gate: ["青嵐の山門", "第1潮：青嵐の山門"],
+        marsh: ["幽沼の毒路", "第2潮：幽沼の毒路"],
+        crypt: ["寒骨の地宮", "第3潮：寒骨の地宮"],
+        rift: ["虚空の裂壇", "第4潮：虚空の裂壇"],
+        bloodmoon: ["血月の妖城", "第5潮：血月の妖城"]
       },
       enemies: {
         boss: "霊潮妖君",
@@ -351,7 +351,7 @@
     fr: {
       ui: {
         title: "Survivants de la Marée Spirituelle",
-        subtitle: "Lancez des sorts automatiquement et survivez à la horde jusqu'à l'aube.",
+        subtitle: "Lancez des sorts automatiquement et survivez à la marée démoniaque jusqu'à l'aube.",
         language: "Langue",
         start: "Commencer",
         upgrades: "Améliorations permanentes",
@@ -362,15 +362,15 @@
         characterTitle: "Choisir un personnage",
         back: "Retour",
         level: "Nv",
-        stage: "Étape",
-        coins: "Pierres",
+        stage: "Marée",
+        coins: "Pierres spirituelles",
         soundOn: "Son : oui",
         soundOff: "Son : non",
         soundEnable: "Activer le son",
         soundDisable: "Couper le son",
         pause: "Pause",
         weapons: "Artefacts",
-        passives: "Talents",
+        passives: "Arts internes",
         levelTitle: "Afflux spirituel",
         levelSubtitle: "Choisissez une amélioration.",
         chestTitle: "Coffre du noyau démon",
@@ -389,14 +389,14 @@
         maxed: "Max",
         reward: "Récompense",
         weapon: "Artefact",
-        passive: "Talent",
+        passive: "Art interne",
         evolved: "Évolué",
         evolvedWeapon: "Artefact évolué",
         evolutionRecipe: "Recette d'évolution : {name}",
         reqEvolution: "Évolution : {name}",
         evolvedFrom: "Évolué depuis {name}",
-        coinBag: "Bourse de pierres",
-        coinBagDesc: "Tous les artefacts et talents sont presque complets. Converti en pierres.",
+        coinBag: "Bourse de pierres spirituelles",
+        coinBagDesc: "Tous les artefacts et arts internes sont presque complets. Converti en pierres spirituelles.",
         newAchievement: "Nouveau succès",
         newCharacter: "Nouveau personnage",
         victoryTitle: "Seigneur démon vaincu",
@@ -405,24 +405,24 @@
         kills: "Éliminations",
         resultLevel: "Niveau",
         resultEvolved: "Artefacts évolués",
-        resultCoins: "Pierres gagnées",
+        resultCoins: "Pierres spirituelles gagnées",
         confirmReset: "Effacer la sauvegarde locale ?",
         chestEvolved: "{name} a évolué.",
         weaponLevelUp: "Artefact amélioré au Nv {level}.",
-        passiveLevelUp: "Talent amélioré au Nv {level}.",
+        passiveLevelUp: "Art interne amélioré au Nv {level}.",
         chestCoinsDesc: "Les artefacts sont complets. Le coffre devient des pierres.",
-        magnet: "Aspiration",
-        bomb: "Bombe de foudre",
+        magnet: "Rassemblement spirituel",
+        bomb: "Tonnerre anti-démon",
         eliteWarning: "Démon d'élite en approche",
         bossWarning: "Le seigneur de la marée descend",
         bossDefeated: "Seigneur démon vaincu"
       },
       stages: {
-        gate: ["Porte verdoyante", "Étape 1 : Porte verdoyante"],
-        marsh: ["Marais toxique", "Étape 2 : Marais toxique"],
-        crypt: ["Crypte d'os gelés", "Étape 3 : Crypte d'os gelés"],
-        rift: ["Autel de la faille", "Étape 4 : Autel de la faille"],
-        bloodmoon: ["Citadelle de la lune sanglante", "Étape 5 : Citadelle de la lune sanglante"]
+        gate: ["Porte verdoyante", "Marée 1 : Porte verdoyante"],
+        marsh: ["Marais toxique", "Marée 2 : Marais toxique"],
+        crypt: ["Crypte d'os gelés", "Marée 3 : Crypte d'os gelés"],
+        rift: ["Autel de la faille", "Marée 4 : Autel de la faille"],
+        bloodmoon: ["Citadelle de la lune sanglante", "Marée 5 : Citadelle de la lune sanglante"]
       },
       enemies: {
         boss: "Seigneur démon de la marée",
@@ -1131,7 +1131,7 @@
       color: "#7cd7af",
       req: "powerCharm",
       evo: "thousandSword",
-      desc: "向最近的敌人射出穿透飞剑。"
+      desc: "向最近的妖物射出穿透飞剑。"
     },
     talisman: {
       id: "talisman",
@@ -1161,7 +1161,7 @@
       color: "#8fb7ff",
       req: "cooldownJade",
       evo: "thunderArray",
-      desc: "随机雷击附近敌人。"
+      desc: "随机雷击附近妖物。"
     },
     frostNeedle: {
       id: "frostNeedle",
@@ -1171,7 +1171,7 @@
       color: "#9ee7ff",
       req: "splitPearl",
       evo: "glacierRain",
-      desc: "扇形射出冰针并减速敌人。"
+      desc: "扇形射出冰针并减速妖物。"
     },
     spinningBlade: {
       id: "spinningBlade",
@@ -1221,7 +1221,7 @@
       color: "#a88cff",
       req: "everlamp",
       evo: "abyssRift",
-      desc: "在妖潮中生成吸附裂隙，持续拉拢并伤害敌人。"
+      desc: "在妖潮中生成吸附裂隙，持续拉拢并伤害妖物。"
     },
     swordSpirit: {
       id: "swordSpirit",
@@ -1231,7 +1231,7 @@
       color: "#9ff1d0",
       req: "splitPearl",
       evo: "myriadSwordSpirit",
-      desc: "召唤剑灵自动追击附近敌人。"
+      desc: "召唤剑灵自动追击附近妖物。"
     },
     thunderLotus: {
       id: "thunderLotus",
@@ -1250,7 +1250,7 @@
       max: 1,
       base: "flyingSword",
       color: "#a4ffd3",
-      desc: "飞剑化为剑潮，持续穿透大群敌人。"
+      desc: "飞剑化为剑潮，持续穿透大群妖物。"
     },
     voidSeal: {
       id: "voidSeal",
@@ -1286,7 +1286,7 @@
       max: 1,
       base: "frostNeedle",
       color: "#bff3ff",
-      desc: "冰针从四面八方坠落，持续减速敌人。"
+      desc: "冰针从四面八方坠落，持续减速妖物。"
     },
     moonWheel: {
       id: "moonWheel",
@@ -1313,7 +1313,7 @@
       max: 1,
       base: "crossbow",
       color: "#b4c4ff",
-      desc: "机关弩化为游龙齐射，连续锁定敌人。"
+      desc: "机关弩化为游龙齐射，连续锁定妖物。"
     },
     skyRendSlash: {
       id: "skyRendSlash",
@@ -1518,12 +1518,12 @@
           name: "Spirit Fox Adept",
           title: "Spirit Flame Start",
           desc: "Higher speed and pickup range. Rewards movement and fast snowballing.",
-          unlock: "Kill 500 enemies in one run"
+          unlock: "Quell 500 demons in one run"
         },
         mechanist: {
           name: "Arcane Mechanist",
-          title: "Repeater Start",
-          desc: "Begins with one extra projectile for stable early damage.",
+          title: "Mechanism Crossbow Start",
+          desc: "Begins with one extra spell path for stable early damage.",
           unlock: "Win once to unlock"
         }
       },
@@ -1555,8 +1555,8 @@
         },
         splitPearl: {
           name: "Splitting Pearl",
-          stat: "Projectiles",
-          desc: "Adds one extra projectile every two levels."
+          stat: "Spell Paths",
+          desc: "Adds one extra spell path every two levels."
         },
         everlamp: {
           name: "Everlasting Lamp",
@@ -1565,18 +1565,18 @@
         },
         goldFang: {
           name: "Fortune Fang",
-          stat: "Stones",
+          stat: "Spirit Stones",
           desc: "Raises spirit stone income by 18% per level."
         }
       },
       weapons: {
         flyingSword: {
           name: "Flying Sword",
-          desc: "Fires piercing blades at the nearest enemy."
+          desc: "Fires piercing blades at the nearest demon."
         },
         talisman: {
           name: "Demon-Sealing Talisman",
-          desc: "Fires tracking seals that burst in a small area on impact."
+          desc: "Fires tracking talismans that burst in a small area on impact."
         },
         spiritFire: {
           name: "Spirit Flame",
@@ -1584,23 +1584,23 @@
         },
         thunderPearl: {
           name: "Thunder Pearl",
-          desc: "Calls random lightning strikes on nearby enemies."
+          desc: "Calls random lightning strikes on nearby demons."
         },
         frostNeedle: {
           name: "Frost Needles",
-          desc: "Fires a fan of icy needles that slow enemies."
+          desc: "Fires a fan of icy needles that slow demons."
         },
         spinningBlade: {
           name: "Spinning Blades",
-          desc: "Orbit around the character and cut through enemies."
+          desc: "Orbit around the cultivator and cut through demons."
         },
         poisonMist: {
           name: "Venom Mist",
           desc: "Creates poison clouds that deal damage over time."
         },
         crossbow: {
-          name: "Clockwork Repeater",
-          desc: "Rapidly fires mechanical bolts."
+          name: "Mechanism Crossbow",
+          desc: "Rapidly fires enchanted crossbow bolts."
         },
         heavySlash: {
           name: "Black-Iron Cleave",
@@ -1608,19 +1608,19 @@
         },
         voidVortex: {
           name: "Void Vortex",
-          desc: "Opens a pulling rift that drags in enemies and damages them over time."
+          desc: "Opens a pulling rift that drags in demons and damages them over time."
         },
         swordSpirit: {
           name: "Sword Spirit",
-          desc: "Summons a spirit blade that automatically hunts nearby enemies."
+          desc: "Summons a spirit blade that automatically hunts nearby demons."
         },
         thunderLotus: {
           name: "Thunder Lotus Seal",
-          desc: "Plants thunder lotuses under enemy packs that erupt after a short delay."
+          desc: "Plants thunder lotuses under demon packs that erupt after a short delay."
         },
         thousandSword: {
           name: "Ten Thousand Swords",
-          desc: "Flying Sword becomes a surging blade tide that pierces huge packs."
+          desc: "Flying Sword becomes a surging blade tide that pierces huge demon packs."
         },
         voidSeal: {
           name: "Great Void Seal",
@@ -1632,23 +1632,23 @@
         },
         thunderArray: {
           name: "Ninefold Thunder Array",
-          desc: "Lightning chains repeatedly across enemies on screen."
+          desc: "Lightning chains repeatedly across demons on screen."
         },
         glacierRain: {
           name: "Glacier Needle Rain",
-          desc: "Icy needles fall from every direction and keep enemies slowed."
+          desc: "Icy needles fall from every direction and keep demons slowed."
         },
         moonWheel: {
           name: "Full Moon Wheel",
-          desc: "A large moon wheel orbits at high speed and carves through enemies."
+          desc: "A large moon wheel orbits at high speed and carves through demons."
         },
         plagueDomain: {
           name: "Plague Domain",
           desc: "Venom Mist follows you and leaves a corrosive domain behind."
         },
         dragonRepeater: {
-          name: "Coiling Dragon Repeater",
-          desc: "The repeater becomes a dragon volley that continuously locks onto enemies."
+          name: "Coiling Dragon Crossbow",
+          desc: "The mechanism crossbow becomes a dragon volley that continuously locks onto demons."
         },
         skyRendSlash: {
           name: "Sky-Rending Cleave",
@@ -1664,7 +1664,7 @@
         },
         ninefoldThunderLotus: {
           name: "Ninefold Thunder Lotus",
-          desc: "Thunder lotuses leave a storm field that suppresses large enemy packs."
+          desc: "Thunder lotuses leave a storm field that suppresses large demon packs."
         }
       },
       enemies: {
@@ -1711,7 +1711,7 @@
         },
         fortune: {
           name: "Fortune",
-          stat: "Stones",
+          stat: "Spirit Stones",
           desc: "Raises spirit stone income by 5% per level."
         }
       },
@@ -1722,8 +1722,8 @@
           reward: "Unlock Talisman Mystic"
         },
         hunter500: {
-          name: "Demon Hunter 500",
-          desc: "Kill 500 enemies in one run.",
+          name: "Demon Tide Hunter 500",
+          desc: "Quell 500 demons in one run.",
           reward: "Unlock Spirit Fox Adept"
         },
         firstVictory: {
@@ -1742,7 +1742,7 @@
           reward: "Advanced build goal"
         },
         rich3000: {
-          name: "Stones Like Rain",
+          name: "Spirit Stones Like Rain",
           desc: "Earn 3000 spirit stones in one run.",
           reward: "Fortune challenge goal"
         }
@@ -1837,7 +1837,7 @@
       weapons: {
         flyingSword: {
           name: "飛剣",
-          desc: "最も近い敵へ貫通する飛剣を放つ。"
+          desc: "最も近い妖へ貫通する飛剣を放つ。"
         },
         talisman: {
           name: "鎮妖符",
@@ -1849,11 +1849,11 @@
         },
         thunderPearl: {
           name: "雷珠",
-          desc: "近くの敵へランダムに雷を落とす。"
+          desc: "近くの妖へランダムに雷を落とす。"
         },
         frostNeedle: {
           name: "氷針",
-          desc: "扇状に氷針を放ち、敵を減速させる。"
+          desc: "扇状に氷針を放ち、妖を減速させる。"
         },
         spinningBlade: {
           name: "旋刃",
@@ -1877,11 +1877,11 @@
         },
         swordSpirit: {
           name: "剣霊召喚",
-          desc: "剣霊を召喚し、近くの敵を自動で追撃する。"
+          desc: "剣霊を召喚し、近くの妖を自動で追撃する。"
         },
         thunderLotus: {
           name: "蓮華雷印",
-          desc: "敵群の足元に雷蓮を刻み、短い遅延の後に爆発させる。"
+          desc: "妖群の足元に雷蓮を刻み、短い遅延の後に爆発させる。"
         },
         thousandSword: {
           name: "万剣帰宗",
@@ -1901,7 +1901,7 @@
         },
         glacierRain: {
           name: "玄氷針雨",
-          desc: "氷針が四方から降り注ぎ、敵を継続的に減速させる。"
+          desc: "氷針が四方から降り注ぎ、妖を継続的に減速させる。"
         },
         moonWheel: {
           name: "満月天輪",
@@ -1913,7 +1913,7 @@
         },
         dragonRepeater: {
           name: "遊龍連弩",
-          desc: "機関弩が遊龍の斉射となり、敵を連続で捕捉する。"
+          desc: "機関弩が遊龍の斉射となり、妖を連続で捕捉する。"
         },
         skyRendSlash: {
           name: "裂空天斬",
@@ -2048,12 +2048,12 @@
           name: "Adepte renard spirituel",
           title: "Départ flamme spirituelle",
           desc: "Vitesse et portée de ramassage plus élevées. Récompense les bons déplacements.",
-          unlock: "Tuez 500 ennemis en une partie"
+          unlock: "Réprimez 500 démons en une partie"
         },
         mechanist: {
           name: "Mécaniste arcanique",
           title: "Départ arbalète",
-          desc: "Commence avec un projectile supplémentaire pour des dégâts stables en début de partie.",
+          desc: "Commence avec une trajectoire spirituelle supplémentaire pour des dégâts stables en début de partie.",
           unlock: "Gagnez une fois pour déverrouiller"
         }
       },
@@ -2085,8 +2085,8 @@
         },
         splitPearl: {
           name: "Perle de division",
-          stat: "Projectiles",
-          desc: "Ajoute un projectile tous les deux niveaux."
+          stat: "Trajectoires",
+          desc: "Ajoute une trajectoire spirituelle tous les deux niveaux."
         },
         everlamp: {
           name: "Lampe éternelle",
@@ -2102,7 +2102,7 @@
       weapons: {
         flyingSword: {
           name: "Épée volante",
-          desc: "Lance des lames perforantes vers l'ennemi le plus proche."
+          desc: "Lance des lames perforantes vers le démon le plus proche."
         },
         talisman: {
           name: "Talisman anti-démon",
@@ -2114,23 +2114,23 @@
         },
         thunderPearl: {
           name: "Perle de tonnerre",
-          desc: "Appelle des éclairs aléatoires sur les ennemis proches."
+          desc: "Appelle des éclairs aléatoires sur les démons proches."
         },
         frostNeedle: {
           name: "Aiguilles de givre",
-          desc: "Projette un éventail d'aiguilles glacées qui ralentissent les ennemis."
+          desc: "Projette un éventail d'aiguilles glacées qui ralentissent les démons."
         },
         spinningBlade: {
           name: "Lames tournoyantes",
-          desc: "Tournent autour du personnage et tranchent les ennemis."
+          desc: "Tournent autour du pratiquant et tranchent les démons."
         },
         poisonMist: {
           name: "Brume venimeuse",
           desc: "Crée des nuages toxiques qui infligent des dégâts continus."
         },
         crossbow: {
-          name: "Arbalète mécanique",
-          desc: "Tire rapidement des carreaux mécaniques."
+          name: "Arbalète à mécanisme",
+          desc: "Tire rapidement des carreaux enchantés."
         },
         heavySlash: {
           name: "Entaille de fer noir",
@@ -2138,23 +2138,23 @@
         },
         voidVortex: {
           name: "Vortex du vide",
-          desc: "Ouvre une faille aspirante qui attire les ennemis et les blesse sur la durée."
+          desc: "Ouvre une faille aspirante qui attire les démons et les blesse sur la durée."
         },
         swordSpirit: {
           name: "Esprit d'épée",
-          desc: "Invoque une lame spirituelle qui traque automatiquement les ennemis proches."
+          desc: "Invoque une lame spirituelle qui traque automatiquement les démons proches."
         },
         thunderLotus: {
           name: "Sceau lotus de foudre",
-          desc: "Plante des lotus de foudre sous les groupes ennemis, qui explosent après un court délai."
+          desc: "Plante des lotus de foudre sous les groupes démoniaques, qui explosent après un court délai."
         },
         thousandSword: {
           name: "Dix mille épées",
-          desc: "L'Épée volante devient une marée de lames qui perce les grandes hordes."
+          desc: "L'Épée volante devient une marée de lames qui perce les grandes marées démoniaques."
         },
         voidSeal: {
           name: "Grand sceau du vide",
-          desc: "Un sceau céleste tombe et verrouille de vastes zones de la horde démoniaque."
+          desc: "Un sceau céleste tombe et verrouille de vastes zones de la marée démoniaque."
         },
         fireSea: {
           name: "Mer de feu céleste",
@@ -2166,11 +2166,11 @@
         },
         glacierRain: {
           name: "Pluie d'aiguilles glaciaires",
-          desc: "Des aiguilles glacées tombent de toutes parts et ralentissent les ennemis."
+          desc: "Des aiguilles glacées tombent de toutes parts et ralentissent les démons."
         },
         moonWheel: {
           name: "Roue de pleine lune",
-          desc: "Une grande roue lunaire orbite à haute vitesse et découpe les ennemis."
+          desc: "Une grande roue lunaire orbite à haute vitesse et découpe les démons."
         },
         plagueDomain: {
           name: "Domaine de peste",
@@ -2178,7 +2178,7 @@
         },
         dragonRepeater: {
           name: "Répéteur dragon spiralé",
-          desc: "L'arbalète devient une salve draconique qui verrouille les ennemis en continu."
+          desc: "L'arbalète à mécanisme devient une salve draconique qui verrouille les démons en continu."
         },
         skyRendSlash: {
           name: "Entaille fend-ciel",
@@ -2190,7 +2190,7 @@
         },
         myriadSwordSpirit: {
           name: "Myriade d'esprits d'épée",
-          desc: "Les lames spirituelles forment une garde qui perce et poursuit la horde."
+          desc: "Les lames spirituelles forment une garde qui perce et poursuit la marée démoniaque."
         },
         ninefoldThunderLotus: {
           name: "Lotus des neuf tonnerres",
@@ -2253,7 +2253,7 @@
         },
         hunter500: {
           name: "Chasseur de 500 démons",
-          desc: "Tuez 500 ennemis en une partie.",
+          desc: "Réprimez 500 démons en une partie.",
           reward: "Déverrouille Adepte renard spirituel"
         },
         firstVictory: {
@@ -2288,7 +2288,7 @@
         },
         bomb: {
           name: "Tonnerre anti-démon",
-          desc: "Frappe la horde démoniaque à l'écran."
+          desc: "Frappe toute la marée démoniaque à l'écran."
         }
       }
     }
