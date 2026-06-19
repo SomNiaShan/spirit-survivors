@@ -620,6 +620,33 @@ h2 {
   color: var(--muted);
 }
 
+.screen-balance {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 14px;
+  border: 1px solid rgba(241, 198, 106, 0.22);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background:
+    linear-gradient(180deg, rgba(43, 38, 36, 0.96), rgba(16, 18, 20, 0.96)),
+    rgba(12, 13, 14, 0.9);
+  color: var(--muted);
+  font-weight: 800;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 10px 24px rgba(0, 0, 0, 0.22);
+}
+
+.screen-balance strong {
+  color: var(--gold);
+  font-size: 18px;
+}
+
 .card-grid,
 .choice-grid,
 .upgrade-grid,
@@ -883,12 +910,25 @@ h2 {
 }
 
 @media (max-width: 680px) {
+  body {
+    font-size: 16px;
+  }
+
   .overlay {
-    padding: 12px;
+    align-items: stretch;
+    justify-items: stretch;
+    padding:
+      max(8px, env(safe-area-inset-top))
+      max(8px, env(safe-area-inset-right))
+      max(8px, env(safe-area-inset-bottom))
+      max(8px, env(safe-area-inset-left));
   }
 
   .panel {
-    padding: 16px;
+    width: 100%;
+    max-height: calc(100dvh - 16px);
+    padding: 18px;
+    align-self: center;
   }
 
   .panel::after {
@@ -905,10 +945,109 @@ h2 {
 
   .brand {
     align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 18px;
   }
 
   .sigil {
     width: 62px;
+  }
+
+  h1 {
+    font-size: 36px;
+    line-height: 1.04;
+  }
+
+  h2 {
+    font-size: 24px;
+    line-height: 1.1;
+  }
+
+  .brand p,
+  .muted {
+    font-size: 15px;
+    line-height: 1.45;
+  }
+
+  button {
+    min-height: 50px;
+    padding: 0 16px;
+    font-size: 16px;
+  }
+
+  button.subtle {
+    min-height: 42px;
+    padding: 0 14px;
+  }
+
+  select {
+    min-height: 42px;
+    font-size: 16px;
+  }
+
+  .menu-actions {
+    gap: 12px;
+  }
+
+  .language-row,
+  .save-row,
+  .screen-head {
+    gap: 10px;
+  }
+
+  .screen-head {
+    padding-bottom: 12px;
+    margin-bottom: 12px;
+  }
+
+  .screen-balance {
+    margin-bottom: 14px;
+    padding: 12px 14px;
+    font-size: 15px;
+  }
+
+  .screen-balance strong {
+    font-size: 20px;
+  }
+
+  .card-grid,
+  .choice-grid,
+  .upgrade-grid,
+  .codex-grid,
+  .achievement-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .card,
+  .choice,
+  .upgrade,
+  .codex,
+  .achievement {
+    min-height: 0;
+    padding: 16px;
+  }
+
+  .card h3,
+  .choice h3,
+  .upgrade h3,
+  .codex h3,
+  .achievement h3 {
+    font-size: 19px;
+  }
+
+  .card p,
+  .choice p,
+  .upgrade p,
+  .codex p,
+  .achievement p {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .tag {
+    padding: 5px 8px;
+    font-size: 12px;
   }
 
   .hud-top {

@@ -23,7 +23,7 @@
   <link rel="preload" as="image" href="assets/premium-motion-trail-atlas-v1.png">
   <link rel="preload" as="image" href="assets/premium-swarm-pressure-atlas-v1.png">
   <link rel="preload" as="image" href="assets/premium-hostile-projectile-atlas-v1.png">
-  <link rel="stylesheet" href="styles.css?v=calm-ui-v1">
+  <link rel="stylesheet" href="styles.css?v=mobile-layout-v1">
 </head>
 <body>
   <canvas id="game"></canvas>
@@ -101,6 +101,10 @@
         <h2 id="upgradeTitle">永久升级</h2>
         <button id="backFromUpgradeBtn" class="subtle">返回</button>
       </div>
+      <div class="screen-balance" id="upgradeBalance">
+        <span id="upgradeCoinsLabel">总灵石</span>
+        <strong id="upgradeCoins">0</strong>
+      </div>
       <div id="metaGrid" class="upgrade-grid"></div>
     </section>
 
@@ -154,6 +158,6 @@
     <div id="touchStick"></div>
   </div>
 
-  <script src="game.js?v=all-lang-i18n-v1"></script>
+  <script src="game.js?v=mobile-layout-v1"></script>
 </body>
 </html>

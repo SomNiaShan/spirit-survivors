@@ -22,6 +22,7 @@
     wave: $("wave"),
     runCoins: $("runCoins"),
     totalCoins: $("totalCoins"),
+    upgradeCoins: $("upgradeCoins"),
     hpFill: $("hpFill"),
     hpText: $("hpText"),
     xpFill: $("xpFill"),
@@ -2469,6 +2470,7 @@
   function saveGame() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state.save));
     ui.totalCoins.textContent = state.save.coins;
+    if (ui.upgradeCoins) ui.upgradeCoins.textContent = state.save.coins;
   }
 
   function setText(id, value) {
@@ -2491,6 +2493,7 @@
     setText("achievementBtn", t("ui.achievements"));
     setText("codexBtn", t("ui.codex"));
     setText("totalCoinsLabel", t("ui.totalCoins"));
+    setText("upgradeCoinsLabel", t("ui.totalCoins"));
     setText("resetBtn", t("ui.reset"));
     setText("characterTitle", t("ui.characterTitle"));
     setText("upgradeTitle", t("ui.upgrades"));
@@ -2891,6 +2894,7 @@
 
   function buildMetaGrid() {
     ui.metaGrid.innerHTML = "";
+    if (ui.upgradeCoins) ui.upgradeCoins.textContent = state.save.coins;
     for (const up of metaUpgrades) {
       const lv = state.save.upgrades[up.id] || 0;
       const maxed = lv >= up.max;
