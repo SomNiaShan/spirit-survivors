@@ -118,6 +118,7 @@
         levelTitle: "灵气涌动",
         levelSubtitle: "选择一项强化。",
         chestTitle: "妖丹宝箱",
+        chestDrop: "宝箱",
         continue: "继续",
         resume: "继续",
         quit: "结束本局",
@@ -202,6 +203,7 @@
         levelTitle: "Spiritual Surge",
         levelSubtitle: "Choose one upgrade.",
         chestTitle: "Demon Core Chest",
+        chestDrop: "Chest",
         continue: "Continue",
         resume: "Resume",
         quit: "End Run",
@@ -281,11 +283,12 @@
         soundEnable: "音声をオン",
         soundDisable: "音声をオフ",
         pause: "一時停止",
-        weapons: "法宝",
-        passives: "心法",
+        weapons: "宝具",
+        passives: "秘伝",
         levelTitle: "霊気奔流",
         levelSubtitle: "強化を1つ選択。",
-        chestTitle: "妖丹宝箱",
+        chestTitle: "妖丹の宝箱",
+        chestDrop: "宝箱",
         continue: "続ける",
         resume: "再開",
         quit: "この回を終了",
@@ -299,15 +302,15 @@
         speed: "速度",
         maxed: "最大",
         reward: "報酬",
-        weapon: "法宝",
-        passive: "心法",
+        weapon: "宝具",
+        passive: "秘伝",
         evolved: "進化",
-        evolvedWeapon: "進化法宝",
+        evolvedWeapon: "進化宝具",
         evolutionRecipe: "進化条件：{name}",
         reqEvolution: "進化：{name}",
         evolvedFrom: "{name} から進化",
         coinBag: "霊石袋",
-        coinBagDesc: "法宝と心法がほぼ完成したため、霊石に変換。",
+        coinBagDesc: "宝具と秘伝がほぼ完成したため、霊石に変換。",
         newAchievement: "新実績",
         newCharacter: "新キャラ",
         victoryTitle: "妖君討伐",
@@ -315,13 +318,13 @@
         survivalTime: "生存時間",
         kills: "撃破",
         resultLevel: "レベル",
-        resultEvolved: "進化法宝",
+        resultEvolved: "進化宝具",
         resultCoins: "今回の霊石",
         confirmReset: "ローカルセーブを消去しますか？",
         chestEvolved: "{name} が進化した。",
-        weaponLevelUp: "法宝が Lv {level} に上昇。",
-        passiveLevelUp: "心法が Lv {level} に上昇。",
-        chestCoinsDesc: "法宝は満了。宝箱は霊石に変換。",
+        weaponLevelUp: "宝具が Lv {level} に上昇。",
+        passiveLevelUp: "秘伝が Lv {level} に上昇。",
+        chestCoinsDesc: "宝具は最大。宝箱は霊石に変換。",
         magnet: "吸霊",
         bomb: "鎮妖雷",
         eliteWarning: "精鋭妖将襲来",
@@ -329,11 +332,11 @@
         bossDefeated: "妖君討伐"
       },
       stages: {
-        gate: ["青嵐山門", "第1関：青嵐山門"],
-        marsh: ["幽沼毒路", "第2関：幽沼毒路"],
-        crypt: ["寒骨地宮", "第3関：寒骨地宮"],
-        rift: ["虚空裂壇", "第4関：虚空裂壇"],
-        bloodmoon: ["血月妖城", "第5関：血月妖城"]
+        gate: ["青嵐の山門", "第1幕：青嵐の山門"],
+        marsh: ["幽沼の毒路", "第2幕：幽沼の毒路"],
+        crypt: ["寒骨の地宮", "第3幕：寒骨の地宮"],
+        rift: ["虚空の裂壇", "第4幕：虚空の裂壇"],
+        bloodmoon: ["血月の妖城", "第5幕：血月の妖城"]
       },
       enemies: {
         boss: "霊潮妖君",
@@ -370,6 +373,7 @@
         levelTitle: "Afflux spirituel",
         levelSubtitle: "Choisissez une amélioration.",
         chestTitle: "Coffre du noyau démon",
+        chestDrop: "Coffre",
         continue: "Continuer",
         resume: "Reprendre",
         quit: "Terminer la partie",
@@ -1756,6 +1760,536 @@
           desc: "Strikes the demon tide across the screen."
         }
       }
+    },
+    ja: {
+      ui: {
+        chestDrop: "宝箱"
+      },
+      characters: {
+        sword: {
+          name: "青衣の剣修",
+          title: "飛剣で開始",
+          desc: "バランスがよく安定。貫通力の高い飛剣で、初回のテンポをつかみやすい。",
+          unlock: "初期キャラクター"
+        },
+        talisman: {
+          name: "符術道士",
+          title: "護符で開始",
+          desc: "クールダウンが短く、連続封印と群れの制御を得意とする。",
+          unlock: "任意のランを完了で解放"
+        },
+        fox: {
+          name: "霊狐の妖修",
+          title: "霊火で開始",
+          desc: "移動速度と回収範囲が高い。立ち回りで勢いを作るタイプ。",
+          unlock: "1回のランで500体撃破"
+        },
+        mechanist: {
+          name: "機関術士",
+          title: "機関弩で開始",
+          desc: "初期から弾道が1本多く、序盤の火力が安定する。",
+          unlock: "初勝利で解放"
+        }
+      },
+      passives: {
+        powerCharm: {
+          name: "破軍の玉",
+          stat: "攻撃",
+          desc: "1レベルごとにダメージが12%上昇。"
+        },
+        cooldownJade: {
+          name: "凝時の玉",
+          stat: "冷却",
+          desc: "1レベルごとにクールダウンを7%短縮。"
+        },
+        windBoots: {
+          name: "踏風の履",
+          stat: "移動速度",
+          desc: "1レベルごとに移動速度が8%上昇。"
+        },
+        lifeGourd: {
+          name: "長生の瓢",
+          stat: "生命",
+          desc: "1レベルごとに最大生命が24上昇し、少し回復する。"
+        },
+        magnetBell: {
+          name: "摂霊の鈴",
+          stat: "回収",
+          desc: "1レベルごとに経験値の回収範囲が24%上昇。"
+        },
+        splitPearl: {
+          name: "分光の珠",
+          stat: "弾道",
+          desc: "2レベルごとに追加弾道が1本増える。"
+        },
+        everlamp: {
+          name: "長明の灯",
+          stat: "範囲",
+          desc: "1レベルごとに持続時間と範囲が10%上昇。"
+        },
+        goldFang: {
+          name: "招財の牙",
+          stat: "霊石",
+          desc: "1レベルごとに霊石収入が18%上昇。"
+        }
+      },
+      weapons: {
+        flyingSword: {
+          name: "飛剣",
+          desc: "最も近い敵へ貫通する飛剣を放つ。"
+        },
+        talisman: {
+          name: "鎮妖符",
+          desc: "追尾する符を放ち、命中時に小範囲で爆ぜる。"
+        },
+        spiritFire: {
+          name: "霊火",
+          desc: "進路を燃やす霊火を放つ。"
+        },
+        thunderPearl: {
+          name: "雷珠",
+          desc: "近くの敵へランダムに雷を落とす。"
+        },
+        frostNeedle: {
+          name: "氷針",
+          desc: "扇状に氷針を放ち、敵を減速させる。"
+        },
+        spinningBlade: {
+          name: "旋刃",
+          desc: "キャラクターの周囲を回転して切り裂く。"
+        },
+        poisonMist: {
+          name: "毒霧",
+          desc: "継続ダメージを与える毒雲を生み出す。"
+        },
+        crossbow: {
+          name: "機関弩",
+          desc: "機関弩の矢を高速で発射する。"
+        },
+        heavySlash: {
+          name: "玄鉄重斬",
+          desc: "前方へ高威力の扇形重斬を放ち、重い手応えを残す。"
+        },
+        voidVortex: {
+          name: "虚空の渦",
+          desc: "妖の群れに吸引裂隙を作り、引き寄せながら継続ダメージを与える。"
+        },
+        swordSpirit: {
+          name: "剣霊召喚",
+          desc: "剣霊を召喚し、近くの敵を自動で追撃する。"
+        },
+        thunderLotus: {
+          name: "蓮華雷印",
+          desc: "敵群の足元に雷蓮を刻み、短い遅延の後に爆発させる。"
+        },
+        thousandSword: {
+          name: "万剣帰宗",
+          desc: "飛剣が剣潮となり、大群を継続的に貫く。"
+        },
+        voidSeal: {
+          name: "太虚鎮印",
+          desc: "天印が落下し、広い範囲の妖潮を封じ込める。"
+        },
+        fireSea: {
+          name: "焚天火海",
+          desc: "霊火が火の海となり、進路と周囲を焼き払う。"
+        },
+        thunderArray: {
+          name: "九霄雷陣",
+          desc: "雷撃が連鎖し、画面内で何度も跳ね回る。"
+        },
+        glacierRain: {
+          name: "玄氷針雨",
+          desc: "氷針が四方から降り注ぎ、敵を継続的に減速させる。"
+        },
+        moonWheel: {
+          name: "満月天輪",
+          desc: "大型の月輪が高速で周囲を切り裂く。"
+        },
+        plagueDomain: {
+          name: "瘴海妖域",
+          desc: "毒霧が身にまとわり、腐食する妖域を残す。"
+        },
+        dragonRepeater: {
+          name: "遊龍連弩",
+          desc: "機関弩が遊龍の斉射となり、敵を連続で捕捉する。"
+        },
+        skyRendSlash: {
+          name: "裂空天斬",
+          desc: "重斬が三筋の裂空剣気を放ち、近接爆発と遠距離貫通を兼ね備える。"
+        },
+        abyssRift: {
+          name: "帰墟裂隙",
+          desc: "渦が帰墟裂隙となり、吸引終了時に崩壊爆発を起こす。"
+        },
+        myriadSwordSpirit: {
+          name: "万剣侍従",
+          desc: "剣霊が群れとなって守り、妖潮を貫通しながら追撃する。"
+        },
+        ninefoldThunderLotus: {
+          name: "九霄雷蓮",
+          desc: "雷蓮の爆発後に雷場を残し、広い妖潮を連続で制圧する。"
+        }
+      },
+      enemies: {
+        imp: { name: "小妖" },
+        wolf: { name: "狼妖" },
+        wisp: { name: "鬼火" },
+        bug: { name: "飛虫" },
+        brute: { name: "盾妖" },
+        runner: { name: "疾走妖" },
+        spitter: { name: "火吐き妖" },
+        summoner: { name: "召妖師" },
+        shadow: { name: "影妖" },
+        stone: { name: "石霊" },
+        mireling: { name: "瘴沼の這妖" },
+        charger: { name: "血蹄の突妖" },
+        lantern: { name: "魂灯怪" },
+        reaver: { name: "裂隙の影刃" },
+        warden: { name: "玄甲の守衛" },
+        eliteBrute: { name: "赤角妖将" },
+        eliteWisp: { name: "幽藍鬼王" },
+        eliteSummoner: { name: "万魂祭司" },
+        boss: { name: "霊潮妖君" }
+      },
+      meta: {
+        might: {
+          name: "剣意",
+          stat: "ダメージ",
+          desc: "1レベルごとに全体ダメージが4%上昇。"
+        },
+        vitality: {
+          name: "根骨",
+          stat: "生命",
+          desc: "1レベルごとに最大生命が10上昇。"
+        },
+        haste: {
+          name: "身ごなし",
+          stat: "移動速度",
+          desc: "1レベルごとに移動速度が3%上昇。"
+        },
+        magnet: {
+          name: "霊嗅",
+          stat: "回収",
+          desc: "1レベルごとに回収範囲が6%上昇。"
+        },
+        fortune: {
+          name: "財運",
+          stat: "霊石",
+          desc: "1レベルごとに霊石収入が5%上昇。"
+        }
+      },
+      achievements: {
+        firstRun: {
+          name: "妖潮への第一歩",
+          desc: "任意のランを1回完了する。",
+          reward: "符術道士を解放"
+        },
+        hunter500: {
+          name: "妖斬り五百",
+          desc: "1回のランで500体撃破する。",
+          reward: "霊狐の妖修を解放"
+        },
+        firstVictory: {
+          name: "妖君討伐",
+          desc: "1回勝利する。",
+          reward: "機関術士を解放"
+        },
+        level30: {
+          name: "霊圧成形",
+          desc: "1回のランでレベル30に到達する。",
+          reward: "恒久強化の目標"
+        },
+        sixEvolved: {
+          name: "六器帰真",
+          desc: "1回のランで進化宝具を6個所持する。",
+          reward: "上級ビルドの目標"
+        },
+        rich3000: {
+          name: "霊石の雨",
+          desc: "1回のランで霊石を3000獲得する。",
+          reward: "財運挑戦の目標"
+        }
+      },
+      powerups: {
+        heal: {
+          name: "回春丹",
+          desc: "生命を回復する。"
+        },
+        magnet: {
+          name: "摂霊陣",
+          desc: "場にある経験値と霊石をすべて回収する。"
+        },
+        bomb: {
+          name: "鎮妖雷",
+          desc: "画面内の妖潮へ雷撃を放つ。"
+        }
+      }
+    },
+    fr: {
+      ui: {
+        chestDrop: "Coffre"
+      },
+      characters: {
+        sword: {
+          name: "Bretteur azur",
+          title: "Départ épée volante",
+          desc: "Un profil équilibré avec des lames perforantes. Idéal pour apprendre le rythme d'une partie.",
+          unlock: "Personnage de départ"
+        },
+        talisman: {
+          name: "Mystique aux talismans",
+          title: "Départ sceaux",
+          desc: "Des temps de recharge plus courts et un bon contrôle grâce aux sceaux répétés.",
+          unlock: "Terminez une partie pour déverrouiller"
+        },
+        fox: {
+          name: "Adepte renard spirituel",
+          title: "Départ flamme spirituelle",
+          desc: "Vitesse et portée de ramassage plus élevées. Récompense les bons déplacements.",
+          unlock: "Tuez 500 ennemis en une partie"
+        },
+        mechanist: {
+          name: "Mécaniste arcanique",
+          title: "Départ arbalète",
+          desc: "Commence avec un projectile supplémentaire pour des dégâts stables en début de partie.",
+          unlock: "Gagnez une fois pour déverrouiller"
+        }
+      },
+      passives: {
+        powerCharm: {
+          name: "Jade Brise-guerre",
+          stat: "Dégâts",
+          desc: "Augmente les dégâts de 12% par niveau."
+        },
+        cooldownJade: {
+          name: "Jade du Temps figé",
+          stat: "Recharge",
+          desc: "Réduit les temps de recharge de 7% par niveau."
+        },
+        windBoots: {
+          name: "Bottes de vent",
+          stat: "Vitesse",
+          desc: "Augmente la vitesse de déplacement de 8% par niveau."
+        },
+        lifeGourd: {
+          name: "Gourde de longévité",
+          stat: "Vie",
+          desc: "Ajoute 24 points de vie max par niveau et soigne légèrement."
+        },
+        magnetBell: {
+          name: "Cloche d'aspiration",
+          stat: "Ramassage",
+          desc: "Augmente la portée de ramassage d'XP de 24% par niveau."
+        },
+        splitPearl: {
+          name: "Perle de division",
+          stat: "Projectiles",
+          desc: "Ajoute un projectile tous les deux niveaux."
+        },
+        everlamp: {
+          name: "Lampe éternelle",
+          stat: "Zone",
+          desc: "Augmente la durée et la zone de 10% par niveau."
+        },
+        goldFang: {
+          name: "Croc de fortune",
+          stat: "Pierres",
+          desc: "Augmente les gains de pierres spirituelles de 18% par niveau."
+        }
+      },
+      weapons: {
+        flyingSword: {
+          name: "Épée volante",
+          desc: "Lance des lames perforantes vers l'ennemi le plus proche."
+        },
+        talisman: {
+          name: "Talisman anti-démon",
+          desc: "Lance des sceaux guidés qui explosent dans une petite zone à l'impact."
+        },
+        spiritFire: {
+          name: "Flamme spirituelle",
+          desc: "Libère des flammes qui brûlent sur leur trajectoire."
+        },
+        thunderPearl: {
+          name: "Perle de tonnerre",
+          desc: "Appelle des éclairs aléatoires sur les ennemis proches."
+        },
+        frostNeedle: {
+          name: "Aiguilles de givre",
+          desc: "Projette un éventail d'aiguilles glacées qui ralentissent les ennemis."
+        },
+        spinningBlade: {
+          name: "Lames tournoyantes",
+          desc: "Tournent autour du personnage et tranchent les ennemis."
+        },
+        poisonMist: {
+          name: "Brume venimeuse",
+          desc: "Crée des nuages toxiques qui infligent des dégâts continus."
+        },
+        crossbow: {
+          name: "Arbalète mécanique",
+          desc: "Tire rapidement des carreaux mécaniques."
+        },
+        heavySlash: {
+          name: "Entaille de fer noir",
+          desc: "Frappe en cône devant vous avec de lourds dégâts et un impact marqué."
+        },
+        voidVortex: {
+          name: "Vortex du vide",
+          desc: "Ouvre une faille aspirante qui attire les ennemis et les blesse sur la durée."
+        },
+        swordSpirit: {
+          name: "Esprit d'épée",
+          desc: "Invoque une lame spirituelle qui traque automatiquement les ennemis proches."
+        },
+        thunderLotus: {
+          name: "Sceau lotus de foudre",
+          desc: "Plante des lotus de foudre sous les groupes ennemis, qui explosent après un court délai."
+        },
+        thousandSword: {
+          name: "Dix mille épées",
+          desc: "L'Épée volante devient une marée de lames qui perce les grandes hordes."
+        },
+        voidSeal: {
+          name: "Grand sceau du vide",
+          desc: "Un sceau céleste tombe et verrouille de vastes zones de la horde démoniaque."
+        },
+        fireSea: {
+          name: "Mer de feu céleste",
+          desc: "La Flamme spirituelle devient une mer de feu autour de votre trajectoire."
+        },
+        thunderArray: {
+          name: "Formation des neuf tonnerres",
+          desc: "Les éclairs s'enchaînent et rebondissent plusieurs fois à l'écran."
+        },
+        glacierRain: {
+          name: "Pluie d'aiguilles glaciaires",
+          desc: "Des aiguilles glacées tombent de toutes parts et ralentissent les ennemis."
+        },
+        moonWheel: {
+          name: "Roue de pleine lune",
+          desc: "Une grande roue lunaire orbite à haute vitesse et découpe les ennemis."
+        },
+        plagueDomain: {
+          name: "Domaine de peste",
+          desc: "La Brume venimeuse vous suit et laisse un domaine corrosif."
+        },
+        dragonRepeater: {
+          name: "Répéteur dragon spiralé",
+          desc: "L'arbalète devient une salve draconique qui verrouille les ennemis en continu."
+        },
+        skyRendSlash: {
+          name: "Entaille fend-ciel",
+          desc: "L'entaille ouvre trois arcs d'énergie, combinant explosion proche et perforation lointaine."
+        },
+        abyssRift: {
+          name: "Faille abyssale",
+          desc: "Le vortex devient une faille abyssale qui s'effondre en explosion."
+        },
+        myriadSwordSpirit: {
+          name: "Myriade d'esprits d'épée",
+          desc: "Les lames spirituelles forment une garde qui perce et poursuit la horde."
+        },
+        ninefoldThunderLotus: {
+          name: "Lotus des neuf tonnerres",
+          desc: "Les lotus de foudre laissent un champ orageux qui contrôle de larges groupes."
+        }
+      },
+      enemies: {
+        imp: { name: "Démon mineur" },
+        wolf: { name: "Démon-loup" },
+        wisp: { name: "Feu follet" },
+        bug: { name: "Insecte ailé" },
+        brute: { name: "Brute au bouclier" },
+        runner: { name: "Démon véloce" },
+        spitter: { name: "Cracheur de flammes" },
+        summoner: { name: "Invocateur démoniaque" },
+        shadow: { name: "Démon d'ombre" },
+        stone: { name: "Esprit de pierre" },
+        mireling: { name: "Rampant du marais" },
+        charger: { name: "Chargeur sabot-sang" },
+        lantern: { name: "Lanterne d'âme" },
+        reaver: { name: "Faucheur de faille" },
+        warden: { name: "Gardien noir" },
+        eliteBrute: { name: "Seigneur à corne rouge" },
+        eliteWisp: { name: "Roi fantôme azur" },
+        eliteSummoner: { name: "Prêtre aux mille âmes" },
+        boss: { name: "Seigneur démon de la marée" }
+      },
+      meta: {
+        might: {
+          name: "Intention d'épée",
+          stat: "Dégâts",
+          desc: "Augmente les dégâts globaux de 4% par niveau."
+        },
+        vitality: {
+          name: "Constitution",
+          stat: "Vie",
+          desc: "Augmente les points de vie max de 10 par niveau."
+        },
+        haste: {
+          name: "Jeu de jambes",
+          stat: "Vitesse",
+          desc: "Augmente la vitesse de déplacement de 3% par niveau."
+        },
+        magnet: {
+          name: "Flair spirituel",
+          stat: "Ramassage",
+          desc: "Augmente la portée de ramassage de 6% par niveau."
+        },
+        fortune: {
+          name: "Fortune",
+          stat: "Pierres",
+          desc: "Augmente les gains de pierres spirituelles de 5% par niveau."
+        }
+      },
+      achievements: {
+        firstRun: {
+          name: "Première marée",
+          desc: "Terminez n'importe quelle partie.",
+          reward: "Déverrouille Mystique aux talismans"
+        },
+        hunter500: {
+          name: "Chasseur de 500 démons",
+          desc: "Tuez 500 ennemis en une partie.",
+          reward: "Déverrouille Adepte renard spirituel"
+        },
+        firstVictory: {
+          name: "Seigneur démon vaincu",
+          desc: "Gagnez une fois.",
+          reward: "Déverrouille Mécaniste arcanique"
+        },
+        level30: {
+          name: "Pression spirituelle",
+          desc: "Atteignez le niveau 30 en une partie.",
+          reward: "Objectif d'amélioration permanente"
+        },
+        sixEvolved: {
+          name: "Six artefacts véritables",
+          desc: "Possédez 6 artefacts évolués en une partie.",
+          reward: "Objectif de build avancé"
+        },
+        rich3000: {
+          name: "Pierres comme la pluie",
+          desc: "Gagnez 3000 pierres spirituelles en une partie.",
+          reward: "Objectif du défi de fortune"
+        }
+      },
+      powerups: {
+        heal: {
+          name: "Pilule de printemps",
+          desc: "Restaure de la vie."
+        },
+        magnet: {
+          name: "Champ d'aspiration",
+          desc: "Ramasse toute l'XP et toutes les pierres spirituelles sur le terrain."
+        },
+        bomb: {
+          name: "Tonnerre anti-démon",
+          desc: "Frappe la horde démoniaque à l'écran."
+        }
+      }
     }
   };
 
@@ -2420,7 +2954,7 @@
         <h3>${localizedAchievementName(achievement)}</h3>
         <p>${localizedAchievementDesc(achievement)}</p>
         <div class="tag-row">
-          <span class="tag">${done ? t("ui.completed", {}, "已完成") : t("ui.incomplete", {}, "未完成")}</span>
+          <span class="tag">${done ? t("ui.completed") : t("ui.incomplete")}</span>
           <span class="tag">${localizedAchievementReward(achievement)}</span>
         </div>
       `;
@@ -4018,7 +4552,7 @@
     }
     if (e.elite) {
       state.chests.push({ x: e.x, y: e.y, r: 17, pulse: 0 });
-      floatingText(e.x, e.y - 44, localizedUi("chestDrop", "宝箱"), colors.gold, 18);
+      floatingText(e.x, e.y - 44, localizedUi("chestDrop", t("ui.chestDrop")), colors.gold, 18);
       playSfx("elite");
     } else {
       playSfx("kill");
